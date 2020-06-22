@@ -4,5 +4,7 @@
 # rotation will be scheduled. Try to kill and run run_demo_client.sh again, new
 # commands should still get through (be replicated) once the new leader becomes
 # stable.
-
-./examples/hotstuff-client --idx 0 --iter -1 --max-async 4
+clients=({1..10})
+for i in "${rep[@]}"; do
+  ./examples/hotstuff-client --idx i%4 --iter -1 --max-async 4
+done
