@@ -63,7 +63,7 @@ using hotstuff::MsgRespCmd;
 using hotstuff::get_hash;
 using hotstuff::promise_t;
 
-using HotStuff = hotstuff::HotStuffSecp256k1 ;
+using HotStuff = hotstuff::HotStuffTH;
 
 class HotStuffApp: public HotStuff {
     double stat_period;
@@ -146,7 +146,7 @@ std::pair<std::string, std::string> split_ip_port_cport(const std::string &s) {
 salticidae::BoxObj<HotStuffApp> papp = nullptr;
 
 int main(int argc, char **argv) {
-    Config config("hotstuff.conf");
+    Config config("hotstuff-bls.conf");
 
     ElapsedTime elapsed;
     elapsed.start();

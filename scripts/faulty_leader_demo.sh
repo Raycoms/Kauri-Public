@@ -1,6 +1,6 @@
 #!/bin/bash
 killall hotstuff-app
-./examples/hotstuff-app --conf ./hotstuff-sec0.conf > log0 2>&1 &
+./examples/hotstuff-app --conf ./hotstuff-sec-bls0.conf > log0 2>&1 &
 leader_pid="$!"
 rep=({1..3})
 if [[ $# -gt 0 ]]; then
@@ -10,7 +10,7 @@ for i in "${rep[@]}"; do
     echo "starting replica $i"
     #valgrind --leak-check=full ./examples/hotstuff-app --conf hotstuff-sec${i}.conf > log${i} 2>&1 &
     #gdb -ex r -ex bt -ex q --args ./examples/hotstuff-app --conf hotstuff-sec${i}.conf > log${i} 2>&1 &
-    ./examples/hotstuff-app --conf ./hotstuff-sec${i}.conf > log${i} 2>&1 &
+    ./examples/hotstuff-app --conf ./hotstuff-sec-bls${i}.conf > log${i} 2>&1 &
 done
 echo "All replicas started. Let's issue some commands to be replicated (in 5 sec)..."
 sleep 5
