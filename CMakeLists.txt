@@ -54,6 +54,8 @@ add_library(hotstuff
     src/entity.cpp
     src/consensus.cpp
     src/hotstuff.cpp
+    bls/build/src/libblstmp.a
+    bls/build/contrib/relic/lib/librelic_s.a
     )
 
 INCLUDE_DIRECTORIES(bls/src)
