@@ -15,7 +15,7 @@ for j in {1..10}; do
   done
 
   echo "waiting...."
-  sleep 65
+  sleep 60
 
   echo "shutting down and copying results"
   killall hotstuff-app

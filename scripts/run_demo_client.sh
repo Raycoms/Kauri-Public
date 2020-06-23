@@ -9,10 +9,12 @@ killall hotstuff-client
 
 sleep 5
 
-echo "starting clients"
+for j in {1..10}; do
 
-clients=({1..10})
-for i in "${clients[@]}"; do
-  echo $((i%4))
-  ./examples/hotstuff-client --idx $((i%4)) --iter -1 --max-async 4 &
+  echo "starting clients"
+  ./examples/hotstuff-client --idx 0 --iter -1 --max-async 4 &
+
+  sleep 60
+  killall hotstuff-client
+
 done
