@@ -56,15 +56,15 @@ add_library(hotstuff
     src/hotstuff.cpp
     )
 
-LINK_DIRECTORIES(bls/build/src)
 INCLUDE_DIRECTORIES(bls/src)
-
-LINK_DIRECTORIES(bls/build/contrib/relic/lib)
 INCLUDE_DIRECTORIES(bls/build/contrib/relic/include)
 INCLUDE_DIRECTORIES(bls/contrib/relic/include)
 
-find_library(RELIC_S_PATH relic_s PATHS ${CMAKE_CURRENT_SOURCE_DIR}/bls/build/contrib/relic/lib)
-message(STATUS "RELIC_S_PATH " ${RELIC_S_PATH})
+add_library( blstmp SHARED IMPORTED )
+set_target_properties( blstmp PROPERTIES IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/bls/build/src/libblstmp.a )
+
+add_library( relic_s SHARED IMPORTED )
+set_target_properties( relic_s PROPERTIES IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/bls/build/contrib/relic/lib/librelic_s.a )
 
 option(BUILD_SHARED "build shared library." OFF)
 if(BUILD_SHARED)
