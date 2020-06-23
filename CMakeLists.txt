@@ -54,8 +54,6 @@ add_library(hotstuff
     src/entity.cpp
     src/consensus.cpp
     src/hotstuff.cpp
-    bls/build/src/libblstmp.a
-    bls/build/contrib/relic/lib/librelic_s.a
     )
 
 INCLUDE_DIRECTORIES(bls/src)
@@ -70,11 +68,11 @@ if(BUILD_SHARED)
     set_property(TARGET hotstuff PROPERTY POSITION_INDEPENDENT_CODE 1)
     add_library(hotstuff_shared SHARED $<TARGET_OBJECTS:hotstuff>)
     set_target_properties(hotstuff_shared PROPERTIES OUTPUT_NAME "hotstuff")
-    target_link_libraries(hotstuff_shared salticidae_static secp256k1 crypto ${CMAKE_THREAD_LIBS_INIT})
+    target_link_libraries(hotstuff_shared salticidae_static secp256k1 crypto ${CMAKE_THREAD_LIBS_INIT} blstmp relic_s)
 endif()
 add_library(hotstuff_static STATIC $<TARGET_OBJECTS:hotstuff>)
 set_target_properties(hotstuff_static PROPERTIES OUTPUT_NAME "hotstuff")
-target_link_libraries(hotstuff_static salticidae_static secp256k1 crypto ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(hotstuff_static salticidae_static secp256k1 crypto ${CMAKE_THREAD_LIBS_INIT} blstmp relic_s)
 
 add_subdirectory(test)
 
