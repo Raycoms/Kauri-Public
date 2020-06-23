@@ -56,6 +56,13 @@ add_library(hotstuff
     src/hotstuff.cpp
     )
 
+INCLUDE_DIRECTORIES(bls/src)
+LINK_DIRECTORIES(bls/build/src)
+
+LINK_DIRECTORIES(bls/build/contrib/relic/lib)
+INCLUDE_DIRECTORIES(bls/build/contrib/relic/include)
+INCLUDE_DIRECTORIES(bls/contrib/relic/include)
+
 option(BUILD_SHARED "build shared library." OFF)
 if(BUILD_SHARED)
     set_property(TARGET hotstuff PROPERTY POSITION_INDEPENDENT_CODE 1)
@@ -87,13 +94,6 @@ configure_file(src/config.h.in include/hotstuff/config.h @ONLY)
 if(BUILD_EXAMPLES)
     add_subdirectory(examples)
 endif()
-
-INCLUDE_DIRECTORIES(bls/src)
-LINK_DIRECTORIES(bls/build/src)
-
-LINK_DIRECTORIES(bls/build/contrib/relic/lib)
-INCLUDE_DIRECTORIES(bls/build/contrib/relic/include)
-INCLUDE_DIRECTORIES(bls/contrib/relic/include)
 
 # build tools
 add_executable(hotstuff-keygen
