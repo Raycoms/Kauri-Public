@@ -19,6 +19,10 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/salticidae/cmake/Modules/")
 
+message(${CMAKE_BINARY_DIR}/bls/build/contrib/relic/lib/librelic_s.a)
+message(${CMAKE_SOURCE_DIR}/bls/build/contrib/relic/lib/librelic_s.a)
+
+
 add_subdirectory(salticidae)
 include_directories(salticidae/include)
 
@@ -60,14 +64,11 @@ INCLUDE_DIRECTORIES(bls/src)
 INCLUDE_DIRECTORIES(bls/build/contrib/relic/include)
 INCLUDE_DIRECTORIES(bls/contrib/relic/include)
 
-message(${CMAKE_BINARY_DIR}/bls/build/contrib/relic/lib/librelic_s.a)
-
-
 add_library( blstmp STATIC IMPORTED )
-set_target_properties( blstmp PROPERTIES IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/bls/build/src/libblstmp.a )
+set_target_properties( blstmp PROPERTIES IMPORTED_LOCATION ${CMAKE_MODULE_PATH}/bls/build/src/libblstmp.a )
 
 add_library( relic_s STATIC IMPORTED )
-set_target_properties( relic_s PROPERTIES IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/bls/build/contrib/relic/lib/librelic_s.a )
+set_target_properties( relic_s PROPERTIES IMPORTED_LOCATION ${CMAKE_MODULE_PATH}/bls/build/contrib/relic/lib/librelic_s.a )
 
 
 option(BUILD_SHARED "build shared library." OFF)
