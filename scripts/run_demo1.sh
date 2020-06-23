@@ -1,4 +1,6 @@
 #!/bin/bash
+killall hotstuff-app
+
 rep=({0..1})
 if [[ $# -gt 0 ]]; then
     rep=($@)
