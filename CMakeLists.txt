@@ -60,10 +60,10 @@ INCLUDE_DIRECTORIES(bls/src)
 INCLUDE_DIRECTORIES(bls/build/contrib/relic/include)
 INCLUDE_DIRECTORIES(bls/contrib/relic/include)
 
-add_library( blstmp SHARED IMPORTED )
+add_library( blstmp STATIC IMPORTED )
 set_target_properties( blstmp PROPERTIES IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/bls/build/src/libblstmp.a )
 
-add_library( relic_s SHARED IMPORTED )
+add_library( relic_s STATIC IMPORTED )
 set_target_properties( relic_s PROPERTIES IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/bls/build/contrib/relic/lib/librelic_s.a )
 
 option(BUILD_SHARED "build shared library." OFF)
