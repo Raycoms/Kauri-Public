@@ -65,6 +65,8 @@ set_target_properties( blstmp PROPERTIES IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/b
 
 add_library( relic_s STATIC IMPORTED )
 set_target_properties( relic_s PROPERTIES IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/bls/build/contrib/relic/lib/librelic_s.a )
+message(${CMAKE_BINARY_DIR}/bls/build/contrib/relic/lib/librelic_s.a)
+
 
 option(BUILD_SHARED "build shared library." OFF)
 if(BUILD_SHARED)
