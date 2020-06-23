@@ -63,7 +63,7 @@ LINK_DIRECTORIES(bls/build/contrib/relic/lib)
 INCLUDE_DIRECTORIES(bls/build/contrib/relic/include)
 INCLUDE_DIRECTORIES(bls/contrib/relic/include)
 
-find_library(RELIC_S_PATH relic_s bls/build/contrib/relic/lib)
+find_library(RELIC_S_PATH relic_s PATHS ${CMAKE_PREFIX_PATH}/bls/build/contrib/relic/lib)
 message(STATUS "RELIC_S_PATH " ${RELIC_S_PATH})
 
 option(BUILD_SHARED "build shared library." OFF)
