@@ -19,6 +19,6 @@ for j in {1..10}; do
 
   echo "shutting down and copying results"
   killall hotstuff-app
-  grep " height=" log0 | tail -1 > results
+  grep " height=" log0 | tail -1 >> results
 
 done
