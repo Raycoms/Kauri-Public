@@ -11,7 +11,7 @@ for j in {1..10}; do
     echo "starting replica $i"
     #valgrind --leak-check=full ./examples/hotstuff-app --conf hotstuff-sec${i}.conf > log${i} 2>&1 &
     #gdb -ex r -ex bt -ex q --args ./examples/hotstuff-app --conf hotstuff-sec${i}.conf > log${i} 2>&1 &
-    ./examples/hotstuff-app --conf ./hotstuff.gen-sec-bls${i}.conf > log${i} 2>&1 &
+    ./examples/hotstuff-app --conf ./hotstuff.gen-sec${i}.conf > log${i} 2>&1 &
   done
 
   echo "waiting...."
