@@ -1,0 +1,10 @@
+0:127.0.0.1:10000;20000	hotstuff.gen-sec0.conf
+1:127.0.0.1:10001;20001	hotstuff.gen-sec1.conf
+2:127.0.0.1:10002;20002	hotstuff.gen-sec2.conf
+3:127.0.0.1:10003;20003	hotstuff.gen-sec3.conf
+4:127.0.0.1:10004;20004	hotstuff.gen-sec4.conf
+5:127.0.0.1:10005;20005	hotstuff.gen-sec5.conf
+6:127.0.0.1:10006;20006	hotstuff.gen-sec6.conf
+7:127.0.0.1:10007;20007	hotstuff.gen-sec7.conf
+8:127.0.0.1:10008;20008	hotstuff.gen-sec8.conf
+9:127.0.0.1:10009;20009	hotstuff.gen-sec9.conf

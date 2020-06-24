@@ -23,7 +23,7 @@ using hotstuff::privkey_bt;
 using hotstuff::pubkey_bt;
 
 int main(int argc, char **argv) {
-    Config config("hotstuff.conf");
+    Config config("hotstuff.gen.conf");
     privkey_bt priv_key;
     auto opt_n = Config::OptValInt::create(1);
     auto opt_algo = Config::OptValStr::create("secp256k1");

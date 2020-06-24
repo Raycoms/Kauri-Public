@@ -24,7 +24,7 @@ using hotstuff::tls_pkey_bt;
 using hotstuff::tls_x509_bt;
 
 int main(int argc, char **argv) {
-    Config config("hotstuff.conf");
+    Config config("hotstuff.gen.conf");
     tls_pkey_bt priv_key;
     tls_x509_bt pub_key;
     auto opt_n = Config::OptValInt::create(1);
