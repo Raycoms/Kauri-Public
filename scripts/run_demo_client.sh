@@ -12,7 +12,7 @@ sleep 5
 for j in {1..10}; do
 
   echo "starting clients"
-  ./examples/hotstuff-client --idx 0 --iter -1 --max-async 4 &
+  ./examples/hotstuff-client --idx $((j%4)) --iter -1 --max-async 4 &
 
   sleep 60
   killall hotstuff-client
