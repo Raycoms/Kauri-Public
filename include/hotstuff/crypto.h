@@ -24,6 +24,7 @@
 #include "hotstuff/type.h"
 #include "hotstuff/task.h"
 #include <bls.hpp>
+#include <libnet.h>
 
 namespace hotstuff {
 
@@ -360,6 +361,10 @@ class SigSecp256k1: public Serializable {
     }
 
     void sign(const bytearray_t &msg, const PrivKeySecp256k1 &priv_key) {
+        struct timeval timeStart,
+                timeEnd;
+        gettimeofday(&timeStart, NULL);
+
         check_msg_length(msg);
         if (!secp256k1_ecdsa_sign(
                 ctx->ctx, &data,
@@ -368,15 +373,34 @@ class SigSecp256k1: public Serializable {
                 NULL, // default nonce function
                 NULL))
             throw std::invalid_argument("failed to create secp256k1 signature");
+
+        gettimeofday(&timeEnd, NULL);
+
+        std::cout << "This effing slow piece of code took "
+                  << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
+                  << " us to execute."
+                  << std::endl;
     }
 
     bool verify(const bytearray_t &msg, const PubKeySecp256k1 &pub_key,
                 const secp256k1_context_t &_ctx) const {
+        struct timeval timeStart,
+                timeEnd;
+        gettimeofday(&timeStart, NULL);
+
         check_msg_length(msg);
-        return secp256k1_ecdsa_verify(
+        bool td = secp256k1_ecdsa_verify(
                 _ctx->ctx, &data,
                 (unsigned char *)&*msg.begin(),
                 &pub_key.data) == 1;
+
+        gettimeofday(&timeEnd, NULL);
+
+        std::cout << "This effing slow piece of code took "
+                  << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
+                  << " us to execute."
+                  << std::endl;
+        return td;
     }
 
     bool verify(const bytearray_t &msg, const PubKeySecp256k1 &pub_key) {
@@ -644,19 +668,43 @@ class QuorumCertSecp256k1: public QuorumCert {
         }
 
         void sign(const bytearray_t &msg, const PrivKeyBLS &priv_key) {
+            struct timeval timeStart,
+                    timeEnd;
+            gettimeofday(&timeStart, NULL);
+
             check_msg_length(msg);
             uint8_t* arr = (unsigned char *)&*msg.begin();
             data = new bls::InsecureSignature(priv_key.data->SignInsecure(arr, sizeof(arr)));
+
+            gettimeofday(&timeEnd, NULL);
+
+            std::cout << "This effing slow piece of code took "
+                      << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
+            << " us to execute."
+                    << std::endl;
         }
 
         bool verify(const bytearray_t &msg, const PubKeyBLS &pub_key) const {
+            struct timeval timeStart,
+                    timeEnd;
+            gettimeofday(&timeStart, NULL);
+
             check_msg_length(msg);
             uint8_t* arr = (unsigned char *)&*msg.begin();
 
             uint8_t hash[bls::BLS::MESSAGE_HASH_LEN];
             bls::Util::Hash256(hash, arr, sizeof(arr));
 
-            return data->Verify({hash}, {*(pub_key.data)});
+            bool td = data->Verify({hash}, {*(pub_key.data)});
+
+            gettimeofday(&timeEnd, NULL);
+
+            std::cout << "This effing slow piece of code took "
+                      << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
+                      << " us to execute."
+                      << std::endl;
+
+            return td;
         }
     };
 
