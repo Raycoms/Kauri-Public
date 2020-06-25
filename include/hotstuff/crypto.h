@@ -474,7 +474,7 @@ class QuorumCertSecp256k1: public QuorumCert {
     };
 
     class PrivKeyBLS: public PrivKey {
-        static const auto nbytes = bls::PrivateKey::PRIVATE_KEY_SIZE;;
+        static const auto nbytes = bls::PrivateKey::PRIVATE_KEY_SIZE;
         friend class SigSecBLS;
 
     public:
