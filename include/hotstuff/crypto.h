@@ -376,7 +376,7 @@ class SigSecp256k1: public Serializable {
 
         gettimeofday(&timeEnd, NULL);
 
-        std::cout << "This effing slow piece of code took "
+        std::cout << "This signing slow piece of code took "
                   << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
                   << " us to execute."
                   << std::endl;
@@ -396,7 +396,7 @@ class SigSecp256k1: public Serializable {
 
         gettimeofday(&timeEnd, NULL);
 
-        std::cout << "This effing slow piece of code took "
+        std::cout << "This verifying slow piece of code took "
                   << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
                   << " us to execute."
                   << std::endl;
@@ -678,7 +678,7 @@ class QuorumCertSecp256k1: public QuorumCert {
 
             gettimeofday(&timeEnd, NULL);
 
-            std::cout << "This effing slow piece of code took "
+            std::cout << "This signing slow piece of code took "
                       << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
             << " us to execute."
                     << std::endl;
@@ -699,7 +699,7 @@ class QuorumCertSecp256k1: public QuorumCert {
 
             gettimeofday(&timeEnd, NULL);
 
-            std::cout << "This effing slow piece of code took "
+            std::cout << "This verifying slow piece of code took "
                       << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
                       << " us to execute."
                       << std::endl;
