@@ -71,18 +71,45 @@ class QuorumCert: public Serializable, public Cloneable {
 using part_cert_bt = BoxObj<PartCert>;
 using quorum_cert_bt = BoxObj<QuorumCert>;
 
-class PubKeyDummy: public PubKey {
-    PubKeyDummy *clone() override { return new PubKeyDummy(*this); }
-    void serialize(DataStream &) const override {}
-    void unserialize(DataStream &) override {}
-};
+    class PrivKeyDummy;
+    class PubKeyDummy: public PubKey {
+        static const auto _olen = 33;
+        secp256k1_pubkey data;
 
-class PrivKeyDummy: public PrivKey {
-    pubkey_bt get_pubkey() const override { return new PubKeyDummy(); }
-    void serialize(DataStream &) const override {}
-    void unserialize(DataStream &) override {}
-    void from_rand() override {}
-};
+    public:
+        PubKeyDummy():
+                PubKey() {}
+
+        PubKeyDummy(const bytearray_t &raw_bytes) { from_bytes(raw_bytes); }
+
+        inline PubKeyDummy(const PrivKeyDummy &priv_key);
+
+        void serialize(DataStream &s) const override {}
+        void unserialize(DataStream &s) override {}
+
+        PubKeyDummy *clone() override {
+            return new PubKeyDummy(*this);
+        }
+    };
+
+    class PrivKeyDummy: public PrivKey {
+    public:
+
+        PrivKeyDummy():
+                PrivKey() {}
+
+        PrivKeyDummy(const bytearray_t &raw_bytes):
+                PrivKeyDummy() { from_bytes(raw_bytes); }
+
+        void serialize(DataStream &s) const override {}
+        void unserialize(DataStream &s) override {}
+        void from_rand() override {}
+        inline pubkey_bt get_pubkey() const override;
+    };
+
+    pubkey_bt PrivKeyDummy::get_pubkey() const {
+        return new PubKeyDummy(*this);
+    }
 
     class SigSecDummy: public Serializable {
     public:
@@ -101,6 +128,8 @@ class PrivKeyDummy: public PrivKey {
         void sign(const bytearray_t &msg, const PrivKeyDummy &priv_key) {}
         bool verify(const bytearray_t &msg, const PubKeyDummy &pub_key) const {return true;}
     };
+
+    PubKeyDummy::PubKeyDummy(const PrivKeyDummy &priv_key): PubKey() {}
 
     class PartCertDummy: public SigSecDummy, public PartCert {
         uint256_t obj_hash;
