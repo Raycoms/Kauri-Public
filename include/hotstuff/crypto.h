@@ -118,7 +118,7 @@ class PrivKeyDummy: public PrivKey {
         }
 
         promise_t verify(const PubKey &pub_key, VeriPool &vpool) override {
-            return true;
+            return promise_t([](promise_t &pm) { pm.resolve(true); });
         }
 
         const uint256_t &get_obj_hash() const override { return obj_hash; }
