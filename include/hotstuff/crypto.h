@@ -84,33 +84,59 @@ class PrivKeyDummy: public PrivKey {
     void from_rand() override {}
 };
 
-class PartCertDummy: public PartCert {
-    uint256_t obj_hash;
+    class SigSecDummy: public Serializable {
     public:
-    PartCertDummy() {}
-    PartCertDummy(const uint256_t &obj_hash):
-        obj_hash(obj_hash) {}
+        SigSecDummy ():
+                Serializable(){}
+        SigSecDummy(const uint256_t &digest,
+                    const PrivKeyDummy &priv_key):
+                Serializable() {
+            sign(digest, priv_key);
+        }
 
-    void serialize(DataStream &s) const override {
-        s << (uint32_t)0 << obj_hash;
-    }
+        SigSecDummy (const SigSecDummy &obj){}
+        SigSecDummy (bls::InsecureSignature sig):Serializable() { }
+        void serialize(DataStream &s) const override {}
+        void unserialize(DataStream &s) override {}
+        void sign(const bytearray_t &msg, const PrivKeyDummy &priv_key) {}
+        bool verify(const bytearray_t &msg, const PubKeyDummy &pub_key) const {return true;}
+    };
 
-    void unserialize(DataStream &s) override {
-        uint32_t tmp;
-        s >> tmp >> obj_hash;
-    }
+    class PartCertDummy: public SigSecDummy, public PartCert {
+        uint256_t obj_hash;
 
-    PartCert *clone() override {
-        return new PartCertDummy(obj_hash);
-    }
+    public:
+        PartCertDummy() = default;
+        PartCertDummy(const PrivKeyDummy &priv_key, const uint256_t &obj_hash):
+                SigSecDummy(obj_hash, priv_key),
+                PartCert(),
+                obj_hash(obj_hash) { }
 
-    bool verify(const PubKey &) override { return true; }
-    promise_t verify(const PubKey &, VeriPool &) override {
-        return promise_t([](promise_t &pm){ pm.resolve(true); });
-    }
+        bool verify(const PubKey &pub_key) override {
+            return SigSecDummy::verify(obj_hash,
+                                     static_cast<const PubKeyDummy &>(pub_key));
+        }
 
-    const uint256_t &get_obj_hash() const override { return obj_hash; }
-};
+        promise_t verify(const PubKey &pub_key, VeriPool &vpool) override {
+            return true;
+        }
+
+        const uint256_t &get_obj_hash() const override { return obj_hash; }
+
+        PartCertDummy *clone() override {
+            return new PartCertDummy(*this);
+        }
+
+        void serialize(DataStream &s) const override {
+            s << obj_hash;
+            this->SigSecDummy::serialize(s);
+        }
+
+        void unserialize(DataStream &s) override {
+            s >> obj_hash;
+            this->SigSecDummy::unserialize(s);
+        }
+    };
 
 class QuorumCertDummy: public QuorumCert {
     uint256_t obj_hash;
