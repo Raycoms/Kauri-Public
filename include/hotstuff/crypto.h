@@ -685,9 +685,6 @@ class QuorumCertSecp256k1: public QuorumCert {
         }
 
         bool verify(const bytearray_t &msg, const PubKeyBLS &pub_key) const {
-            struct timeval timeStart,
-                    timeEnd;
-            gettimeofday(&timeStart, NULL);
 
             check_msg_length(msg);
             uint8_t* arr = (unsigned char *)&*msg.begin();
@@ -695,6 +692,9 @@ class QuorumCertSecp256k1: public QuorumCert {
             uint8_t hash[bls::BLS::MESSAGE_HASH_LEN];
             bls::Util::Hash256(hash, arr, sizeof(arr));
 
+            struct timeval timeStart,
+                    timeEnd;
+            gettimeofday(&timeStart, NULL);
             bool td = data->Verify({hash}, {*(pub_key.data)});
 
             gettimeofday(&timeEnd, NULL);
