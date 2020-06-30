@@ -302,6 +302,8 @@ class PMRoundRobinProposer: virtual public PaceMaker {
 #endif
                 do_new_consensus(x + 1, std::vector<uint256_t>{});
             });
+
+        rotate();
     }
 
     void on_exp_timeout(TimerEvent &) {
@@ -361,25 +363,6 @@ class PMRoundRobinProposer: virtual public PaceMaker {
         exp_timeout = base_timeout;
         if (prop_blk[proposer] == blk) {
             stop_rotate();
-        }
-        else if (!rotating) {
-            rotating = true;
-            proposer = (proposer + 1) % hsc->get_config().nreplicas;
-            HOTSTUFF_LOG_PROTO("Pacemaker: rotate to %d", proposer);
-            if (proposer == hsc->get_id())
-            {
-                auto hs = static_cast<hotstuff::HotStuffBase *>(hsc);
-                hs->do_elected();
-                hs->get_tcall().async_call([this, hs](salticidae::ThreadCall::Handle &) {
-                    auto &pending = hs->get_decision_waiting();
-                    if (!pending.size()) return;
-                    HOTSTUFF_LOG_PROTO("reproposing pending commands");
-                    std::vector<uint256_t> cmds;
-                    for (auto &p: pending)
-                        cmds.push_back(p.first);
-                    do_new_consensus(0, cmds);
-                });
-            }
         }
     }
 
