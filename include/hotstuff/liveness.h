@@ -361,6 +361,8 @@ class PMRoundRobinProposer: virtual public PaceMaker {
         exp_timeout = base_timeout;
         if (prop_blk[proposer] == blk)
             stop_rotate();
+        else
+            rotate();
     }
 
     void impeach() override {
