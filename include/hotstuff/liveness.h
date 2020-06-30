@@ -363,7 +363,8 @@ class PMRoundRobinProposer: virtual public PaceMaker {
             stop_rotate();
         }
         else if (!rotating) {
-            rotate();
+            rotating = true;
+            proposer = (proposer + 1) % hsc->get_config().nreplicas;
         }
     }
 
