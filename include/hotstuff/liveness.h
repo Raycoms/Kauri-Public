@@ -292,13 +292,14 @@ class PMRoundRobinProposer: virtual public PaceMaker {
     void do_new_consensus(int x, const std::vector<uint256_t> &cmds) {
         auto blk = hsc->on_propose(cmds, get_parents(), bytearray_t());
         pm_qc_manual.reject();
-        rotate();
         (pm_qc_manual = hsc->async_qc_finish(blk))
             .then([this, x]() {
                 HOTSTUFF_LOG_PROTO("Pacemaker: got QC for block %d", x);
+                rotate();
 #ifdef HOTSTUFF_TWO_STEP
                 if (x >= 2) return;
 #else
+
                 if (x >= 3) return;
 #endif
                 do_new_consensus(x + 1, std::vector<uint256_t>{});
