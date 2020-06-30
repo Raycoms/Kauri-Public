@@ -366,7 +366,22 @@ class PMRoundRobinProposer: virtual public PaceMaker {
             rotating = true;
             proposer = (proposer + 1) % hsc->get_config().nreplicas;
             HOTSTUFF_LOG_PROTO("Pacemaker: rotate to %d", proposer);
-            stop_rotate();
+            last_proposed = hsc->get_genesis();
+            proposer_update_last_proposed();
+            if (proposer == hsc->get_id())
+            {
+                auto hs = static_cast<hotstuff::HotStuffBase *>(hsc);
+                hs->do_elected();
+                hs->get_tcall().async_call([this, hs](salticidae::ThreadCall::Handle &) {
+                    auto &pending = hs->get_decision_waiting();
+                    if (!pending.size()) return;
+                    HOTSTUFF_LOG_PROTO("reproposing pending commands");
+                    std::vector<uint256_t> cmds;
+                    for (auto &p: pending)
+                        cmds.push_back(p.first);
+                    do_new_consensus(0, cmds);
+                });
+            }
         }
     }
 
