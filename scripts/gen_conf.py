@@ -7,7 +7,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Generate configuration file for a batch of replicas')
     parser.add_argument('--prefix', type=str, default='hotstuff.gen')
     parser.add_argument('--ips', type=str, default=None)
-    parser.add_argument('--iter', type=int, default=50)
+    parser.add_argument('--iter', type=int, default=100)
     parser.add_argument('--pport', type=int, default=10000)
     parser.add_argument('--cport', type=int, default=20000)
     parser.add_argument('--keygen', type=str, default='./hotstuff-keygen')

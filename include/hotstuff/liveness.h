@@ -295,7 +295,6 @@ class PMRoundRobinProposer: virtual public PaceMaker {
         (pm_qc_manual = hsc->async_qc_finish(blk))
             .then([this, x]() {
                 HOTSTUFF_LOG_PROTO("Pacemaker: got QC for block %d", x);
-                rotate();
 #ifdef HOTSTUFF_TWO_STEP
                 if (x >= 2) return;
 #else
