@@ -359,10 +359,12 @@ class PMRoundRobinProposer: virtual public PaceMaker {
     void on_consensus(const block_t &blk) override {
         timer.del();
         exp_timeout = base_timeout;
-        if (prop_blk[proposer] == blk)
+        if (prop_blk[proposer] == blk) {
             stop_rotate();
-        else
+        }
+        else if (!rotating) {
             rotate();
+        }
     }
 
     void impeach() override {
