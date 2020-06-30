@@ -366,8 +366,6 @@ class PMRoundRobinProposer: virtual public PaceMaker {
             rotating = true;
             proposer = (proposer + 1) % hsc->get_config().nreplicas;
             HOTSTUFF_LOG_PROTO("Pacemaker: rotate to %d", proposer);
-            last_proposed = hsc->get_genesis();
-            proposer_update_last_proposed();
             if (proposer == hsc->get_id())
             {
                 auto hs = static_cast<hotstuff::HotStuffBase *>(hsc);
