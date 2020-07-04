@@ -34,6 +34,13 @@ void MsgPropose::postponed_parse(HotStuffCore *hsc) {
     serialized >> proposal;
 }
 
+const opcode_t MsgRelay::opcode;
+MsgRelay::MsgRelay(const VoteRelay &proposal) { serialized << proposal; }
+void MsgRelay::postponed_parse(HotStuffCore *hsc) {
+    vote.hsc = hsc;
+    serialized >> vote;
+}
+
 const opcode_t MsgVote::opcode;
 MsgVote::MsgVote(const Vote &vote) { serialized << vote; }
 void MsgVote::postponed_parse(HotStuffCore *hsc) {
@@ -75,7 +82,6 @@ void MsgRespBlock::postponed_parse(HotStuffCore *hsc) {
     }
 }
 
-// TODO: improve this function
 void HotStuffBase::exec_command(uint256_t cmd_hash, commit_cb_t callback) {
     cmd_pending.enqueue(std::make_pair(cmd_hash, callback));
 }
@@ -135,7 +141,6 @@ bool HotStuffBase::on_deliver_blk(const block_t &blk) {
         {
             pm.reject(blk);
             res = false;
-            // TODO: do we need to also free it from storage?
         }
         blk_delivery_waiting.erase(it);
     }
@@ -200,10 +205,20 @@ promise_t HotStuffBase::async_deliver_blk(const uint256_t &blk_hash,
 }
 
 void HotStuffBase::propose_handler(MsgPropose &&msg, const Net::conn_t &conn) {
+    std::cout << "Propose handler" << std::endl;
     const PeerId &peer = conn->get_peer_id();
     if (peer.is_null()) return;
     msg.postponed_parse(this);
     auto &prop = msg.proposal;
+
+    for (const PeerId& peerId : childPeers)
+    {
+        std::cout << "Relay proposal" << std::endl;
+        pn.send_msg(MsgPropose(prop), peerId);
+    }
+
+    std::cout << "Verify proposal" << std::endl;
+
     block_t blk = prop.blk;
     if (!blk) return;
     promise::all(std::vector<promise_t>{
@@ -214,9 +229,11 @@ void HotStuffBase::propose_handler(MsgPropose &&msg, const Net::conn_t &conn) {
 }
 
 void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
+    std::cout << "Received vote to relay" << std::endl;
     const auto &peer = conn->get_peer_id();
     if (peer.is_null()) return;
     msg.postponed_parse(this);
+
     //auto &vote = msg.vote;
     RcObj<Vote> v(new Vote(std::move(msg.vote)));
     promise::all(std::vector<promise_t>{
@@ -225,12 +242,64 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
     }).then([this, v=std::move(v)](const promise::values_t values) {
         if (!promise::any_cast<bool>(values[1]))
             LOG_WARN("invalid vote from %d", v->voter);
-        else
-            on_receive_vote(*v);
+
+        std::cout << "1 add part " << v->voter << " " << currentQuorumCert.size() << std::endl;
+
+        currentQuorumCert.back()->add_part(v->voter, *v->cert);
+        votedCounter++;
+
+        std::cout << "2 add part " << v->voter << std::endl;
+
+        if (votedCounter >= childPeers.size() && id != 0) {
+            std::cout << "Send relay message!" << std::endl;
+            pn.send_msg(MsgRelay(VoteRelay(votedCounter, v->blk_hash, currentQuorumCert.back().get(), this)), parentPeer);
+            votedCounter = 0;
+            return;
+        }
+
+        std::cout << "3 add part " << v->voter << std::endl;
+
+        block_t blk = get_delivered_blk(v->blk_hash);
+        if (!currentQuorumCert.back()->has_n(config.nmajority)) return;
+
+        votedCounter = 0;
+        currentQuorumCert.back()->compute();
+        update_hqc(blk, currentQuorumCert.back());
+        on_qc_finish(blk);
     });
 }
 
+void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
+    std::cout << "Vote relay handler1" << std::endl;
+    const auto &peer = conn->get_peer_id();
+    if (peer.is_null()) return;
+    msg.postponed_parse(this);
+    //auto &vote = msg.vote;
+    std::cout << "Vote relay handler2" << std::endl;
+    currentQuorumCert.back()->merge_quorum(*msg.vote.cert);
+    votedCounter += 1;
+    std::cout << "Vote relay handler3" << std::endl;
+    if (id != 0) {
+        if (votedCounter < childPeers.size()) return;
+        pn.send_msg(MsgRelay(VoteRelay(votedCounter, msg.vote.blk_hash, currentQuorumCert.back().get(), this)), parentPeer);
+        votedCounter = 0;
+        return;
+    }
+
+    HOTSTUFF_LOG_PROTO("got %s", std::string(msg.vote).c_str());
+    block_t blk = get_delivered_blk(msg.vote.blk_hash);
+
+    if (!currentQuorumCert.back()->has_n(config.nmajority)) return;
+
+    std::cout << "go to town" << std::endl;
+    votedCounter = 0;
+    currentQuorumCert.back()->compute();
+    update_hqc(blk, currentQuorumCert.back());
+    on_qc_finish(blk);
+}
+
 void HotStuffBase::req_blk_handler(MsgReqBlock &&msg, const Net::conn_t &conn) {
+    std::cout << "Req block handler" << std::endl;
     const PeerId replica = conn->get_peer_id();
     if (replica.is_null()) return;
     auto &blk_hashes = msg.blk_hashes;
@@ -249,6 +318,7 @@ void HotStuffBase::req_blk_handler(MsgReqBlock &&msg, const Net::conn_t &conn) {
 }
 
 void HotStuffBase::resp_blk_handler(MsgRespBlock &&msg, const Net::conn_t &) {
+    std::cout << "Resp block handler" << std::endl;
     msg.postponed_parse(this);
     for (const auto &blk: msg.blks)
         if (blk) on_fetch_blk(blk);
@@ -358,6 +428,7 @@ HotStuffBase::HotStuffBase(uint32_t blk_size,
     pn.reg_handler(salticidae::generic_bind(&HotStuffBase::vote_handler, this, _1, _2));
     pn.reg_handler(salticidae::generic_bind(&HotStuffBase::req_blk_handler, this, _1, _2));
     pn.reg_handler(salticidae::generic_bind(&HotStuffBase::resp_blk_handler, this, _1, _2));
+    pn.reg_handler(salticidae::generic_bind(&HotStuffBase::vote_relay_handler, this, _1, _2));
     pn.reg_conn_handler(salticidae::generic_bind(&HotStuffBase::conn_handler, this, _1, _2));
     pn.start();
     pn.listen(listen_addr);
@@ -365,21 +436,30 @@ HotStuffBase::HotStuffBase(uint32_t blk_size,
 
 void HotStuffBase::do_broadcast_proposal(const Proposal &prop) {
     //MsgPropose prop_msg(prop);
-    pn.multicast_msg(MsgPropose(prop), peers);
-    //for (const auto &replica: peers)
-    //    pn.send_msg(prop_msg, replica);
+    //pn.multicast_msg(MsgPropose(prop), peers);
+    for (const PeerId& peerId : childPeers)
+    {
+        pn.send_msg(MsgPropose(prop), peerId);
+    }
 }
 
 void HotStuffBase::do_vote(ReplicaID last_proposer, const Vote &vote) {
-    pmaker->beat_resp(last_proposer)
-            .then([this, vote](ReplicaID proposer) {
+    pmaker->beat_resp(last_proposer).then([this, vote](ReplicaID proposer) {
+
         if (proposer == get_id())
         {
             throw HotStuffError("unreachable line");
-            //on_receive_vote(vote);
         }
-        else
-            pn.send_msg(MsgVote(vote), get_config().get_peer_id(proposer));
+
+        if (childPeers.empty()) {
+            pn.send_msg(MsgVote(vote), parentPeer);
+        } else {
+            std::cout << "new cert2 open" << std::endl;
+            currentQuorumCert.push_back(create_quorum_cert(vote.blk_hash));
+            std::cout << "new cert2 mid2" << std::endl;
+            currentQuorumCert.back()->add_part(vote.voter, *vote.cert);
+            std::cout << "new cert2 close" << std::endl;
+        }
     });
 }
 
@@ -400,9 +480,12 @@ void HotStuffBase::do_decide(Finality &&fin) {
 
 HotStuffBase::~HotStuffBase() {}
 
-void HotStuffBase::start(
-        std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> &&replicas,
-        bool ec_loop) {
+void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> &&replicas, bool ec_loop) {
+
+    const uint8_t fanout = 2;
+    childPeers.reserve(fanout);
+
+    uint16_t parent = 0;
     for (size_t i = 0; i < replicas.size(); i++)
     {
         auto &addr = std::get<0>(replicas[i]);
@@ -416,6 +499,22 @@ void HotStuffBase::start(
             pn.add_peer(peer);
             pn.set_peer_addr(peer, addr);
             pn.conn_peer(peer);
+        }
+
+        if (id == parent) {
+            if (id != i) {
+                std::cout << " add child: " << i << std::endl;
+                childPeers.push_back(peer);
+            }
+        }
+        else if (id == i) {
+            std::cout << " set parent: " << parent << std::endl;
+            parentPeer = peers[parent];
+        }
+
+        if (i != 0 && i % fanout == 0)
+        {
+            parent++;
         }
     }
 

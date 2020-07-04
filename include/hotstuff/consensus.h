@@ -32,6 +32,7 @@ namespace hotstuff {
 struct Proposal;
 struct Vote;
 struct Finality;
+struct VoteRelay;
 
 /** Abstraction for HotStuff protocol state machine (without network implementation). */
 class HotStuffCore {
@@ -45,7 +46,7 @@ class HotStuffCore {
     /* === auxilliary variables === */
     privkey_bt priv_key;            /**< private key for signing votes */
     std::set<block_t> tails;   /**< set of tail blocks */
-    ReplicaConfig config;                   /**< replica configuration */
+    /**< replica configuration */
     /* === async event queues === */
     std::unordered_map<block_t, promise_t> qc_waiting;
     promise_t propose_waiting;
@@ -55,20 +56,28 @@ class HotStuffCore {
     /** always vote negatively, useful for some PaceMakers */
     bool vote_disabled;
 
-    block_t get_delivered_blk(const uint256_t &blk_hash);
     void sanity_check_delivered(const block_t &blk);
     void update(const block_t &nblk);
-    void update_hqc(const block_t &_hqc, const quorum_cert_bt &qc);
+
     void on_hqc_update();
-    void on_qc_finish(const block_t &blk);
+
     void on_propose_(const Proposal &prop);
     void on_receive_proposal_(const Proposal &prop);
 
     protected:
     ReplicaID id;                  /**< identity of the replica itself */
 
-    public:
+    block_t get_delivered_blk(const uint256_t &blk_hash);
+
+    ReplicaConfig config;
+
+    void update_hqc(const block_t &_hqc, const quorum_cert_bt &qc);
+
+    void on_qc_finish(const block_t &blk);
+
+public:
     BoxObj<EntityStorage> storage;
+    std::vector<quorum_cert_bt> currentQuorumCert;
 
     HotStuffCore(ReplicaID id, privkey_bt &&priv_key);
     virtual ~HotStuffCore() {
@@ -226,7 +235,10 @@ struct Vote: public Serializable {
         HotStuffCore *hsc):
         voter(voter),
         blk_hash(blk_hash),
-        cert(std::move(cert)), hsc(hsc) {}
+        cert(std::move(cert)), hsc(hsc)
+        {
+            std::cout << "create the vote" << std::endl;
+        }
 
     Vote(const Vote &other):
         voter(other.voter),
@@ -313,6 +325,54 @@ struct Finality: public Serializable {
         return s;
     }
 };
+
+/** Abstraction for vote relay messages. */
+    struct VoteRelay: public Serializable {
+        /** block being voted */
+        uint256_t blk_hash;
+        /** proof of validity for the vote */
+        quorum_cert_bt cert;
+
+        uint8_t signers;
+
+        /** handle of the core object to allow polymorphism */
+        HotStuffCore *hsc;
+
+        VoteRelay(): cert(nullptr), hsc(nullptr), signers(0) {}
+        VoteRelay(uint8_t signers,
+                const uint256_t &blk_hash,
+                  quorum_cert_bt &&cert,
+             HotStuffCore *hsc):
+                signers(signers),
+                blk_hash(blk_hash),
+                cert(std::move(cert)), hsc(hsc) {}
+
+        VoteRelay(const VoteRelay &other):
+                signers(other.signers),
+                blk_hash(other.blk_hash),
+                cert(other.cert ? other.cert->clone() : nullptr),
+                hsc(other.hsc) {}
+
+        VoteRelay(VoteRelay &&other) = default;
+
+        void serialize(DataStream &s) const override {
+            s << signers << blk_hash << *cert;
+        }
+
+        void unserialize(DataStream &s) override {
+            assert(hsc != nullptr);
+            s >> signers >> blk_hash;
+            cert = hsc->parse_quorum_cert(s);
+        }
+
+        operator std::string () const {
+            DataStream s;
+            s << "<vote " << "signers " << signers
+              << " blk=" << get_hex10(blk_hash) << ">";
+            return s;
+        }
+    };
+
 
 }
 

@@ -68,13 +68,21 @@ struct MsgReqBlock {
     MsgReqBlock(DataStream &&s);
 };
 
-
 struct MsgRespBlock {
     static const opcode_t opcode = 0x3;
     DataStream serialized;
     std::vector<block_t> blks;
     MsgRespBlock(const std::vector<block_t> &blks);
     MsgRespBlock(DataStream &&s): serialized(std::move(s)) {}
+    void postponed_parse(HotStuffCore *hsc);
+};
+
+struct MsgRelay {
+    static const opcode_t opcode = 0x4;
+    DataStream serialized;
+    VoteRelay vote;
+    MsgRelay(const VoteRelay &);
+    MsgRelay(DataStream &&s): serialized(std::move(s)) {}
     void postponed_parse(HotStuffCore *hsc);
 };
 
@@ -178,6 +186,10 @@ class HotStuffBase: public HotStuffCore {
     mutable double part_delivery_time_max;
     mutable std::unordered_map<const PeerId, uint32_t> part_fetched_replica;
 
+    mutable PeerId parentPeer;
+    mutable std::vector<PeerId> childPeers;
+    mutable uint8_t votedCounter = 0;
+
     void on_fetch_cmd(const command_t &cmd);
     void on_fetch_blk(const block_t &blk);
     bool on_deliver_blk(const block_t &blk);
@@ -186,6 +198,8 @@ class HotStuffBase: public HotStuffCore {
     inline void propose_handler(MsgPropose &&, const Net::conn_t &);
     /** deliver consensus message: <vote> */
     inline void vote_handler(MsgVote &&, const Net::conn_t &);
+    /** deliver consensus relay message: <vote_relay> */
+    inline void vote_relay_handler(MsgRelay &&, const Net::conn_t &);
     /** fetches full block data */
     inline void req_blk_handler(MsgReqBlock &&, const Net::conn_t &);
     /** receives a block */

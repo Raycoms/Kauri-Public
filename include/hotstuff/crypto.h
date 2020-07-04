@@ -62,6 +62,8 @@ class QuorumCert: public Serializable, public Cloneable {
     public:
     virtual ~QuorumCert() = default;
     virtual void add_part(ReplicaID replica, const PartCert &pc) = 0;
+    virtual void merge_quorum(const QuorumCert &qc) = 0;
+    virtual bool has_n(uint8_t n) = 0;
     virtual void compute() = 0;
     virtual promise_t verify(const ReplicaConfig &config, VeriPool &vpool) = 0;
     virtual bool verify(const ReplicaConfig &config) = 0;
@@ -189,6 +191,8 @@ class QuorumCertDummy: public QuorumCert {
     }
 
     void add_part(ReplicaID, const PartCert &) override {}
+    void merge_quorum(const QuorumCert &) override {}
+    bool has_n(const uint8_t n) override { return true; }
     void compute() override {}
     bool verify(const ReplicaConfig &) override { return true; }
     promise_t verify(const ReplicaConfig &, VeriPool &) override {
@@ -476,8 +480,22 @@ class QuorumCertSecp256k1: public QuorumCert {
         if (pc.get_obj_hash() != obj_hash)
             throw std::invalid_argument("PartCert does match the block hash");
         sigs.insert(std::make_pair(
-            rid, static_cast<const PartCertSecp256k1 &>(pc)));
+            rid, dynamic_cast<const PartCertSecp256k1 &>(pc)));
         rids.set(rid);
+    }
+
+    void merge_quorum(const QuorumCert &qc) override {
+        if (qc.get_obj_hash() != obj_hash)
+            throw std::invalid_argument("QuorumCert does match the block hash");
+        for (const std::pair<const unsigned short, SigSecp256k1>& sig : dynamic_cast<const QuorumCertSecp256k1 &>(qc).sigs) {
+            sigs.insert(std::make_pair(
+                    sig.first, sig.second));
+            rids.set(sig.first);
+        }
+    }
+
+    bool has_n(const uint8_t n) override {
+        return sigs.size() >= n;
     }
 
     void compute() override {}
@@ -772,7 +790,14 @@ class QuorumCertSecp256k1: public QuorumCert {
     public:
         QuorumCertBLS() = default;
         QuorumCertBLS(const ReplicaConfig &config, const uint256_t &obj_hash);
-        ~QuorumCertBLS()
+        QuorumCertBLS (const QuorumCertBLS &other): obj_hash(other.obj_hash), rids(other.rids), signatures(other.signatures), t(other.t)
+        {
+            if (other.theSig != nullptr) {
+                theSig = new SigSecBLS(*other.theSig);
+            }
+        }
+
+        ~QuorumCertBLS() override
         {
             delete theSig;
             theSig = nullptr;
@@ -784,6 +809,20 @@ class QuorumCertSecp256k1: public QuorumCert {
             signatures.insert(std::make_pair(
                     rid, static_cast<const PartCertBLS &>(pc)));
             rids.set(rid);
+        }
+
+        void merge_quorum(const QuorumCert &qc) override {
+            if (qc.get_obj_hash() != obj_hash)
+                throw std::invalid_argument("QuorumCert does match the block hash");
+            for (const std::pair<const unsigned short, SigSecBLS>& sig : dynamic_cast<const QuorumCertBLS &>(qc).signatures) {
+                signatures.insert(std::make_pair(
+                        sig.first, sig.second));
+                rids.set(sig.first);
+            }
+        }
+
+        bool has_n(const uint8_t n) override {
+            return signatures.size() >= n;
         }
 
         void compute() override
@@ -814,7 +853,7 @@ class QuorumCertSecp256k1: public QuorumCert {
             bool combined = (theSig != nullptr);
             s << obj_hash << rids << combined;
             if (combined) {
-                s << *theSig;
+                theSig->serialize(s);
             }
             else {
                 for (size_t i = 0; i < rids.size(); i++)

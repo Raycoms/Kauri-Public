@@ -131,7 +131,7 @@ void HotStuffCore::update(const block_t &nblk) {
     std::vector<block_t> commit_queue;
     block_t b;
     for (b = blk; b->height > b_exec->height; b = b->parents[0])
-    { /* TODO: also commit the uncles/aunts */
+    {
         commit_queue.push_back(b);
     }
     if (b != b_exec)
@@ -210,9 +210,11 @@ void HotStuffCore::on_receive_proposal(const Proposal &prop) {
             }
         }
     }
-    LOG_PROTO("now state: %s", std::string(*this).c_str());
-    if (bnew->qc_ref)
+    LOG_PROTO("x now state: %s", std::string(*this).c_str());
+    std::cout << "blah" << std::endl;
+    if (bnew->qc_ref) {
         on_qc_finish(bnew->qc_ref);
+    }
     on_receive_proposal_(prop);
     if (opinion && !vote_disabled)
         do_vote(prop.proposer,
@@ -221,23 +223,32 @@ void HotStuffCore::on_receive_proposal(const Proposal &prop) {
 }
 
 void HotStuffCore::on_receive_vote(const Vote &vote) {
+    if (vote.voter == get_id()) {
+        std::cout << "new cert1" << std::endl;
+        currentQuorumCert.push_back(create_quorum_cert(vote.blk_hash));
+        currentQuorumCert.back()->add_part(vote.voter, *vote.cert);
+    }
     LOG_PROTO("got %s", std::string(vote).c_str());
-    LOG_PROTO("now state: %s", std::string(*this).c_str());
+    LOG_PROTO("y now state: %s", std::string(*this).c_str());
+
     block_t blk = get_delivered_blk(vote.blk_hash);
     assert(vote.cert);
     size_t qsize = blk->voted.size();
     if (qsize >= config.nmajority) return;
+
     if (!blk->voted.insert(vote.voter).second)
     {
         LOG_WARN("duplicate vote for %s from %d", get_hex10(vote.blk_hash).c_str(), vote.voter);
         return;
     }
+
     auto &qc = blk->self_qc;
     if (qc == nullptr)
     {
         LOG_WARN("vote for block not proposed by itself");
         qc = create_quorum_cert(blk->get_hash());
     }
+
     qc->add_part(vote.voter, *vote.cert);
     if (qsize + 1 == config.nmajority)
     {
@@ -246,6 +257,7 @@ void HotStuffCore::on_receive_vote(const Vote &vote) {
         on_qc_finish(blk);
     }
 }
+
 /*** end HotStuff protocol logic ***/
 void HotStuffCore::on_init(uint32_t nfaulty) {
 
