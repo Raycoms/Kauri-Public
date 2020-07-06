@@ -258,7 +258,7 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
         {
             if (cert != nullptr && cert->get_obj_hash() == blk->get_hash()) {
                 cert->add_part(v->voter, *v->cert);
-                if (id != 0 && cert->has_n(childPeers.size())) {
+                if (id != 0 && cert->has_n(numberOfChildren)) {
                     //std::cout << "Send relay message!" << std::endl;
                     pn.send_msg(MsgRelay(VoteRelay(v->blk_hash, cert->clone(), this)), parentPeer);
                 }
@@ -281,9 +281,9 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
     //auto &vote = msg.vote;
     currentQuorumCert.back()->merge_quorum(*msg.vote.cert);
     if (id != 0) {
-        if (!currentQuorumCert.back()->has_n(childPeers.size())) return;
+        if (!currentQuorumCert.back()->has_n(numberOfChildren)) return;
         //std::cout << "Send Vote Relay" << std::endl;
-        pn.send_msg(MsgRelay(VoteRelay(msg.vote.blk_hash, currentQuorumCert.back().get(), this)), parentPeer);
+        pn.send_msg(MsgRelay(VoteRelay(msg.vote.blk_hash, currentQuorumCert.back().get()->clone(), this)), parentPeer);
         return;
     }
 
@@ -487,9 +487,9 @@ HotStuffBase::~HotStuffBase() {}
 void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> &&replicas, bool ec_loop) {
 
     const uint8_t fanout = 2;
-    childPeers.reserve(fanout);
 
     uint16_t parent = 0;
+    std::set<uint16_t> children;
     for (size_t i = 0; i < replicas.size(); i++)
     {
         auto &addr = std::get<0>(replicas[i]);
@@ -508,12 +508,17 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
         if (id == parent) {
             if (id != i) {
                 //std::cout << " add child: " << i << std::endl;
-                childPeers.push_back(peer);
+                childPeers.insert(peer);
+                children.insert(i);
             }
         }
         else if (id == i) {
             //std::cout << " set parent: " << parent << std::endl;
             parentPeer = peers[parent];
+        }
+        else if (i != 0 && children.find(parent) != children.end())
+        {
+            children.insert(i);
         }
 
         if (i != 0 && i % fanout == 0)
@@ -521,6 +526,9 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
             parent++;
         }
     }
+
+    //std::cout << " total children: " << children.size() << std::endl;
+    numberOfChildren = children.size();
 
     /* ((n - 1) + 1 - 1) / 3 */
     uint32_t nfaulty = peers.size() / 3;

@@ -78,6 +78,7 @@ class HotStuffCore {
 public:
     BoxObj<EntityStorage> storage;
     std::vector<quorum_cert_bt> currentQuorumCert;
+    uint16_t numberOfChildren;
 
     HotStuffCore(ReplicaID id, privkey_bt &&priv_key);
     virtual ~HotStuffCore() {
@@ -235,10 +236,7 @@ struct Vote: public Serializable {
         HotStuffCore *hsc):
         voter(voter),
         blk_hash(blk_hash),
-        cert(std::move(cert)), hsc(hsc)
-        {
-            std::cout << "create the vote" << std::endl;
-        }
+        cert(std::move(cert)), hsc(hsc) { }
 
     Vote(const Vote &other):
         voter(other.voter),

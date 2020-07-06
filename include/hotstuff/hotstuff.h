@@ -187,7 +187,7 @@ class HotStuffBase: public HotStuffCore {
     mutable std::unordered_map<const PeerId, uint32_t> part_fetched_replica;
 
     mutable PeerId parentPeer;
-    mutable std::vector<PeerId> childPeers;
+    mutable std::set<PeerId> childPeers;
 
     void on_fetch_cmd(const command_t &cmd);
     void on_fetch_blk(const block_t &blk);
