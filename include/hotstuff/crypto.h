@@ -380,10 +380,10 @@ class SigSecp256k1: public Serializable {
 
         gettimeofday(&timeEnd, NULL);
 
-        std::cout << "This signing slow piece of code took "
+        /*std::cout << "This signing slow piece of code took "
                   << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
                   << " us to execute."
-                  << std::endl;
+                  << std::endl;*/
     }
 
     bool verify(const bytearray_t &msg, const PubKeySecp256k1 &pub_key,
@@ -400,10 +400,10 @@ class SigSecp256k1: public Serializable {
 
         gettimeofday(&timeEnd, NULL);
 
-        std::cout << "This verifying slow piece of code took "
+        /*std::cout << "This verifying slow piece of code took "
                   << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
                   << " us to execute."
-                  << std::endl;
+                  << std::endl;*/
         return td;
     }
 
@@ -696,10 +696,10 @@ class QuorumCertSecp256k1: public QuorumCert {
 
             gettimeofday(&timeEnd, NULL);
 
-            std::cout << "This signing slow piece of code took "
+            /*std::cout << "This signing slow piece of code took "
                       << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
             << " us to execute."
-                    << std::endl;
+                    << std::endl;*/
         }
 
         bool verify(const bytearray_t &msg, const PubKeyBLS &pub_key) const {
@@ -717,10 +717,10 @@ class QuorumCertSecp256k1: public QuorumCert {
 
             gettimeofday(&timeEnd, NULL);
 
-            std::cout << "This verifying slow piece of code took "
+            /*std::cout << "This verifying slow piece of code took "
                       << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
                       << " us to execute."
-                      << std::endl;
+                      << std::endl;*/
 
             return td;
         }
@@ -822,7 +822,7 @@ class QuorumCertSecp256k1: public QuorumCert {
         }
 
         bool has_n(const uint8_t n) override {
-            return signatures.size() >= n;
+            return theSig != nullptr || signatures.size() >= n;
         }
 
         void compute() override

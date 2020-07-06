@@ -333,22 +333,17 @@ struct Finality: public Serializable {
         /** proof of validity for the vote */
         quorum_cert_bt cert;
 
-        uint8_t signers;
-
         /** handle of the core object to allow polymorphism */
         HotStuffCore *hsc;
 
-        VoteRelay(): cert(nullptr), hsc(nullptr), signers(0) {}
-        VoteRelay(uint8_t signers,
-                const uint256_t &blk_hash,
+        VoteRelay(): cert(nullptr), hsc(nullptr) {}
+        VoteRelay(const uint256_t &blk_hash,
                   quorum_cert_bt &&cert,
              HotStuffCore *hsc):
-                signers(signers),
                 blk_hash(blk_hash),
                 cert(std::move(cert)), hsc(hsc) {}
 
         VoteRelay(const VoteRelay &other):
-                signers(other.signers),
                 blk_hash(other.blk_hash),
                 cert(other.cert ? other.cert->clone() : nullptr),
                 hsc(other.hsc) {}
@@ -356,18 +351,18 @@ struct Finality: public Serializable {
         VoteRelay(VoteRelay &&other) = default;
 
         void serialize(DataStream &s) const override {
-            s << signers << blk_hash << *cert;
+            s << blk_hash << *cert;
         }
 
         void unserialize(DataStream &s) override {
             assert(hsc != nullptr);
-            s >> signers >> blk_hash;
+            s >> blk_hash;
             cert = hsc->parse_quorum_cert(s);
         }
 
         operator std::string () const {
             DataStream s;
-            s << "<vote " << "signers " << signers
+            s << "<vote " << "signers "
               << " blk=" << get_hex10(blk_hash) << ">";
             return s;
         }

@@ -188,7 +188,6 @@ class HotStuffBase: public HotStuffCore {
 
     mutable PeerId parentPeer;
     mutable std::vector<PeerId> childPeers;
-    mutable uint8_t votedCounter = 0;
 
     void on_fetch_cmd(const command_t &cmd);
     void on_fetch_blk(const block_t &blk);

@@ -65,7 +65,6 @@ namespace hotstuff {
     QuorumCertBLS::QuorumCertBLS(
             const ReplicaConfig &config, const uint256_t &obj_hash) :
             QuorumCert(), obj_hash(obj_hash), rids(config.nreplicas), t(config.nmajority){
-        std::cout << "try this???" << std::endl;
         rids.clear();
     }
 

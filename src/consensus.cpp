@@ -210,11 +210,12 @@ void HotStuffCore::on_receive_proposal(const Proposal &prop) {
             }
         }
     }
+
     LOG_PROTO("x now state: %s", std::string(*this).c_str());
-    std::cout << "blah" << std::endl;
     if (bnew->qc_ref) {
         on_qc_finish(bnew->qc_ref);
     }
+
     on_receive_proposal_(prop);
     if (opinion && !vote_disabled)
         do_vote(prop.proposer,
@@ -224,7 +225,7 @@ void HotStuffCore::on_receive_proposal(const Proposal &prop) {
 
 void HotStuffCore::on_receive_vote(const Vote &vote) {
     if (vote.voter == get_id()) {
-        std::cout << "new cert1" << std::endl;
+        //std::cout << "new cert1" << std::endl;
         currentQuorumCert.push_back(create_quorum_cert(vote.blk_hash));
         currentQuorumCert.back()->add_part(vote.voter, *vote.cert);
     }
