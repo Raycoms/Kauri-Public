@@ -250,7 +250,7 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
             //std::cout << "already has full majority" << std::endl;
         }
 
-        if (currentQuorumCert.size() > 2) {
+        if (currentQuorumCert.size() > 5) {
             currentQuorumCert.erase(currentQuorumCert.begin());
         }
 
