@@ -278,7 +278,7 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
     msg.postponed_parse(this);
     //std::cout << "vote relay handler: " << msg.vote.blk_hash.to_hex() << std::endl;
 
-    if (currentQuorumCert.size() > 5) {
+    if (currentQuorumCert.size() > 3) {
         currentQuorumCert.erase(currentQuorumCert.begin());
     }
 
