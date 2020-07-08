@@ -218,7 +218,7 @@ void HotStuffCore::on_receive_proposal(const Proposal &prop) {
 
     on_receive_proposal_(prop);
     if (opinion && !vote_disabled)
-        do_vote(prop.proposer,
+        do_vote(prop,
             Vote(id, bnew->get_hash(),
                 create_part_cert(*priv_key, bnew->get_hash()), this));
 }

@@ -136,7 +136,7 @@ public:
     /** Called upon sending out a new vote to the next proposer.  The user
      * should send the vote message to a *good* proposer to have good liveness,
      * while safety is always guaranteed by HotStuffCore. */
-    virtual void do_vote(ReplicaID last_proposer, const Vote &vote) = 0;
+    virtual void do_vote(Proposal last_proposer, const Vote &vote) = 0;
 
     /* The user plugs in the detailed instances for those
      * polymorphic data types. */
@@ -360,7 +360,7 @@ struct Finality: public Serializable {
 
         operator std::string () const {
             DataStream s;
-            s << "<vote " << "signers "
+            s << "<voterelay "
               << " blk=" << get_hex10(blk_hash) << ">";
             return s;
         }
