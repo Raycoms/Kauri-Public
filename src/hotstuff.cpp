@@ -450,6 +450,12 @@ void HotStuffBase::do_broadcast_proposal(const Proposal &prop) {
 }
 
 void HotStuffBase::do_vote(Proposal prop, const Vote &vote) {
+    for (const PeerId& peerId : childPeers)
+    {
+        //std::cout << "Relay proposal" << std::endl;
+        pn.send_msg(MsgPropose(prop), peerId);
+    }
+    
     pmaker->beat_resp(prop.proposer).then([this, vote, prop](ReplicaID proposer) {
 
         if (proposer == get_id())
@@ -462,11 +468,6 @@ void HotStuffBase::do_vote(Proposal prop, const Vote &vote) {
             pn.send_msg(MsgVote(vote), parentPeer);
         } else {
             //todo I think this goes at some mment later than receiving, and all breaks apart. We need this more resilient (If height >= blockheight we check in the quorum cert for it).
-            for (const PeerId& peerId : childPeers)
-            {
-                //std::cout << "Relay proposal" << std::endl;
-                pn.send_msg(MsgPropose(prop), peerId);
-            }
 
             //std::cout << "Create cert and add vote" << std::endl;
             currentQuorumCert.push_back(create_quorum_cert(vote.blk_hash));
