@@ -245,7 +245,7 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
             LOG_WARN("invalid vote from %d", v->voter);
         block_t blk = get_delivered_blk(v->blk_hash);
 
-        if (currentQuorumCert.size() > 3) {
+        if (currentQuorumCert.size() > 2) {
             currentQuorumCert.erase(currentQuorumCert.begin());
         }
 
@@ -278,7 +278,7 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
     msg.postponed_parse(this);
     //std::cout << "vote relay handler: " << msg.vote.blk_hash.to_hex() << std::endl;
 
-    if (currentQuorumCert.size() > 3) {
+    if (currentQuorumCert.size() > 2) {
         currentQuorumCert.erase(currentQuorumCert.begin());
     }
 
