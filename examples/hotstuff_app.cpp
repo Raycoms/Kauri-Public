@@ -132,7 +132,7 @@ class HotStuffApp: public HotStuff {
                 const ClientNetwork<opcode_t>::Config &clinet_config);
 
     void start(const std::vector<std::tuple<NetAddr, bytearray_t, bytearray_t>> &reps);
-    void set_master_pub(const std::string &master);
+    void set_master_pub(const std::string &master, uint8_t fanout);
     void stop();
 };
 
@@ -175,6 +175,7 @@ int main(int argc, char **argv) {
     auto opt_max_rep_msg = Config::OptValInt::create(4 << 20); // 4M by default
     auto opt_max_cli_msg = Config::OptValInt::create(65536); // 64K by default
     auto opt_master_pub = Config::OptValStr::create("");
+    auto opt_fanout = Config::OptValInt::create(2); // 2 by default
 
     config.add_opt("block-size", opt_blk_size, Config::SET_VAL);
     config.add_opt("parent-limit", opt_parent_limit, Config::SET_VAL);
@@ -199,7 +200,8 @@ int main(int argc, char **argv) {
     config.add_opt("max-rep-msg", opt_max_rep_msg, Config::SET_VAL, 'S', "the maximum replica message size");
     config.add_opt("max-cli-msg", opt_max_cli_msg, Config::SET_VAL, 'S', "the maximum client message size");
     config.add_opt("help", opt_help, Config::SWITCH_ON, 'h', "show this help info");
-    config.add_opt("master-pub", opt_master_pub, Config::SET_VAL, 'p', "master public key for BLS");
+    config.add_opt("master-pub", opt_master_pub, Config::SET_VAL, 'x', "master public key for BLS");
+    config.add_opt("fan-out", opt_fanout, Config::SET_VAL, 'y', "fanout");
 
     EventContext ec;
     config.parse(argc, argv);
@@ -288,7 +290,7 @@ int main(int argc, char **argv) {
     }
 
     if (!opt_master_pub->get().empty()) {
-        papp->set_master_pub(opt_master_pub->get());
+        papp->set_master_pub(opt_master_pub->get(), 2);
     }
 
     auto shutdown = [&](int) { papp->stop(); };
@@ -422,6 +424,6 @@ void HotStuffApp::print_stat() const {
 #endif
 }
 
-void HotStuffApp::set_master_pub(const std::string& masterPub) {
-    HotStuff::set_master_pub(hotstuff::from_hex(masterPub));
+void HotStuffApp::set_master_pub(const std::string& masterPub, uint8_t fanout) {
+    HotStuff::set_master_pub(hotstuff::from_hex(masterPub), fanout);
 }

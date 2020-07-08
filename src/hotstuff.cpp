@@ -494,7 +494,7 @@ HotStuffBase::~HotStuffBase() {}
 
 void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> &&replicas, bool ec_loop) {
 
-    const uint8_t fanout = 2;
+    const uint8_t fanout = config.fanout;
 
     uint16_t parent = 0;
     std::set<uint16_t> children;

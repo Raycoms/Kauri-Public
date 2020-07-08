@@ -65,6 +65,8 @@ class ReplicaConfig {
 
     PubKey* globalPub;
 
+    uint8_t fanout;
+
     ReplicaConfig(): nreplicas(0), nmajority(0) {}
 
     void add_replica(ReplicaID rid, const ReplicaInfo &info) {

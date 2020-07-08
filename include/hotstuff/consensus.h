@@ -93,7 +93,7 @@ public:
     void on_init(uint32_t nfaulty);
 
     /** Call to initialize the master public key.. */
-    void set_master_pub(const pubkey_bt &masterPub);
+    void set_master_pub(const pubkey_bt &masterPub, uint8_t fanout);
 
     /* TODO: better name for "delivery" ? */
     /** Call to inform the state machine that a block is ready to be handled.

@@ -368,8 +368,9 @@ HotStuffCore::operator std::string () const {
     return s;
 }
 
-void HotStuffCore::set_master_pub(const pubkey_bt &masterPub) {
+void HotStuffCore::set_master_pub(const pubkey_bt &masterPub, uint8_t fanout) {
     config.globalPub = masterPub->clone();
+    config.fanout = fanout;
 }
 
 }
