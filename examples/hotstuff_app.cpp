@@ -290,7 +290,7 @@ int main(int argc, char **argv) {
     }
 
     if (!opt_master_pub->get().empty()) {
-        papp->set_master_pub(opt_master_pub->get(), 2);
+        papp->set_master_pub(opt_master_pub->get(), opt_fanout->get());
     }
 
     auto shutdown = [&](int) { papp->stop(); };
