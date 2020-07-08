@@ -219,6 +219,12 @@ void HotStuffBase::propose_handler(MsgPropose &&msg, const Net::conn_t &conn) {
         async_deliver_blk(blk->get_hash(), peer)
     }).then([this, prop = std::move(prop)]() {
         on_receive_proposal(prop);
+
+        for (const PeerId& peerId : childPeers)
+        {
+            //std::cout << "Relay proposal" << std::endl;
+            pn.send_msg(MsgPropose(prop), peerId);
+        }
     });
 }
 
@@ -450,12 +456,7 @@ void HotStuffBase::do_broadcast_proposal(const Proposal &prop) {
 }
 
 void HotStuffBase::do_vote(Proposal prop, const Vote &vote) {
-    for (const PeerId& peerId : childPeers)
-    {
-        //std::cout << "Relay proposal" << std::endl;
-        pn.send_msg(MsgPropose(prop), peerId);
-    }
-    
+
     pmaker->beat_resp(prop.proposer).then([this, vote, prop](ReplicaID proposer) {
 
         if (proposer == get_id())
