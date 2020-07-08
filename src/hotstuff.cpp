@@ -212,18 +212,17 @@ void HotStuffBase::propose_handler(MsgPropose &&msg, const Net::conn_t &conn) {
     auto &prop = msg.proposal;
 
     //std::cout << "Verify proposal" << std::endl;
+    for (const PeerId& peerId : childPeers)
+    {
+        //std::cout << "Relay proposal" << std::endl;
+        pn.send_msg(MsgPropose(prop), peerId);
+    }
 
     block_t blk = prop.blk;
     if (!blk) return;
     promise::all(std::vector<promise_t>{
         async_deliver_blk(blk->get_hash(), peer)
     }).then([this, prop = std::move(prop)]() {
-        for (const PeerId& peerId : childPeers)
-        {
-            //std::cout << "Relay proposal" << std::endl;
-            pn.send_msg(MsgPropose(prop), peerId);
-        }
-
         on_receive_proposal(prop);
     });
 }
