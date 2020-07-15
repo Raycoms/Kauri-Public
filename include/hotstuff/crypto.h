@@ -526,10 +526,12 @@ class QuorumCertSecp256k1: public QuorumCert {
     class PubKeyBLS: public PubKey {
         static const auto _olen = bls::PublicKey::PUBLIC_KEY_SIZE;
         friend class SigSecBLS;
+        friend class QuorumCertAggBLS;
 
         bls::PublicKey* data = nullptr;
 
     public:
+
         PubKeyBLS() :
                 PubKey() {}
 
@@ -691,8 +693,7 @@ class QuorumCertSecp256k1: public QuorumCert {
             gettimeofday(&timeStart, NULL);
 
             check_msg_length(msg);
-            uint8_t* arr = (unsigned char *)&*msg.begin();
-            data = new bls::InsecureSignature(priv_key.data->SignInsecure(arr, sizeof(arr)));
+            data = new bls::InsecureSignature(priv_key.data->SignInsecure(msg.data(), msg.size()));
 
             gettimeofday(&timeEnd, NULL);
 
@@ -705,10 +706,9 @@ class QuorumCertSecp256k1: public QuorumCert {
         bool verify(const bytearray_t &msg, const PubKeyBLS &pub_key) const {
 
             check_msg_length(msg);
-            uint8_t* arr = (unsigned char *)&*msg.begin();
 
             uint8_t hash[bls::BLS::MESSAGE_HASH_LEN];
-            bls::Util::Hash256(hash, arr, sizeof(arr));
+            bls::Util::Hash256(hash, msg.data(), msg.size());
 
             struct timeval timeStart,
                     timeEnd;
@@ -807,7 +807,7 @@ class QuorumCertSecp256k1: public QuorumCert {
             if (pc.get_obj_hash() != obj_hash)
                 throw std::invalid_argument("PartCert does match the block hash");
             signatures.insert(std::make_pair(
-                    rid, static_cast<const PartCertBLS &>(pc)));
+                    rid, dynamic_cast<const PartCertBLS &>(pc)));
             rids.set(rid);
         }
 
@@ -831,7 +831,7 @@ class QuorumCertSecp256k1: public QuorumCert {
             std::vector<size_t> players;
             players.reserve(signatures.size());
 
-            for(auto elem : signatures) {
+            for(const auto& elem : signatures) {
                 players.push_back(elem.first + 1);
                 sigShareOut.push_back(*elem.second.data);
             }
@@ -875,6 +875,130 @@ class QuorumCertSecp256k1: public QuorumCert {
         }
     };
 
+    class SigVeriTaskAggBLS: public VeriTask {
+        std::vector<const uint8_t *> hash;
+        std::vector<bls::PublicKey> pubs;
+        SigSecBLS sig;
+    public:
+        SigVeriTaskAggBLS(std::vector<const uint8_t *> hash,
+                          std::vector<bls::PublicKey> pubs,
+                          const SigSecBLS &sig):
+                hash(hash), pubs(pubs), sig(sig) {}
+        ~SigVeriTaskAggBLS() override = default;
+
+        bool verify() override {
+            return sig.data->Verify(hash, pubs);
+        }
+    };
+
+    class QuorumCertAggBLS: public QuorumCert {
+        uint256_t obj_hash;
+        salticidae::Bits rids;
+        SigSecBLS* theSig = nullptr;
+        uint8_t n = 0;
+
+    public:
+        QuorumCertAggBLS() = default;
+        QuorumCertAggBLS(const ReplicaConfig &config, const uint256_t &obj_hash);
+        QuorumCertAggBLS (const QuorumCertAggBLS &other): obj_hash(other.obj_hash), rids(other.rids)
+        {
+            if (other.theSig != nullptr) {
+                theSig = new SigSecBLS(*other.theSig);
+            }
+        }
+
+        ~QuorumCertAggBLS() override
+        {
+            delete theSig;
+            theSig = nullptr;
+        }
+
+        void calculateN() {
+            n = 0;
+            for (unsigned int i = 0; i < rids.size(); i++) {
+                if (rids[i] == 1) {
+                    n++;
+                }
+            }
+        }
+
+        void add_part(ReplicaID rid, const PartCert &pc) override {
+            if (pc.get_obj_hash() != obj_hash)
+                throw std::invalid_argument("PartCert does match the block hash");
+            rids.set(rid);
+            calculateN();
+
+            if (theSig == nullptr) {
+                theSig = new SigSecBLS(*dynamic_cast<const PartCertBLS &>(pc).data);
+                return;
+            }
+
+            bls::InsecureSignature sig1 = *theSig->data;
+            bls::InsecureSignature sig2 = *dynamic_cast<const PartCertBLS &>(pc).data;
+
+            bls::InsecureSignature sig = bls::InsecureSignature::Aggregate({sig1, sig2});
+
+            *theSig->data = sig;
+        }
+
+        void merge_quorum(const QuorumCert &qc) override {
+            if (qc.get_obj_hash()!= obj_hash)throw std::invalid_argument("QuorumCert does match the block hash");
+
+            salticidae::Bits newRids = dynamic_cast<const QuorumCertAggBLS &>(qc).rids;
+            for (unsigned int i = 0;i < newRids.size();i++) {
+                if (newRids[i] == 1) {
+                    rids.set(i);
+                }
+            }
+            calculateN();
+
+            if (theSig == nullptr) {
+                theSig = new SigSecBLS(*dynamic_cast<const QuorumCertAggBLS &>(qc).theSig->data);
+                return;
+            }
+
+            bls::InsecureSignature sig1 = *theSig->data;
+            bls::InsecureSignature sig2 = *dynamic_cast<const QuorumCertAggBLS &>(qc).theSig->data;
+
+            bls::InsecureSignature sig = bls::InsecureSignature::Aggregate({sig1, sig2});
+
+            *theSig->data = sig;
+        }
+
+        bool has_n(const uint8_t t) override {
+            return n >= t;
+        }
+
+        void compute() override { }
+
+        bool verify(const ReplicaConfig &config) override;
+        promise_t verify(const ReplicaConfig &config, VeriPool &vpool) override;
+
+        const uint256_t &get_obj_hash() const override { return obj_hash; }
+
+        QuorumCertAggBLS *clone() override {
+            return new QuorumCertAggBLS(*this);
+        }
+
+        void serialize(DataStream &s) const override {
+            bool combined = (theSig != nullptr);
+            s << obj_hash << rids << combined;
+            if (combined) {
+                theSig->serialize(s);
+            }
+        }
+
+        void unserialize(DataStream &s) override {
+            bool combined;
+            s >> obj_hash >> rids >> combined;
+            calculateN();
+
+            if (combined) {
+                theSig = new SigSecBLS();
+                theSig->unserialize(s);
+            }
+        }
+    };
 }
 
 #endif

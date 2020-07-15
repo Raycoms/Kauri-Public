@@ -256,7 +256,7 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
 
                 if (id != 0 ) {
                     if (!cert->has_n(numberOfChildren + 1)) return;
-                    //std::cout << "send relay message: " << v->blk_hash.to_hex() << std::endl;
+                    //std::cout << peers[id].to_hex() <<  " send relay message: " << v->blk_hash.to_hex() <<  std::endl;
 
                     pn.send_msg(MsgRelay(VoteRelay(v->blk_hash, cert->clone(), this)), parentPeer);
                 }

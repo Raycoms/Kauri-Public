@@ -93,4 +93,54 @@ namespace hotstuff {
             return true;
         });
     }
+
+    QuorumCertAggBLS::QuorumCertAggBLS(
+            const ReplicaConfig &config, const uint256_t &obj_hash) :
+            QuorumCert(), obj_hash(obj_hash), rids(config.nreplicas){
+        rids.clear();
+    }
+
+    bool QuorumCertAggBLS::verify(const ReplicaConfig &config) {
+        if (theSig == nullptr) return false;
+        HOTSTUFF_LOG_DEBUG("checking cert(%d), obj_hash=%s",
+                           i, get_hex10(obj_hash).c_str());
+
+
+        uint8_t hash[bls::BLS::MESSAGE_HASH_LEN];
+        bls::Util::Hash256(hash, obj_hash.to_bytes().data(),  obj_hash.to_bytes().size());
+
+        std::vector<const uint8_t *> hashes;
+        std::vector<bls::PublicKey> pubs;
+        for (unsigned int i = 0; i < rids.size(); i++) {
+            if (rids[i]) {
+                pubs.push_back(*dynamic_cast<const PubKeyBLS & > (*config.get_info(i).pubkey.get()).data);
+                hashes.push_back(hash);
+            }
+        }
+
+        return theSig->data->Verify(hashes, pubs);
+    }
+
+    promise_t QuorumCertAggBLS::verify(const ReplicaConfig &config, VeriPool &vpool) {
+        if (theSig == nullptr)
+            return promise_t([](promise_t &pm) { pm.resolve(false); });
+        std::vector<promise_t> vpm;
+
+        uint8_t hash[bls::BLS::MESSAGE_HASH_LEN];
+        bls::Util::Hash256(hash, obj_hash.to_bytes().data(),  obj_hash.to_bytes().size());
+
+        std::vector<const uint8_t *> hashes;
+        std::vector<bls::PublicKey> pubs;
+        for (unsigned int i = 0; i < rids.size(); i++) {
+            if (rids[i]) {
+                pubs.push_back(*dynamic_cast<const PubKeyBLS & > (*config.get_info(i).pubkey.get()).data);
+                hashes.push_back(hash);
+            }
+        }
+
+        if (theSig->data->Verify(hashes, pubs)) {
+            return promise_t([](promise_t &pm) { pm.resolve(true); });
+        }
+        return promise_t([](promise_t &pm) { pm.resolve(false); });
+    }
 }
