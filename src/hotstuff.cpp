@@ -244,8 +244,15 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
         if (!promise::any_cast<bool>(values[1]))
             LOG_WARN("invalid vote from %d", v->voter);
         block_t blk = get_delivered_blk(v->blk_hash);
+        size_t qsize = blk->voted.size();
+        if (qsize >= config.nmajority) return;
 
-        if (currentQuorumCert.size() > 1) {
+        if (!blk->voted.insert(v->voter).second) {
+            LOG_WARN("duplicate vote for %s from %d", get_hex10(v->blk_hash).c_str(), v->voter);
+            return;
+        }
+
+        if (currentQuorumCert.size() > 2) {
             currentQuorumCert.erase(currentQuorumCert.begin());
         }
 
@@ -261,9 +268,14 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
                     pn.send_msg(MsgRelay(VoteRelay(v->blk_hash, cert->clone(), this)), parentPeer);
                 }
                 else if (cert->has_n(config.nmajority)) {
+                    //std::cout << "go to town: " << blk->get_hash().to_hex() << std::endl;
                     cert->compute();
                     update_hqc(blk, cert);
                     on_qc_finish(blk);
+                }
+                else
+                {
+                    //std::cout << "wait: " << blk->get_hash().to_hex() << std::endl;
                 }
                 return;
             }

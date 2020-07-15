@@ -93,6 +93,7 @@ class ReplicaConfig {
 
 class Block;
 class HotStuffCore;
+class HotStuffBase;
 
 using block_t = salticidae::ArcObj<Block>;
 
@@ -122,6 +123,8 @@ get_hashes(const std::vector<Hashable> &plist) {
 
 class Block {
     friend HotStuffCore;
+    friend HotStuffBase;
+
     std::vector<uint256_t> parent_hashes;
     std::vector<uint256_t> cmds;
     quorum_cert_bt qc;
