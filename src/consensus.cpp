@@ -231,14 +231,14 @@ void HotStuffCore::on_receive_vote(const Vote &vote) {
     block_t blk = get_delivered_blk(vote.blk_hash);
     assert(vote.cert);
 
-    if (vote.voter != get_id()) return;
-    if (blk->qc != nullptr && blk->qc->has_n(config.nmajority)) return;
-
     if (!blk->voted.insert(vote.voter).second)
     {
         LOG_WARN("duplicate vote for %s from %d", get_hex10(vote.blk_hash).c_str(), vote.voter);
         return;
     }
+
+    if (vote.voter != get_id()) return;
+    if (blk->qc != nullptr && blk->qc->has_n(config.nmajority)) return;
 
     std::cout << "self vote" << std::endl;
     auto &qc = blk->self_qc;

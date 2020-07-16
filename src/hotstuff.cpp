@@ -252,12 +252,6 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
             LOG_WARN("invalid vote from %d", v->voter);
         auto &cert = blk->self_qc;
 
-        if (!blk->voted.insert(v->voter).second)
-        {
-            LOG_WARN("duplicate vote for %s from %d", get_hex10(v->blk_hash).c_str(), v->voter);
-            return;
-        }
-
         if (cert != nullptr && cert->get_obj_hash() == blk->get_hash() && !cert->has_n(config.nmajority)) {
             cert->add_part(v->voter, *v->cert);
             if (id != 0 ) {
