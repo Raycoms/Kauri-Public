@@ -205,16 +205,16 @@ promise_t HotStuffBase::async_deliver_blk(const uint256_t &blk_hash,
 }
 
 void HotStuffBase::propose_handler(MsgPropose &&msg, const Net::conn_t &conn) {
-    std::cout << "Propose handler" << std::endl;
+    //std::cout << "Propose handler" << std::endl;
     const PeerId &peer = conn->get_peer_id();
     if (peer.is_null()) return;
     msg.postponed_parse(this);
     auto &prop = msg.proposal;
 
-    std::cout << "Verify proposal" << std::endl;
+    //std::cout << "Verify proposal" << std::endl;
     for (const PeerId& peerId : childPeers)
     {
-        std::cout << "Relay proposal" << std::endl;
+        //std::cout << "Relay proposal" << std::endl;
         pn.send_msg(MsgPropose(prop), peerId);
     }
 
@@ -233,10 +233,10 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
     if (peer.is_null()) return;
     msg.postponed_parse(this);
     block_t blk = get_delivered_blk(msg.vote.blk_hash);
-    std::cout << "vote handler: " << msg.vote.blk_hash.to_hex() << " " << &blk->self_qc << std::endl;
+    //std::cout << "vote handler: " << msg.vote.blk_hash.to_hex() << " " << &blk->self_qc << std::endl;
 
     if (blk->self_qc->has_n(config.nmajority)) {
-        std::cout << "bye vote handler: " << msg.vote.blk_hash.to_hex() << " " << &blk->self_qc << std::endl;
+        //std::cout << "bye vote handler: " << msg.vote.blk_hash.to_hex() << " " << &blk->self_qc << std::endl;
         return;
     }
 
@@ -256,17 +256,17 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
             cert->add_part(v->voter, *v->cert);
             if (id != 0 ) {
                 if (!cert->has_n(numberOfChildren + 1)) return;
-                std::cout << peers[id].to_hex() <<  " send relay message: " << v->blk_hash.to_hex() <<  std::endl;
+                //std::cout << peers[id].to_hex() <<  " send relay message: " << v->blk_hash.to_hex() <<  std::endl;
                 pn.send_msg(MsgRelay(VoteRelay(v->blk_hash, cert->clone(), this)), parentPeer);
             }
             else if (cert->has_n(config.nmajority)) {
-                std::cout << "go to town1: " << blk->get_hash().to_hex() << std::endl;
+                //std::cout << "go to town1: " << blk->get_hash().to_hex() << std::endl;
                 cert->compute();
                 update_hqc(blk, cert);
                 on_qc_finish(blk);
             }
             else {
-                std::cout << "wait: " << blk->get_hash().to_hex() << std::endl;
+                //std::cout << "wait: " << blk->get_hash().to_hex() << std::endl;
             }
             return;
         }
@@ -279,7 +279,7 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
     const auto &peer = conn->get_peer_id();
     if (peer.is_null()) return;
     msg.postponed_parse(this);
-    std::cout << "vote relay handler: " << msg.vote.blk_hash.to_hex() << std::endl;
+    //std::cout << "vote relay handler: " << msg.vote.blk_hash.to_hex() << std::endl;
 
     block_t blk = get_delivered_blk(msg.vote.blk_hash);
     auto &cert = blk->self_qc;
@@ -288,7 +288,7 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
         cert->merge_quorum(*msg.vote.cert);
         if (id != 0) {
             if (!cert->has_n(numberOfChildren + 1)) return;
-            std::cout << "Send Vote Relay: " << msg.vote.blk_hash.to_hex() << std::endl;
+            //std::cout << "Send Vote Relay: " << msg.vote.blk_hash.to_hex() << std::endl;
             pn.send_msg(MsgRelay(VoteRelay(msg.vote.blk_hash, cert.get()->clone(), this)),parentPeer);
             return;
         }
@@ -297,7 +297,7 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
 
         if (!cert->has_n(config.nmajority)) return;
 
-        std::cout << "go to town3: " << msg.vote.blk_hash.to_hex() << std::endl;
+        //std::cout << "go to town3: " << msg.vote.blk_hash.to_hex() << std::endl;
 
         cert->compute();
         update_hqc(blk, cert);
@@ -444,13 +444,13 @@ void HotStuffBase::do_broadcast_proposal(const Proposal &prop) {
     //pn.multicast_msg(MsgPropose(prop), peers);
     for (const PeerId& peerId : childPeers)
     {
-        std::cout << "send proposal" << std::endl;
+        //std::cout << "send proposal" << std::endl;
         pn.send_msg(MsgPropose(prop), peerId);
     }
 }
 
 void HotStuffBase::do_vote(Proposal prop, const Vote &vote) {
-    std::cout << "Create cert and add vote1" << std::endl;
+    //std::cout << "Create cert and add vote1" << std::endl;
 
     pmaker->beat_resp(prop.proposer).then([this, vote, prop](ReplicaID proposer) {
 
@@ -460,12 +460,12 @@ void HotStuffBase::do_vote(Proposal prop, const Vote &vote) {
         }
 
         if (childPeers.empty()) {
-            std::cout << "send vote" << std::endl;
+            //std::cout << "send vote" << std::endl;
             pn.send_msg(MsgVote(vote), parentPeer);
         } else {
             //todo I think this goes at some mment later than receiving, and all breaks apart. We need this more resilient (If height >= blockheight we check in the quorum cert for it).
             block_t blk = get_delivered_blk(vote.blk_hash);
-            std::cout << "Create cert and add vote2" << std::endl;
+            //std::cout << "Create cert and add vote2" << std::endl;
 
             if (blk->qc == nullptr)
             {
@@ -516,13 +516,13 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
 
         if (id == parent) {
             if (id != i) {
-                std::cout << " add child: " << i << std::endl;
+                //std::cout << " add child: " << i << std::endl;
                 childPeers.insert(peer);
                 children.insert(i);
             }
         }
         else if (id == i) {
-            std::cout << " set parent: " << parent << std::endl;
+            //std::cout << " set parent: " << parent << std::endl;
             parentPeer = peers[parent];
         }
         else if (i != 0 && children.find(parent) != children.end())
@@ -536,7 +536,7 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
         }
     }
 
-    std::cout << " total children: " << children.size() << std::endl;
+    //std::cout << " total children: " << children.size() << std::endl;
     numberOfChildren = children.size();
 
     /* ((n - 1) + 1 - 1) / 3 */
