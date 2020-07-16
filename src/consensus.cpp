@@ -171,6 +171,7 @@ block_t HotStuffCore::on_propose(const std::vector<uint256_t> &cmds,
     update(bnew);
     Proposal prop(id, bnew, nullptr);
     LOG_PROTO("propose %s", std::string(*bnew).c_str());
+    std::cout << "prop" << std::endl;
     /* self-vote */
     if (bnew->height <= vheight)
         throw std::runtime_error("new block should be higher than vheight");
@@ -224,18 +225,14 @@ void HotStuffCore::on_receive_proposal(const Proposal &prop) {
 }
 
 void HotStuffCore::on_receive_vote(const Vote &vote) {
-    if (vote.voter == get_id()) {
-        //std::cout << "new cert1" << std::endl;
-        currentQuorumCert.push_back(create_quorum_cert(vote.blk_hash));
-        currentQuorumCert.back()->add_part(vote.voter, *vote.cert);
-    }
     LOG_PROTO("got %s", std::string(vote).c_str());
     LOG_PROTO("y now state: %s", std::string(*this).c_str());
 
     block_t blk = get_delivered_blk(vote.blk_hash);
     assert(vote.cert);
-    size_t qsize = blk->voted.size();
-    if (qsize >= config.nmajority) return;
+
+    if (vote.voter != get_id()) return;
+    if (blk->qc != nullptr && blk->qc->has_n(config.nmajority)) return;
 
     if (!blk->voted.insert(vote.voter).second)
     {
@@ -243,6 +240,7 @@ void HotStuffCore::on_receive_vote(const Vote &vote) {
         return;
     }
 
+    std::cout << "self vote" << std::endl;
     auto &qc = blk->self_qc;
     if (qc == nullptr)
     {
@@ -250,9 +248,12 @@ void HotStuffCore::on_receive_vote(const Vote &vote) {
         qc = create_quorum_cert(blk->get_hash());
     }
 
+    std::cout << "add part1 " << blk->hash.to_hex() << " " << blk->qc->get_obj_hash().to_hex() << " " << blk->self_qc->get_obj_hash().to_hex() << std::endl;
     qc->add_part(vote.voter, *vote.cert);
-    if (qsize + 1 == config.nmajority)
+    std::cout << "add part2 " << std::endl;
+    if (qc->has_n(config.nmajority))
     {
+        std::cout << "go to town2" << std::endl;
         qc->compute();
         update_hqc(blk, qc);
         on_qc_finish(blk);
@@ -301,7 +302,9 @@ void HotStuffCore::add_replica(ReplicaID rid, const PeerId &peer_id,
 }
 
 promise_t HotStuffCore::async_qc_finish(const block_t &blk) {
-    if (blk->voted.size() >= config.nmajority)
+    std::cout << "test " << blk->voted.size() << " " << blk->self_qc->has_n(config.nmajority) << std::endl;
+
+    if ((blk->self_qc != nullptr && blk->self_qc->has_n(config.nmajority) && !blk->voted.empty()) || blk->voted.size() >= config.nmajority)
         return promise_t([](promise_t &pm) {
             pm.resolve();
         });

@@ -77,7 +77,6 @@ class HotStuffCore {
 
 public:
     BoxObj<EntityStorage> storage;
-    std::vector<quorum_cert_bt> currentQuorumCert;
     uint16_t numberOfChildren;
 
     HotStuffCore(ReplicaID id, privkey_bt &&priv_key);
