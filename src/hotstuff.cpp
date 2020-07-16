@@ -467,11 +467,11 @@ void HotStuffBase::do_vote(Proposal prop, const Vote &vote) {
             block_t blk = get_delivered_blk(vote.blk_hash);
             //std::cout << "Create cert and add vote2" << std::endl;
 
-            if (blk->qc == nullptr)
+            if (blk->self_qc == nullptr)
             {
-                blk->qc = create_quorum_cert(vote.blk_hash);
+                blk->self_qc = create_quorum_cert(vote.blk_hash);
             }
-            blk->qc->add_part(vote.voter, *vote.cert);
+            blk->self_qc->add_part(vote.voter, *vote.cert);
         }
     });
 }
