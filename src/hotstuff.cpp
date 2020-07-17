@@ -211,15 +211,17 @@ void HotStuffBase::propose_handler(MsgPropose &&msg, const Net::conn_t &conn) {
     msg.postponed_parse(this);
     auto &prop = msg.proposal;
 
+    block_t blk = prop.blk;
+    if (!blk) return;
+
     //std::cout << "Verify proposal" << std::endl;
     for (const PeerId& peerId : childPeers)
     {
         //std::cout << "Relay proposal" << std::endl;
         pn.send_msg(MsgPropose(prop), peerId);
+        //todo this happens to quickly. What do we do then? Just add it ourselves? (try?)
     }
 
-    block_t blk = prop.blk;
-    if (!blk) return;
     promise::all(std::vector<promise_t>{
         async_deliver_blk(blk->get_hash(), peer)
     }).then([this, prop = std::move(prop)]() {
@@ -232,7 +234,12 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
     const auto &peer = conn->get_peer_id();
     if (peer.is_null()) return;
     msg.postponed_parse(this);
-    block_t blk = get_delivered_blk(msg.vote.blk_hash);
+    //std::cout << "vote handler0: " << std::endl;
+    block_t blk = get_potentially_not_delivered_blk(msg.vote.blk_hash);
+    if (!blk->delivered) {
+        blk->self_qc = create_quorum_cert(blk->get_hash());
+    }
+
     //std::cout << "vote handler: " << msg.vote.blk_hash.to_hex() << " " << &blk->self_qc << std::endl;
 
     if (blk->self_qc->has_n(config.nmajority)) {
@@ -281,10 +288,18 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
     msg.postponed_parse(this);
     //std::cout << "vote relay handler: " << msg.vote.blk_hash.to_hex() << std::endl;
 
-    block_t blk = get_delivered_blk(msg.vote.blk_hash);
-    auto &cert = blk->self_qc;
+    block_t blk = get_potentially_not_delivered_blk(msg.vote.blk_hash);
+    if (!blk->delivered) {
+        blk->self_qc = create_quorum_cert(blk->get_hash());
+    }
 
-    if (cert != nullptr && cert->get_obj_hash() == msg.vote.blk_hash && !cert->has_n(config.nmajority)) {
+    if (blk->self_qc->has_n(config.nmajority)) {
+        //std::cout << "bye vote relay handler: " << msg.vote.blk_hash.to_hex() << " " << &blk->self_qc << std::endl;
+        return;
+    }
+
+    auto &cert = blk->self_qc;
+    if (cert != nullptr && cert->get_obj_hash() == blk->get_hash() && !cert->has_n(config.nmajority)) {
         cert->merge_quorum(*msg.vote.cert);
         if (id != 0) {
             if (!cert->has_n(numberOfChildren + 1)) return;
@@ -465,12 +480,13 @@ void HotStuffBase::do_vote(Proposal prop, const Vote &vote) {
         } else {
             //todo I think this goes at some mment later than receiving, and all breaks apart. We need this more resilient (If height >= blockheight we check in the quorum cert for it).
             block_t blk = get_delivered_blk(vote.blk_hash);
-            //std::cout << "Create cert and add vote2" << std::endl;
-
-            if (blk->self_qc == nullptr)
+            if (prop.blk->self_qc == nullptr)
             {
-                blk->self_qc = create_quorum_cert(vote.blk_hash);
+                //std::cout << "create quorum cert 0" << std::endl;
+                blk->self_qc = create_quorum_cert(prop.blk->get_hash());
             }
+
+            //std::cout << "Create cert and add vote2" << std::endl;
             blk->self_qc->add_part(vote.voter, *vote.cert);
         }
     });

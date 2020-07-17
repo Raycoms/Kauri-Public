@@ -49,10 +49,17 @@ void HotStuffCore::sanity_check_delivered(const block_t &blk) {
         throw std::runtime_error("block not delivered");
 }
 
+block_t HotStuffCore::get_potentially_not_delivered_blk(const uint256_t &blk_hash) {
+    block_t blk = storage->find_blk(blk_hash);
+    if (blk == nullptr)
+        throw std::runtime_error("block not delivered " + std::to_string(blk == nullptr));
+    return blk;
+}
+
 block_t HotStuffCore::get_delivered_blk(const uint256_t &blk_hash) {
     block_t blk = storage->find_blk(blk_hash);
     if (blk == nullptr || !blk->delivered)
-        throw std::runtime_error("block not delivered");
+        throw std::runtime_error("block not delivered ");
     return blk;
 }
 

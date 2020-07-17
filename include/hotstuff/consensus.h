@@ -69,6 +69,8 @@ class HotStuffCore {
 
     block_t get_delivered_blk(const uint256_t &blk_hash);
 
+    block_t get_potentially_not_delivered_blk(const uint256_t &blk_hash);
+
     ReplicaConfig config;
 
     void update_hqc(const block_t &_hqc, const quorum_cert_bt &qc);
