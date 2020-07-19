@@ -532,13 +532,13 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
 
         if (id == parent) {
             if (id != i) {
-                //std::cout << " add child: " << i << std::endl;
+                std::cout << " add child: " << i << std::endl;
                 childPeers.insert(peer);
                 children.insert(i);
             }
         }
         else if (id == i) {
-            //std::cout << " set parent: " << parent << std::endl;
+            std::cout << " set parent: " << parent << std::endl;
             parentPeer = peers[parent];
         }
         else if (i != 0 && children.find(parent) != children.end())
@@ -552,7 +552,7 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
         }
     }
 
-    //std::cout << " total children: " << children.size() << std::endl;
+    std::cout << " total children: " << children.size() << std::endl;
     numberOfChildren = children.size();
 
     /* ((n - 1) + 1 - 1) / 3 */
