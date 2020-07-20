@@ -515,8 +515,35 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
 
     uint16_t parent = 0;
     std::set<uint16_t> children;
+    auto level = 0;
+    auto maxFanout = fanout;
+    uint8_t childrenCount = fanout;
+    auto currentChildren = 0;
+
     for (size_t i = 0; i < replicas.size(); i++)
     {
+        const auto remaining = 50 - i;
+        const double processesOnLevel = std::ceil(std::pow(fanout, level));
+
+        if (i != 0) {
+            currentChildren++;
+        }
+        if (currentChildren > maxFanout) {
+            parent++;
+            currentChildren = 1;
+        }
+
+        if (currentChildren == 1 && processesOnLevel > remaining) {
+            auto previousProcesses = 0;
+            for (auto l = 0; l < level - 1; l++) {
+                previousProcesses += std::ceil(std::pow(fanout, l));
+            }
+            auto doneParents = parent - previousProcesses;
+            auto parents = std::ceil(std::pow(fanout, level - 1));
+            auto perParent = std::floor(remaining / (parents - doneParents));
+            maxFanout = perParent;
+        }
+
         auto &addr = std::get<0>(replicas[i]);
         auto cert_hash = std::move(std::get<2>(replicas[i]));
         valid_tls_certs.insert(cert_hash);
@@ -532,23 +559,20 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
 
         if (id == parent) {
             if (id != i) {
-                std::cout << " add child: " << i << std::endl;
+                std::cout << id << " add child: " << i << " level: " << level << "ps: " << processesOnLevel << " "
+                          << remaining << " " << maxFanout << std::endl;
                 childPeers.insert(peer);
                 children.insert(i);
             }
-        }
-        else if (id == i) {
-            std::cout << " set parent: " << parent << std::endl;
+        } else if (id == i) {
+            std::cout << id << " set parent: " << parent << " " << maxFanout << " " << currentChildren << std::endl;
             parentPeer = peers[parent];
-        }
-        else if (i != 0 && children.find(parent) != children.end())
-        {
+        } else if (i != 0 && children.find(parent) != children.end()) {
             children.insert(i);
         }
 
-        if (i != 0 && i % fanout == 0)
-        {
-            parent++;
+        if (i % static_cast<size_t>(std::pow(fanout, level)) == 0) {
+            level++;
         }
     }
 
