@@ -380,10 +380,10 @@ class SigSecp256k1: public Serializable {
 
         gettimeofday(&timeEnd, NULL);
 
-        /*std::cout << "This signing slow piece of code took "
+        std::cout << "This signing slow piece of code took "
                   << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
                   << " us to execute."
-                  << std::endl;*/
+                  << std::endl;
     }
 
     bool verify(const bytearray_t &msg, const PubKeySecp256k1 &pub_key,
@@ -400,10 +400,10 @@ class SigSecp256k1: public Serializable {
 
         gettimeofday(&timeEnd, NULL);
 
-        /*std::cout << "This verifying slow piece of code took "
+        std::cout << "This verifying slow piece of code took "
                   << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
                   << " us to execute."
-                  << std::endl;*/
+                  << std::endl;
         return td;
     }
 
@@ -697,10 +697,10 @@ class QuorumCertSecp256k1: public QuorumCert {
 
             gettimeofday(&timeEnd, NULL);
 
-            /*std::cout << "This signing slow piece of code took "
+            std::cout << "This signing slow piece of code took "
                       << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
             << " us to execute."
-                    << std::endl;*/
+                    << std::endl;
         }
 
         bool verify(const bytearray_t &msg, const PubKeyBLS &pub_key) const {
@@ -717,10 +717,10 @@ class QuorumCertSecp256k1: public QuorumCert {
 
             gettimeofday(&timeEnd, NULL);
 
-            /*std::cout << "This verifying slow piece of code took "
+            std::cout << "This verifying slow piece of code took "
                       << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
                       << " us to execute."
-                      << std::endl;*/
+                      << std::endl;
 
             return td;
         }
@@ -837,7 +837,19 @@ class QuorumCertSecp256k1: public QuorumCert {
             }
 
             uint8_t* arr = (unsigned char *)&*obj_hash.to_bytes().begin();
+
+            struct timeval timeStart,
+                    timeEnd;
+            gettimeofday(&timeStart, NULL);
             theSig = new SigSecBLS(bls::Threshold::AggregateUnitSigs(sigShareOut, arr, sizeof(arr), &players[0], t));
+
+            gettimeofday(&timeEnd, NULL);
+
+            std::cout << "This th computing slow piece of code took "
+                      << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
+                      << " us to execute."
+                      << std::endl;
+
         }
 
         bool verify(const ReplicaConfig &config) override;
@@ -936,7 +948,17 @@ class QuorumCertSecp256k1: public QuorumCert {
             bls::InsecureSignature sig1 = *theSig->data;
             bls::InsecureSignature sig2 = *dynamic_cast<const PartCertBLS &>(pc).data;
 
+            struct timeval timeStart,
+                    timeEnd;
+            gettimeofday(&timeStart, NULL);
             bls::InsecureSignature sig = bls::InsecureSignature::Aggregate({sig1, sig2});
+
+            gettimeofday(&timeEnd, NULL);
+
+            std::cout << "This aggregating slow piece of code took "
+                      << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
+                      << " us to execute."
+                      << std::endl;
 
             *theSig->data = sig;
         }
@@ -960,7 +982,17 @@ class QuorumCertSecp256k1: public QuorumCert {
             bls::InsecureSignature sig1 = *theSig->data;
             bls::InsecureSignature sig2 = *dynamic_cast<const QuorumCertAggBLS &>(qc).theSig->data;
 
+            struct timeval timeStart,
+                    timeEnd;
+            gettimeofday(&timeStart, NULL);
             bls::InsecureSignature sig = bls::InsecureSignature::Aggregate({sig1, sig2});
+
+            gettimeofday(&timeEnd, NULL);
+
+            std::cout << "This aggregating slow piece of code took "
+                      << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
+                      << " us to execute."
+                      << std::endl;
 
             *theSig->data = sig;
         }

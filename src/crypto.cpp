@@ -138,7 +138,19 @@ namespace hotstuff {
             }
         }
 
-        if (theSig->data->Verify(hashes, pubs)) {
+        struct timeval timeStart,
+                timeEnd;
+        gettimeofday(&timeStart, NULL);
+        bool veri = theSig->data->Verify(hashes, pubs);
+
+        gettimeofday(&timeEnd, NULL);
+
+        std::cout << "This verifying agg piece of code took "
+                  << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
+                  << " us to execute."
+                  << std::endl;
+
+        if (veri) {
             return promise_t([](promise_t &pm) { pm.resolve(true); });
         }
         return promise_t([](promise_t &pm) { pm.resolve(false); });
