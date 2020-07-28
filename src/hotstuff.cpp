@@ -247,7 +247,13 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
         return;
     }
 
-    //todo: Idk why, but this is already full on receiving. I have to check where this is created now!
+    if (id != 0 ) {
+        if (!blk->self_qc->has_n(numberOfChildren + 1)) return;
+        //std::cout << peers[id].to_hex() <<  " send relay message: " << v->blk_hash.to_hex() <<  std::endl;
+        pn.send_msg(MsgRelay(VoteRelay(msg.vote.blk_hash, blk->self_qc->clone(), this)), parentPeer);
+        async_deliver_blk(msg.vote.blk_hash, peer);
+        return;
+    }
 
     //auto &vote = msg.vote;
     RcObj<Vote> v(new Vote(std::move(msg.vote)));
@@ -261,12 +267,8 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
 
         if (cert != nullptr && cert->get_obj_hash() == blk->get_hash() && !cert->has_n(config.nmajority)) {
             cert->add_part(v->voter, *v->cert);
-            if (id != 0 ) {
-                if (!cert->has_n(numberOfChildren + 1)) return;
-                //std::cout << peers[id].to_hex() <<  " send relay message: " << v->blk_hash.to_hex() <<  std::endl;
-                pn.send_msg(MsgRelay(VoteRelay(v->blk_hash, cert->clone(), this)), parentPeer);
-            }
-            else if (cert->has_n(config.nmajority)) {
+
+            if (cert->has_n(config.nmajority)) {
                 //std::cout << "go to town1: " << blk->get_hash().to_hex() << std::endl;
                 cert->compute();
                 update_hqc(blk, cert);
@@ -298,25 +300,34 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
         return;
     }
 
-    auto &cert = blk->self_qc;
-    if (cert != nullptr && cert->get_obj_hash() == blk->get_hash() && !cert->has_n(config.nmajority)) {
-        cert->merge_quorum(*msg.vote.cert);
-        if (id != 0) {
-            if (!cert->has_n(numberOfChildren + 1)) return;
-            //std::cout << "Send Vote Relay: " << msg.vote.blk_hash.to_hex() << std::endl;
-            pn.send_msg(MsgRelay(VoteRelay(msg.vote.blk_hash, cert.get()->clone(), this)),parentPeer);
-            return;
+    //auto &vote = msg.vote;
+    RcObj<VoteRelay> v(new VoteRelay(std::move(msg.vote)));
+    promise::all(std::vector<promise_t>{
+            async_deliver_blk(v->blk_hash, peer),
+            v->cert->verify(config, vpool),
+    }).then([this, blk, v=std::move(v)](const promise::values_t values) {
+        if (!promise::any_cast<bool>(values[1]))
+            LOG_WARN ("invalid vote-relay from");
+        auto &cert = blk->self_qc;
+        if (cert != nullptr && cert->get_obj_hash() == blk->get_hash() && !cert->has_n(config.nmajority)) {
+            cert->merge_quorum(*v->cert);
+            if (id != 0) {
+                if (!cert->has_n(numberOfChildren + 1)) return;
+                //std::cout << "Send Vote Relay: " << msg.vote.blk_hash.to_hex() << std::endl;
+                pn.send_msg(MsgRelay(VoteRelay(v->blk_hash, cert.get()->clone(), this)), parentPeer);
+                return;
+            }
+
+            HOTSTUFF_LOG_PROTO("got %s", std::string(*v).c_str());
+
+            if (!cert->has_n(config.nmajority)) return;
+
+            //std::cout << "go to town3: " << msg.vote.blk_hash.to_hex() << std::endl;
+
+            cert->compute();
+            update_hqc(blk, cert);
+            on_qc_finish(blk);
         }
-
-        HOTSTUFF_LOG_PROTO("got %s", std::string(msg.vote).c_str());
-
-        if (!cert->has_n(config.nmajority)) return;
-
-        //std::cout << "go to town3: " << msg.vote.blk_hash.to_hex() << std::endl;
-
-        cert->compute();
-        update_hqc(blk, cert);
-        on_qc_finish(blk);
     }
 }
 
