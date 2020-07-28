@@ -584,6 +584,7 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
             std::cout << id << " set parent: " << parent << " " << maxFanout << " " << currentChildren << std::endl;
             parentPeer = peers[parent];
         } else if (i != 0 && children.find(parent) != children.end()) {
+            std::cout << id << " add indirect child: " << i << std::endl;
             children.insert(i);
         }
 
