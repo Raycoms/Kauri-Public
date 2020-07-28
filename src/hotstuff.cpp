@@ -328,7 +328,7 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
             update_hqc(blk, cert);
             on_qc_finish(blk);
         }
-    }
+    });
 }
 
 void HotStuffBase::req_blk_handler(MsgReqBlock &&msg, const Net::conn_t &conn) {
