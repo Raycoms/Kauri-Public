@@ -309,7 +309,9 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
         if (!promise::any_cast<bool>(values[1]))
             LOG_WARN ("invalid vote-relay from");
         auto &cert = blk->self_qc;
+        std::cout << "in vote relay1" << std::endl;
         if (cert != nullptr && cert->get_obj_hash() == blk->get_hash() && !cert->has_n(config.nmajority)) {
+            std::cout << "in vote relay2" << std::endl;
             cert->merge_quorum(*v->cert);
             if (id != 0) {
                 if (!cert->has_n(numberOfChildren + 1)) return;
