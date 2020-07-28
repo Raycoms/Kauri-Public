@@ -538,7 +538,7 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
 
     for (size_t i = 0; i < replicas.size(); i++)
     {
-        const auto remaining = 50 - i;
+        const auto remaining = replicas.size() - i;
         const double processesOnLevel = std::ceil(std::pow(fanout, level));
 
         if (i != 0) {
