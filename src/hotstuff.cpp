@@ -267,7 +267,7 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
             LOG_WARN("invalid vote from %d", v->voter);
         auto &cert = blk->self_qc;
 
-        if (cert != nullptr && cert->get_obj_hash() == blk->get_hash() && !cert->has_n(config.nmajority)) {
+        if (cert != nullptr && cert->get_obj_hash() == blk->get_hash()) {
             if (cert->has_n(config.nmajority)) {
                 //std::cout << "go to town1: " << blk->get_hash().to_hex() << std::endl;
                 cert->compute();
