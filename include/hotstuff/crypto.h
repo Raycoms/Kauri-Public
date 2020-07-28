@@ -199,7 +199,12 @@ class QuorumCertDummy: public QuorumCert {
     {
         qty += ((QuorumCertDummy&) qc).qty;
     }
-    bool has_n(const uint8_t n) override { return qty >= n; }
+    bool has_n(const uint8_t n) override
+    {
+        std::cout << "compare " << n << " " << qty << std::endl;
+
+        return qty >= n;
+    }
     void compute() override {}
     bool verify(const ReplicaConfig &) override { return true; }
     promise_t verify(const ReplicaConfig &, VeriPool &) override {

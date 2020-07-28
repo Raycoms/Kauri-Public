@@ -313,9 +313,10 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
         if (cert != nullptr && cert->get_obj_hash() == blk->get_hash() && !cert->has_n(config.nmajority)) {
             std::cout << "in vote relay2" << std::endl;
             cert->merge_quorum(*v->cert);
+
             if (id != 0) {
                 if (!cert->has_n(numberOfChildren + 1)) return;
-                //std::cout << "Send Vote Relay: " << msg.vote.blk_hash.to_hex() << std::endl;
+                std::cout << "Send Vote Relay: " << v->blk_hash.to_hex() << std::endl;
                 pn.send_msg(MsgRelay(VoteRelay(v->blk_hash, cert.get()->clone(), this)), parentPeer);
                 return;
             }
