@@ -175,6 +175,7 @@ class QuorumCertDummy: public QuorumCert {
     size_t qty = 1;
     public:
     QuorumCertDummy() {}
+    QuorumCertDummy (const QuorumCertDummy &other): obj_hash(other.obj_hash), qty(other.qty) { }
     QuorumCertDummy(const ReplicaConfig &, const uint256_t &obj_hash):
         obj_hash(obj_hash) {}
 
