@@ -294,11 +294,13 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
     if (!blk->delivered) {
         blk->self_qc = create_quorum_cert(blk->get_hash());
     }
+    std::cout << "got vote relay1" << std::endl;
 
     if (blk->self_qc->has_n(config.nmajority)) {
         //std::cout << "bye vote relay handler: " << msg.vote.blk_hash.to_hex() << " " << &blk->self_qc << std::endl;
         return;
     }
+    std::cout << "got vote relay2" << std::endl;
 
     //auto &vote = msg.vote;
     RcObj<VoteRelay> v(new VoteRelay(std::move(msg.vote)));
