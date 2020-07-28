@@ -240,7 +240,7 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
         blk->self_qc = create_quorum_cert(blk->get_hash());
     }
 
-    //std::cout << "vote handler: " << msg.vote.blk_hash.to_hex() << " " << &blk->self_qc << std::endl;
+    std::cout << "vote handler: " << msg.vote.blk_hash.to_hex() << " " << &blk->self_qc << std::endl;
 
     if (blk->self_qc->has_n(config.nmajority)) {
         //std::cout << "bye vote handler: " << msg.vote.blk_hash.to_hex() << " " << &blk->self_qc << std::endl;
@@ -313,8 +313,8 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
         auto &cert = blk->self_qc;
         std::cout << "in vote relay1" << std::endl;
         if (cert != nullptr && cert->get_obj_hash() == blk->get_hash() && !cert->has_n(config.nmajority)) {
-            std::cout << "in vote relay2" << std::endl;
             cert->merge_quorum(*v->cert);
+            std::cout << "in vote relay2" << std::endl;
 
             if (id != 0) {
                 if (!cert->has_n(numberOfChildren + 1)) return;
