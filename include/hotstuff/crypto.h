@@ -172,12 +172,12 @@ using quorum_cert_bt = BoxObj<QuorumCert>;
 
 class QuorumCertDummy: public QuorumCert {
     uint256_t obj_hash;
-    size_t qty = 1;
+    size_t qty = 0;
     public:
-    QuorumCertDummy() {}
+    QuorumCertDummy() { qty++; }
     QuorumCertDummy (const QuorumCertDummy &other): obj_hash(other.obj_hash), qty(other.qty) { }
     QuorumCertDummy(const ReplicaConfig &, const uint256_t &obj_hash):
-        obj_hash(obj_hash) {}
+        obj_hash(obj_hash) { qty++; }
 
     void serialize(DataStream &s) const override {
         s << (uint32_t)1 << obj_hash << qty;
