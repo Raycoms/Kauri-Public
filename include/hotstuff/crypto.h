@@ -172,27 +172,34 @@ using quorum_cert_bt = BoxObj<QuorumCert>;
 
 class QuorumCertDummy: public QuorumCert {
     uint256_t obj_hash;
+    size_t qty = 1;
     public:
     QuorumCertDummy() {}
     QuorumCertDummy(const ReplicaConfig &, const uint256_t &obj_hash):
         obj_hash(obj_hash) {}
 
     void serialize(DataStream &s) const override {
-        s << (uint32_t)1 << obj_hash;
+        s << (uint32_t)1 << obj_hash << qty;
     }
 
     void unserialize(DataStream &s) override {
         uint32_t tmp;
-        s >> tmp >> obj_hash;
+        s >> tmp >> obj_hash >> qty;
     }
 
     QuorumCert *clone() override {
         return new QuorumCertDummy(*this);
     }
 
-    void add_part(ReplicaID, const PartCert &) override {}
-    void merge_quorum(const QuorumCert &) override {}
-    bool has_n(const uint8_t n) override { return true; }
+    void add_part(ReplicaID, const PartCert &) override
+    {
+        qty++;
+    }
+    void merge_quorum(const QuorumCert & qc) override
+    {
+        qty += ((QuorumCertDummy&) qc).qty;
+    }
+    bool has_n(const uint8_t n) override { return qty >= n; }
     void compute() override {}
     bool verify(const ReplicaConfig &) override { return true; }
     promise_t verify(const ReplicaConfig &, VeriPool &) override {
