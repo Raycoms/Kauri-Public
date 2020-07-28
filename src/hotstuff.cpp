@@ -268,8 +268,6 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
         auto &cert = blk->self_qc;
 
         if (cert != nullptr && cert->get_obj_hash() == blk->get_hash() && !cert->has_n(config.nmajority)) {
-            cert->add_part(v->voter, *v->cert);
-
             if (cert->has_n(config.nmajority)) {
                 //std::cout << "go to town1: " << blk->get_hash().to_hex() << std::endl;
                 cert->compute();
