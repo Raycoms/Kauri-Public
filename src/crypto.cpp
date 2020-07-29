@@ -114,11 +114,12 @@ namespace hotstuff {
         for (unsigned int i = 0; i < rids.size(); i++) {
             if (rids[i]) {
                 pubs.push_back(*dynamic_cast<const PubKeyBLS & > (*config.get_info(i).pubkey.get()).data);
-                hashes.push_back(hash);
             }
         }
+        bls::PublicKey aggPubKey = bls::PublicKey::Aggregate(pubs);
 
-        return theSig->data->Verify(hashes, pubs);
+        theSig->data->SetAggregationInfo(bls::AggregationInfo::FromMsg(aggPubKey, hash, sizeof(hash)));
+        return theSig->data->Verify();
     }
 
     promise_t QuorumCertAggBLS::verify(const ReplicaConfig &config, VeriPool &vpool) {
@@ -153,7 +154,8 @@ namespace hotstuff {
 
         gettimeofday(&timeStart, NULL);
 
-        bool veri = theSig->data->Verify({hash}, {aggPubKey});
+        theSig->data->SetAggregationInfo(bls::AggregationInfo::FromMsg(aggPubKey, hash, sizeof(hash)));
+        bool veri = theSig->data->Verify();
 
         gettimeofday(&timeEnd, NULL);
 
