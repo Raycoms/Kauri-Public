@@ -129,19 +129,32 @@ namespace hotstuff {
         uint8_t hash[bls::BLS::MESSAGE_HASH_LEN];
         bls::Util::Hash256(hash, obj_hash.to_bytes().data(),  obj_hash.to_bytes().size());
 
-        std::vector<const uint8_t *> hashes;
         std::vector<bls::PublicKey> pubs;
         for (unsigned int i = 0; i < rids.size(); i++) {
             if (rids[i]) {
                 pubs.push_back(*dynamic_cast<const PubKeyBLS & > (*config.get_info(i).pubkey.get()).data);
-                hashes.push_back(hash);
             }
         }
+
 
         struct timeval timeStart,
                 timeEnd;
         gettimeofday(&timeStart, NULL);
-        bool veri = theSig->data->Verify(hashes, pubs);
+
+        const std::vector<bls::PublicKey> constPubs = pubs;
+        bls::PublicKey aggPubKey = bls::PublicKey::Aggregate(constPubs);
+
+        gettimeofday(&timeEnd, NULL);
+
+        std::cout << "This combining pub keys agg piece of code took "
+                  << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
+                  << " us to execute."
+                  << std::endl;
+
+
+        gettimeofday(&timeStart, NULL);
+
+        bool veri = theSig->data->Verify({hash}, {aggPubKey});
 
         gettimeofday(&timeEnd, NULL);
 
