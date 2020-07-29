@@ -141,8 +141,7 @@ namespace hotstuff {
                 timeEnd;
         gettimeofday(&timeStart, NULL);
 
-        const std::vector<bls::PublicKey> constPubs = pubs;
-        bls::PublicKey aggPubKey = bls::PublicKey::Aggregate(constPubs);
+        bls::PublicKey aggPubKey = bls::PublicKey::Aggregate(pubs);
 
         gettimeofday(&timeEnd, NULL);
 

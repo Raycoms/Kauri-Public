@@ -539,6 +539,7 @@ class QuorumCertSecp256k1: public QuorumCert {
     class PubKeyBLS: public PubKey {
         static const auto _olen = bls::PublicKey::PUBLIC_KEY_SIZE;
         friend class SigSecBLS;
+        friend class SigSecBLSAgg;
         friend class QuorumCertAggBLS;
 
         bls::PublicKey* data = nullptr;
@@ -916,10 +917,161 @@ class QuorumCertSecp256k1: public QuorumCert {
         }
     };
 
+    class SigSecBLSAgg: public Serializable {
+
+        static void check_msg_length(const bytearray_t &msg) {
+            if (msg.size() != 32)
+                throw std::invalid_argument("the message should be 32-bytes");
+        }
+
+    public:
+        bls::Signature* data = nullptr;
+
+        SigSecBLSAgg ():
+                Serializable(){}
+        SigSecBLSAgg(const uint256_t &digest,
+                  const PrivKeyBLS &priv_key):
+                Serializable() {
+            sign(digest, priv_key);
+        }
+
+        SigSecBLSAgg (const SigSecBLSAgg &obj)
+        {
+            data = new bls::Signature(*(obj.data));
+        }
+
+        SigSecBLSAgg (bls::Signature sig):
+                Serializable()
+        {
+            data = new bls::Signature(sig);
+        }
+
+        ~SigSecBLSAgg() override
+        {
+            delete data;
+            data = nullptr;
+        }
+
+        void serialize(DataStream &s) const override {
+            static uint8_t output[bls::Signature::SIGNATURE_SIZE];
+
+            int i = 0;
+            for (auto in : data->Serialize())
+            {
+                output[i++] = in;
+            }
+            s.put_data(output, output + bls::Signature::SIGNATURE_SIZE);
+        }
+
+        void unserialize(DataStream &s) override {
+            static const auto _exc = std::invalid_argument("ill-formed signature");
+            try {
+                data = new bls::Signature(bls::Signature::FromBytes(s.get_data_inplace(bls::Signature::SIGNATURE_SIZE)));
+            } catch (std::ios_base::failure &) {
+                throw _exc;
+            }
+        }
+
+        void sign(const bytearray_t &msg, const PrivKeyBLS &priv_key) {
+            struct timeval timeStart,
+                    timeEnd;
+            gettimeofday(&timeStart, NULL);
+
+            check_msg_length(msg);
+            data = new bls::Signature(priv_key.data->Sign(msg.data(), msg.size()));
+
+            gettimeofday(&timeEnd, NULL);
+
+            std::cout << "This signing slow piece of code took "
+                      << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
+                      << " us to execute."
+                      << std::endl;
+        }
+
+        bool verify(const bytearray_t &msg, const PubKeyBLS &pub_key) const {
+
+            check_msg_length(msg);
+
+            uint8_t hash[bls::BLS::MESSAGE_HASH_LEN];
+            bls::Util::Hash256(hash, msg.data(), msg.size());
+
+            struct timeval timeStart,
+                    timeEnd;
+            gettimeofday(&timeStart, NULL);
+
+            data->SetAggregationInfo(bls::AggregationInfo::FromMsg(*(pub_key.data), hash, sizeof(hash)));
+            bool td = data->Verify();
+
+            gettimeofday(&timeEnd, NULL);
+
+            std::cout << "This verifying slow piece of code took "
+                      << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
+                      << " us to execute."
+                      << std::endl;
+
+            return td;
+        }
+    };
+
+    class SigVeriTaskBLSAgg: public VeriTask {
+        uint256_t msg;
+        PubKeyBLS pubkey;
+        SigSecBLSAgg sig;
+    public:
+        SigVeriTaskBLSAgg(const uint256_t &msg,
+                          const PubKeyBLS &pubkey,
+                          const SigSecBLSAgg &sig):
+                msg(msg), pubkey(pubkey), sig(sig) {}
+        virtual ~SigVeriTaskBLSAgg() = default;
+
+        bool verify() override {
+            return sig.verify(msg, pubkey);
+        }
+    };
+
+    class PartCertBLSAgg: public SigSecBLSAgg, public PartCert {
+        uint256_t obj_hash;
+
+    public:
+        PartCertBLSAgg() = default;
+        PartCertBLSAgg(const PrivKeyBLS &priv_key, const uint256_t &obj_hash):
+                SigSecBLSAgg(obj_hash, priv_key),
+                PartCert(),
+                obj_hash(obj_hash) { }
+
+        bool verify(const PubKey &pub_key) override {
+            return SigSecBLSAgg::verify(obj_hash,
+                                     static_cast<const PubKeyBLS &>(pub_key));
+        }
+
+        promise_t verify(const PubKey &pub_key, VeriPool &vpool) override {
+            return vpool.verify(new SigVeriTaskBLSAgg(obj_hash,
+                                                   static_cast<const PubKeyBLS &>(pub_key),
+                                                   static_cast<const SigSecBLSAgg &>(*this)));
+        }
+
+        const uint256_t &get_obj_hash() const override { return obj_hash; }
+
+        PartCertBLSAgg *clone() override {
+            return new PartCertBLSAgg(*this);
+        }
+
+        void serialize(DataStream &s) const override {
+            s << obj_hash;
+            this->SigSecBLSAgg::serialize(s);
+        }
+
+        void unserialize(DataStream &s) override {
+            s >> obj_hash;
+            this->SigSecBLSAgg::unserialize(s);
+        }
+    };
+
+
     class QuorumCertAggBLS: public QuorumCert {
         uint256_t obj_hash;
         salticidae::Bits rids;
-        SigSecBLS* theSig = nullptr;
+        SigSecBLSAgg* theSig = nullptr;
         uint8_t n = 0;
 
     public:
@@ -928,7 +1080,7 @@ class QuorumCertSecp256k1: public QuorumCert {
         QuorumCertAggBLS (const QuorumCertAggBLS &other): obj_hash(other.obj_hash), rids(other.rids)
         {
             if (other.theSig != nullptr) {
-                theSig = new SigSecBLS(*other.theSig);
+                theSig = new SigSecBLSAgg(*other.theSig);
             }
         }
 
@@ -954,17 +1106,17 @@ class QuorumCertSecp256k1: public QuorumCert {
             calculateN();
 
             if (theSig == nullptr) {
-                theSig = new SigSecBLS(*dynamic_cast<const PartCertBLS &>(pc).data);
+                theSig = new SigSecBLSAgg(*dynamic_cast<const PartCertBLSAgg &>(pc).data);
                 return;
             }
 
-            bls::InsecureSignature sig1 = *theSig->data;
-            bls::InsecureSignature sig2 = *dynamic_cast<const PartCertBLS &>(pc).data;
+            bls::Signature sig1 = *theSig->data;
+            bls::Signature sig2 = *dynamic_cast<const SigSecBLSAgg &>(pc).data;
 
             struct timeval timeStart,
                     timeEnd;
             gettimeofday(&timeStart, NULL);
-            bls::InsecureSignature sig = bls::InsecureSignature::Aggregate({sig1, sig2});
+            bls::Signature sig = bls::Signature::Aggregate({sig1, sig2});
 
             gettimeofday(&timeEnd, NULL);
 
@@ -977,7 +1129,7 @@ class QuorumCertSecp256k1: public QuorumCert {
         }
 
         void merge_quorum(const QuorumCert &qc) override {
-            if (qc.get_obj_hash()!= obj_hash)throw std::invalid_argument("QuorumCert does match the block hash");
+            if (qc.get_obj_hash()!= obj_hash) throw std::invalid_argument("QuorumCert does match the block hash");
 
             salticidae::Bits newRids = dynamic_cast<const QuorumCertAggBLS &>(qc).rids;
             for (unsigned int i = 0;i < newRids.size();i++) {
@@ -988,17 +1140,17 @@ class QuorumCertSecp256k1: public QuorumCert {
             calculateN();
 
             if (theSig == nullptr) {
-                theSig = new SigSecBLS(*dynamic_cast<const QuorumCertAggBLS &>(qc).theSig->data);
+                theSig = new SigSecBLSAgg(*dynamic_cast<const QuorumCertAggBLS &>(qc).theSig->data);
                 return;
             }
 
-            bls::InsecureSignature sig1 = *theSig->data;
-            bls::InsecureSignature sig2 = *dynamic_cast<const QuorumCertAggBLS &>(qc).theSig->data;
+            bls::Signature sig1 = *theSig->data;
+            bls::Signature sig2 = *dynamic_cast<const QuorumCertAggBLS &>(qc).theSig->data;
 
             struct timeval timeStart,
                     timeEnd;
             gettimeofday(&timeStart, NULL);
-            bls::InsecureSignature sig = bls::InsecureSignature::Aggregate({sig1, sig2});
+            bls::Signature sig = bls::Signature::Aggregate({sig1, sig2});
 
             gettimeofday(&timeEnd, NULL);
 
@@ -1039,7 +1191,7 @@ class QuorumCertSecp256k1: public QuorumCert {
             calculateN();
 
             if (combined) {
-                theSig = new SigSecBLS();
+                theSig = new SigSecBLSAgg();
                 theSig->unserialize(s);
             }
         }

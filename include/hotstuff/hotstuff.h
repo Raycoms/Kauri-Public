@@ -329,7 +329,7 @@ using HotStuffSecp256k1 = HotStuff<PrivKeySecp256k1, PubKeySecp256k1,
 using HotStuffTH = HotStuff<PrivKeyBLS, PubKeyBLS,
             PartCertBLS, QuorumCertBLS>;
 using HotStuffAgg = HotStuff<PrivKeyBLS, PubKeyBLS,
-            PartCertBLS, QuorumCertAggBLS>;
+            PartCertBLSAgg, QuorumCertAggBLS>;
 
 template<EntityType ent_type>
 FetchContext<ent_type>::FetchContext(FetchContext && other):
