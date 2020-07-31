@@ -105,20 +105,7 @@ namespace hotstuff {
         HOTSTUFF_LOG_DEBUG("checking cert(%d), obj_hash=%s",
                            i, get_hex10(obj_hash).c_str());
 
-
-        uint8_t hash[bls::BLS::MESSAGE_HASH_LEN];
-        bls::Util::Hash256(hash, obj_hash.to_bytes().data(),  obj_hash.to_bytes().size());
-
-        std::vector<const uint8_t *> hashes;
-        std::vector<bls::PublicKey> pubs;
-        for (unsigned int i = 0; i < rids.size(); i++) {
-            if (rids[i]) {
-                pubs.push_back(*dynamic_cast<const PubKeyBLS & > (*config.get_info(i).pubkey.get()).data);
-            }
-        }
-        bls::PublicKey aggPubKey = bls::PublicKey::Aggregate(pubs);
-
-        theSig->data->SetAggregationInfo(bls::AggregationInfo::FromMsg(aggPubKey, hash, sizeof(hash)));
+        theSig->data->SetAggregationInfo(bls::AggregationInfo::FromMsg(*pub, obj_hash.to_bytes().data(), obj_hash.to_bytes().size()));
         return theSig->data->Verify();
     }
 
@@ -127,34 +114,11 @@ namespace hotstuff {
             return promise_t([](promise_t &pm) { pm.resolve(false); });
         std::vector<promise_t> vpm;
 
-        uint8_t hash[bls::BLS::MESSAGE_HASH_LEN];
-        bls::Util::Hash256(hash, obj_hash.to_bytes().data(),  obj_hash.to_bytes().size());
-
-        std::vector<bls::PublicKey> pubs;
-        for (unsigned int i = 0; i < rids.size(); i++) {
-            if (rids[i]) {
-                pubs.push_back(*dynamic_cast<const PubKeyBLS & > (*config.get_info(i).pubkey.get()).data);
-            }
-        }
-
-
         struct timeval timeStart,
                 timeEnd;
         gettimeofday(&timeStart, NULL);
 
-        bls::PublicKey aggPubKey = bls::PublicKey::Aggregate(pubs);
-
-        gettimeofday(&timeEnd, NULL);
-
-        std::cout << "This combining pub keys agg piece of code took "
-                  << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
-                  << " us to execute."
-                  << std::endl;
-
-
-        gettimeofday(&timeStart, NULL);
-
-        theSig->data->SetAggregationInfo(bls::AggregationInfo::FromMsg(aggPubKey, hash, sizeof(hash)));
+        theSig->data->SetAggregationInfo(bls::AggregationInfo::FromMsg(*pub, obj_hash.to_bytes().data(), obj_hash.to_bytes().size()));
         bool veri = theSig->data->Verify();
 
         gettimeofday(&timeEnd, NULL);
@@ -168,5 +132,44 @@ namespace hotstuff {
             return promise_t([](promise_t &pm) { pm.resolve(true); });
         }
         return promise_t([](promise_t &pm) { pm.resolve(false); });
+    }
+
+    void QuorumCertAggBLS::add_part(const ReplicaConfig &config, ReplicaID rid, const PartCert &pc) {
+        if (pc.get_obj_hash() != obj_hash)
+            throw std::invalid_argument("PartCert does match the block hash");
+        rids.set(rid);
+        calculateN();
+
+        if (theSig == nullptr) {
+            theSig = new SigSecBLSAgg(*dynamic_cast<const PartCertBLSAgg &>(pc).data);
+            pub = new bls::PublicKey(*dynamic_cast<const PubKeyBLS & > (config.get_pubkey(rid)).data);
+            return;
+        }
+        uint8_t hash[bls::BLS::MESSAGE_HASH_LEN];
+        bls::Util::Hash256(hash, obj_hash.to_bytes().data(),  obj_hash.to_bytes().size());
+
+        bls::Signature sig1 = *theSig->data;
+        sig1.SetAggregationInfo(bls::AggregationInfo::FromMsgHash(*pub, hash));
+
+        bls::Signature sig2 = *dynamic_cast<const SigSecBLSAgg &>(pc).data;
+        bls::PublicKey pub2 = *dynamic_cast<const PubKeyBLS & > (config.get_pubkey(rid)).data;
+        sig2.SetAggregationInfo(bls::AggregationInfo::FromMsgHash(pub2, hash));
+
+
+
+        struct timeval timeStart,
+                timeEnd;
+        gettimeofday(&timeStart, NULL);
+        bls::Signature sig = bls::Signature::Aggregate({sig1, sig2});
+        bls::PublicKey resultPub = bls::PublicKey::Aggregate({*pub, pub2});
+        gettimeofday(&timeEnd, NULL);
+
+        std::cout << "This aggregating slow piece of code took "
+                  << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
+                  << " us to execute."
+                  << std::endl;
+
+        *theSig->data = sig;
+        *pub = resultPub;
     }
 }

@@ -61,7 +61,7 @@ class ReplicaConfig;
 class QuorumCert: public Serializable, public Cloneable {
     public:
     virtual ~QuorumCert() = default;
-    virtual void add_part(ReplicaID replica, const PartCert &pc) = 0;
+    virtual void add_part(const ReplicaConfig &config, ReplicaID replica, const PartCert &pc) = 0;
     virtual void merge_quorum(const QuorumCert &qc) = 0;
     virtual bool has_n(uint8_t n) = 0;
     virtual void compute() = 0;
@@ -192,7 +192,7 @@ class QuorumCertDummy: public QuorumCert {
         return new QuorumCertDummy(*this);
     }
 
-    void add_part(ReplicaID, const PartCert &) override
+    void add_part(const ReplicaConfig &config, ReplicaID, const PartCert &) override
     {
         qty++;
     }
@@ -489,7 +489,7 @@ class QuorumCertSecp256k1: public QuorumCert {
     QuorumCertSecp256k1() = default;
     QuorumCertSecp256k1(const ReplicaConfig &config, const uint256_t &obj_hash);
 
-    void add_part(ReplicaID rid, const PartCert &pc) override {
+    void add_part(const ReplicaConfig &config, ReplicaID rid, const PartCert &pc) override {
         if (pc.get_obj_hash() != obj_hash)
             throw std::invalid_argument("PartCert does match the block hash");
         sigs.insert(std::make_pair(
@@ -817,7 +817,7 @@ class QuorumCertSecp256k1: public QuorumCert {
             theSig = nullptr;
         }
 
-        void add_part(ReplicaID rid, const PartCert &pc) override {
+        void add_part(const ReplicaConfig &config, ReplicaID rid, const PartCert &pc) override {
             if (pc.get_obj_hash() != obj_hash)
                 throw std::invalid_argument("PartCert does match the block hash");
             signatures.insert(std::make_pair(
@@ -992,14 +992,11 @@ class QuorumCertSecp256k1: public QuorumCert {
 
             check_msg_length(msg);
 
-            uint8_t hash[bls::BLS::MESSAGE_HASH_LEN];
-            bls::Util::Hash256(hash, msg.data(), msg.size());
-
             struct timeval timeStart,
                     timeEnd;
             gettimeofday(&timeStart, NULL);
 
-            data->SetAggregationInfo(bls::AggregationInfo::FromMsg(*(pub_key.data), hash, sizeof(hash)));
+            data->SetAggregationInfo(bls::AggregationInfo::FromMsg(*(pub_key.data), msg.data(), msg.size()));
             bool td = data->Verify();
 
             gettimeofday(&timeEnd, NULL);
@@ -1072,6 +1069,7 @@ class QuorumCertSecp256k1: public QuorumCert {
         uint256_t obj_hash;
         salticidae::Bits rids;
         SigSecBLSAgg* theSig = nullptr;
+        bls::PublicKey* pub = nullptr;
         uint8_t n = 0;
 
     public:
@@ -1082,12 +1080,18 @@ class QuorumCertSecp256k1: public QuorumCert {
             if (other.theSig != nullptr) {
                 theSig = new SigSecBLSAgg(*other.theSig);
             }
+
+            if (other.pub != nullptr) {
+                pub = new bls::PublicKey(*other.pub);
+            }
         }
 
         ~QuorumCertAggBLS() override
         {
             delete theSig;
             theSig = nullptr;
+            delete pub;
+            pub = nullptr;
         }
 
         void calculateN() {
@@ -1099,34 +1103,7 @@ class QuorumCertSecp256k1: public QuorumCert {
             }
         }
 
-        void add_part(ReplicaID rid, const PartCert &pc) override {
-            if (pc.get_obj_hash() != obj_hash)
-                throw std::invalid_argument("PartCert does match the block hash");
-            rids.set(rid);
-            calculateN();
-
-            if (theSig == nullptr) {
-                theSig = new SigSecBLSAgg(*dynamic_cast<const PartCertBLSAgg &>(pc).data);
-                return;
-            }
-
-            bls::Signature sig1 = *theSig->data;
-            bls::Signature sig2 = *dynamic_cast<const SigSecBLSAgg &>(pc).data;
-
-            struct timeval timeStart,
-                    timeEnd;
-            gettimeofday(&timeStart, NULL);
-            bls::Signature sig = bls::Signature::Aggregate({sig1, sig2});
-
-            gettimeofday(&timeEnd, NULL);
-
-            std::cout << "This aggregating slow piece of code took "
-                      << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
-                      << " us to execute."
-                      << std::endl;
-
-            *theSig->data = sig;
-        }
+        void add_part(const ReplicaConfig &config, ReplicaID rid, const PartCert &pc);
 
         void merge_quorum(const QuorumCert &qc) override {
             if (qc.get_obj_hash()!= obj_hash) throw std::invalid_argument("QuorumCert does match the block hash");
@@ -1139,27 +1116,37 @@ class QuorumCertSecp256k1: public QuorumCert {
             }
             calculateN();
 
+            uint8_t hash[bls::BLS::MESSAGE_HASH_LEN];
+            bls::Util::Hash256(hash, obj_hash.to_bytes().data(),  obj_hash.to_bytes().size());
+
             if (theSig == nullptr) {
                 theSig = new SigSecBLSAgg(*dynamic_cast<const QuorumCertAggBLS &>(qc).theSig->data);
+                pub = new bls::PublicKey(*dynamic_cast<const QuorumCertAggBLS &>(qc).pub);
                 return;
             }
 
             bls::Signature sig1 = *theSig->data;
+            sig1.SetAggregationInfo(bls::AggregationInfo::FromMsgHash(*pub, hash));
+
             bls::Signature sig2 = *dynamic_cast<const QuorumCertAggBLS &>(qc).theSig->data;
+            bls::PublicKey pub2 = *dynamic_cast<const QuorumCertAggBLS &>(qc).pub;
+            sig2.SetAggregationInfo(bls::AggregationInfo::FromMsgHash(*dynamic_cast<const QuorumCertAggBLS &>(qc).pub, hash));
 
             struct timeval timeStart,
                     timeEnd;
             gettimeofday(&timeStart, NULL);
             bls::Signature sig = bls::Signature::Aggregate({sig1, sig2});
+            bls::PublicKey resultPub = bls::PublicKey::Aggregate({*pub, pub2});
 
             gettimeofday(&timeEnd, NULL);
 
-            std::cout << "This aggregating slow piece of code took "
+            std::cout << "This merging slow piece of code took "
                       << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
                       << " us to execute."
                       << std::endl;
 
             *theSig->data = sig;
+            *pub = resultPub;
         }
 
         bool has_n(const uint8_t t) override {
@@ -1179,20 +1166,31 @@ class QuorumCertSecp256k1: public QuorumCert {
 
         void serialize(DataStream &s) const override {
             bool combined = (theSig != nullptr);
-            s << obj_hash << rids << combined;
+            bool hasPub = (pub != nullptr);
+            s << obj_hash << rids << combined << hasPub;
             if (combined) {
                 theSig->serialize(s);
+            }
+
+            if (hasPub) {
+                static uint8_t output[bls::PublicKey::PUBLIC_KEY_SIZE];
+                pub->Serialize(output);
+                s.put_data(output, output + bls::PublicKey::PUBLIC_KEY_SIZE);
             }
         }
 
         void unserialize(DataStream &s) override {
-            bool combined;
-            s >> obj_hash >> rids >> combined;
+            bool combined, hasPub;
+            s >> obj_hash >> rids >> combined >> hasPub;
             calculateN();
 
             if (combined) {
                 theSig = new SigSecBLSAgg();
                 theSig->unserialize(s);
+            }
+
+            if (hasPub) {
+                pub = new bls::PublicKey(bls::PublicKey::FromBytes(s.get_data_inplace(bls::PublicKey::PUBLIC_KEY_SIZE)));
             }
         }
     };

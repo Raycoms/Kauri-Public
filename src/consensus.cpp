@@ -256,7 +256,7 @@ void HotStuffCore::on_receive_vote(const Vote &vote) {
     }
 
     //std::cout << "add part1 " << blk->hash.to_hex() << " " << blk->qc->get_obj_hash().to_hex() << " " << blk->self_qc->get_obj_hash().to_hex() << std::endl;
-    qc->add_part(vote.voter, *vote.cert);
+    qc->add_part(config, vote.voter, *vote.cert);
     //std::cout << "add part2 " << std::endl;
     if (qc->has_n(config.nmajority))
     {
