@@ -251,10 +251,12 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
         return;
     }
     auto &cert = blk->self_qc;
-    cert->add_part(config, msg.vote.voter, *msg.vote.cert);
+
 
     if (id != 0 ) {
-        if (!cert->has_n(numberOfChildren + 1)) return;
+        cert->add_part(config, msg.vote.voter, *msg.vote.cert);
+
+        if (!cert->has_n(numberOfChildren)) return;
         //std::cout << peers[id].to_hex() <<  " send relay message: " << v->blk_hash.to_hex() <<  std::endl;
         pn.send_msg(MsgRelay(VoteRelay(msg.vote.blk_hash, blk->self_qc->clone(), this)), parentPeer);
         async_deliver_blk(msg.vote.blk_hash, peer);
@@ -271,6 +273,7 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
             LOG_WARN("invalid vote from %d", v->voter);
         auto &cert = blk->self_qc;
 
+        cert->add_part(config, v->voter, *v->cert);
         if (cert != nullptr && cert->get_obj_hash() == blk->get_hash()) {
             if (cert->has_n(config.nmajority)) {
                 //std::cout << "go to town1: " << blk->get_hash().to_hex() << std::endl;
