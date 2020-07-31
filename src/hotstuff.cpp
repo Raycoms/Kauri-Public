@@ -273,6 +273,14 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
             LOG_WARN("invalid vote from %d", v->voter);
         auto &cert = blk->self_qc;
 
+        struct timeval timeEnd;
+        gettimeofday(&timeEnd, NULL);
+
+        std::cout << "Vote handling cost partially threaded - pre combining: "
+                  << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
+                  << " us to execute."
+                  << std::endl;
+
         cert->add_part(config, v->voter, *v->cert);
         if (cert != nullptr && cert->get_obj_hash() == blk->get_hash()) {
             if (cert->has_n(config.nmajority)) {
@@ -285,8 +293,6 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
                 //std::cout << "wait: " << blk->get_hash().to_hex() << std::endl;
             }
         }
-
-        struct timeval timeEnd;
 
         gettimeofday(&timeEnd, NULL);
 
