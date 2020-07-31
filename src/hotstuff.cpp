@@ -170,35 +170,14 @@ promise_t HotStuffBase::async_fetch_blk(const uint256_t &blk_hash,
     return static_cast<promise_t &>(it->second);
 }
 
-promise_t HotStuffBase::async_deliver_blk(const uint256_t &blk_hash,
-                                        const PeerId &replica) {
-    struct timeval timeStart,
-            timeEnd;
-    gettimeofday(&timeStart, NULL);
-
-    if (storage->is_blk_delivered(blk_hash)) {
-        gettimeofday(&timeEnd, NULL);
-
-        std::cout << "This async_deliver_blk slow piece of code took "
-                  << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
-                  << " us to execute."
-                  << std::endl;
-
+promise_t HotStuffBase::async_deliver_blk(const uint256_t &blk_hash, const PeerId &replica) {
+    if (storage->is_blk_delivered(blk_hash))
         return promise_t([this, &blk_hash](promise_t pm) {
             pm.resolve(storage->find_blk(blk_hash));
         });
-    }
     auto it = blk_delivery_waiting.find(blk_hash);
-    if (it != blk_delivery_waiting.end()) {
-        gettimeofday(&timeEnd, NULL);
-
-        std::cout << "This async_deliver_blk slow piece of code took "
-                  << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
-                  << " us to execute."
-                  << std::endl;
+    if (it != blk_delivery_waiting.end())
         return static_cast<promise_t &>(it->second);
-    }
-
     BlockDeliveryContext pm{[](promise_t){}};
     it = blk_delivery_waiting.insert(std::make_pair(blk_hash, pm)).first;
     /* otherwise the on_deliver_batch will resolve */
@@ -221,13 +200,6 @@ promise_t HotStuffBase::async_deliver_blk(const uint256_t &blk_hash,
                 HOTSTUFF_LOG_WARN("verification failed during async delivery");
         });
     });
-
-    gettimeofday(&timeEnd, NULL);
-
-    std::cout << "This async_deliver_blk slow piece of code took "
-              << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
-              << " us to execute."
-              << std::endl;
     return static_cast<promise_t &>(pm);
 }
 
