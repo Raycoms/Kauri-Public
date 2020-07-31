@@ -172,13 +172,33 @@ promise_t HotStuffBase::async_fetch_blk(const uint256_t &blk_hash,
 
 promise_t HotStuffBase::async_deliver_blk(const uint256_t &blk_hash,
                                         const PeerId &replica) {
-    if (storage->is_blk_delivered(blk_hash))
+    struct timeval timeStart,
+            timeEnd;
+    gettimeofday(&timeStart, NULL);
+
+    if (storage->is_blk_delivered(blk_hash)) {
+        gettimeofday(&timeEnd, NULL);
+
+        std::cout << "This async_deliver_blk slow piece of code took "
+                  << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
+                  << " us to execute."
+                  << std::endl;
+
         return promise_t([this, &blk_hash](promise_t pm) {
             pm.resolve(storage->find_blk(blk_hash));
         });
+    }
     auto it = blk_delivery_waiting.find(blk_hash);
-    if (it != blk_delivery_waiting.end())
+    if (it != blk_delivery_waiting.end()) {
+        gettimeofday(&timeEnd, NULL);
+
+        std::cout << "This async_deliver_blk slow piece of code took "
+                  << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
+                  << " us to execute."
+                  << std::endl;
         return static_cast<promise_t &>(it->second);
+    }
+
     BlockDeliveryContext pm{[](promise_t){}};
     it = blk_delivery_waiting.insert(std::make_pair(blk_hash, pm)).first;
     /* otherwise the on_deliver_batch will resolve */
@@ -201,6 +221,13 @@ promise_t HotStuffBase::async_deliver_blk(const uint256_t &blk_hash,
                 HOTSTUFF_LOG_WARN("verification failed during async delivery");
         });
     });
+
+    gettimeofday(&timeEnd, NULL);
+
+    std::cout << "This async_deliver_blk slow piece of code took "
+              << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
+              << " us to execute."
+              << std::endl;
     return static_cast<promise_t &>(pm);
 }
 
@@ -273,14 +300,6 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
             LOG_WARN("invalid vote from %d", v->voter);
         auto &cert = blk->self_qc;
 
-        struct timeval timeEnd;
-        gettimeofday(&timeEnd, NULL);
-
-        std::cout << "Vote handling cost partially threaded - pre combining: "
-                  << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
-                  << " us to execute."
-                  << std::endl;
-
         cert->add_part(config, v->voter, *v->cert);
         if (cert != nullptr && cert->get_obj_hash() == blk->get_hash()) {
             if (cert->has_n(config.nmajority)) {
@@ -294,6 +313,7 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
             }
         }
 
+        struct timeval timeEnd;
         gettimeofday(&timeEnd, NULL);
 
         std::cout << "Vote handling cost partially threaded: "
