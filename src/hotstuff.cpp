@@ -314,13 +314,11 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
     if (!blk->delivered) {
         blk->self_qc = create_quorum_cert(blk->get_hash());
     }
-    std::cout << "got vote relay1" << std::endl;
 
     if (blk->self_qc->has_n(config.nmajority)) {
         //std::cout << "bye vote relay handler: " << msg.vote.blk_hash.to_hex() << " " << &blk->self_qc << std::endl;
         return;
     }
-    std::cout << "got vote relay2" << std::endl;
 
     //auto &vote = msg.vote;
     RcObj<VoteRelay> v(new VoteRelay(std::move(msg.vote)));
@@ -331,10 +329,8 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
         if (!promise::any_cast<bool>(values[1]))
             LOG_WARN ("invalid vote-relay from");
         auto &cert = blk->self_qc;
-        std::cout << "in vote relay1" << std::endl;
         if (cert != nullptr && cert->get_obj_hash() == blk->get_hash() && !cert->has_n(config.nmajority)) {
             cert->merge_quorum(*v->cert);
-            std::cout << "in vote relay2" << std::endl;
 
             if (id != 0) {
                 if (!cert->has_n(numberOfChildren + 1)) return;

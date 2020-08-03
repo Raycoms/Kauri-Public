@@ -202,8 +202,6 @@ class QuorumCertDummy: public QuorumCert {
     }
     bool has_n(const uint8_t n) override
     {
-        std::cout << "compare " << std::to_string(n) << " " << std::to_string(qty) << std::endl;
-
         return qty >= n;
     }
     void compute() override {}
