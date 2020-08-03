@@ -304,6 +304,9 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
 }
 
 void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
+    struct timeval timeStart,
+            timeEnd;
+    gettimeofday(&timeStart, NULL);
 
     const auto &peer = conn->get_peer_id();
     if (peer.is_null()) return;
@@ -325,9 +328,9 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
     promise::all(std::vector<promise_t>{
             async_deliver_blk(v->blk_hash, peer),
             v->cert->verify(config, vpool),
-    }).then([this, blk, v=std::move(v)](const promise::values_t values) {
+    }).then([this, blk, v=std::move(v), timeStart](const promise::values_t values) {
         if (!promise::any_cast<bool>(values[1]))
-            LOG_WARN ("invalid vote-relay from");
+            LOG_WARN ("invalid vote-relay");
         auto &cert = blk->self_qc;
         if (cert != nullptr && cert->get_obj_hash() == blk->get_hash() && !cert->has_n(config.nmajority)) {
             cert->merge_quorum(*v->cert);
@@ -348,8 +351,23 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
             cert->compute();
             update_hqc(blk, cert);
             on_qc_finish(blk);
+
+            struct timeval timeEnd;
+            gettimeofday(&timeEnd, NULL);
+
+            std::cout << "Vote handling cost partially threaded: "
+                      << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
+                      << " us to execute."
+                      << std::endl;
         }
     });
+
+    gettimeofday(&timeEnd, NULL);
+
+    std::cout << "Vote relay handling cost: "
+              << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
+              << " us to execute."
+              << std::endl;
 }
 
 void HotStuffBase::req_blk_handler(MsgReqBlock &&msg, const Net::conn_t &conn) {
