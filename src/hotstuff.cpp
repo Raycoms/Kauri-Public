@@ -310,7 +310,7 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
     //std::cout << "vote relay handler: " << msg.vote.blk_hash.to_hex() << std::endl;
 
     block_t blk = get_potentially_not_delivered_blk(msg.vote.blk_hash);
-    if (!blk->delivered) {
+    if (!blk->delivered && blk->self_qc == nullptr) {
         blk->self_qc = create_quorum_cert(blk->get_hash());
     }
 
