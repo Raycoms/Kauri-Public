@@ -43,8 +43,7 @@ class HotStuffCore {
     block_t b_lock;                            /**< locked block */
     block_t b_exec;                            /**< last executed block */
     uint32_t vheight;          /**< height of the block last voted for */
-    /* === auxilliary variables === */
-    privkey_bt priv_key;            /**< private key for signing votes */
+    /**< private key for signing votes */
     std::set<block_t> tails;   /**< set of tail blocks */
     /**< replica configuration */
     /* === async event queues === */
@@ -77,6 +76,8 @@ class HotStuffCore {
 
     void on_qc_finish(const block_t &blk);
 
+/* === auxilliary variables === */
+privkey_bt priv_key;
 public:
     BoxObj<EntityStorage> storage;
     uint16_t numberOfChildren;

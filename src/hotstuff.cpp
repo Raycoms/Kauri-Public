@@ -241,6 +241,9 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
     block_t blk = get_potentially_not_delivered_blk(msg.vote.blk_hash);
     if (!blk->delivered && blk->self_qc == nullptr) {
         blk->self_qc = create_quorum_cert(blk->get_hash());
+        part_cert_bt part = create_part_cert(*priv_key, blk->get_hash());
+        blk->self_qc->add_part(config, id, *part);
+
         std::cout << "create cert: " << msg.vote.blk_hash.to_hex() << " " << &blk->self_qc << std::endl;
     }
 
@@ -312,6 +315,9 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
     block_t blk = get_potentially_not_delivered_blk(msg.vote.blk_hash);
     if (!blk->delivered && blk->self_qc == nullptr) {
         blk->self_qc = create_quorum_cert(blk->get_hash());
+        part_cert_bt part = create_part_cert(*priv_key, blk->get_hash());
+        blk->self_qc->add_part(config, id, *part);
+
         std::cout << "create cert: " << msg.vote.blk_hash.to_hex() << " " << &blk->self_qc << std::endl;
     }
 
@@ -534,10 +540,8 @@ void HotStuffBase::do_vote(Proposal prop, const Vote &vote) {
             {
                 //std::cout << "create quorum cert 0" << std::endl;
                 blk->self_qc = create_quorum_cert(prop.blk->get_hash());
+                blk->self_qc->add_part(config, vote.voter, *vote.cert);
             }
-
-            //std::cout << "Create cert and add vote2" << std::endl;
-            blk->self_qc->add_part(config, vote.voter, *vote.cert);
         }
     });
 }
