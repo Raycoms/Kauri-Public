@@ -274,33 +274,33 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
         cert->add_part(config, v->voter, *v->cert);
         if (cert != nullptr && cert->get_obj_hash() == blk->get_hash()) {
             if (cert->has_n(config.nmajority)) {
-                //std::cout << "go to town1: " << blk->get_hash().to_hex() << std::endl;
+                std::cout << "go to town: " << blk->get_hash().to_hex() << std::endl;
+                std::cout << "go to town: " << blk->get_hash().to_hex() << std::endl;
                 cert->compute();
                 update_hqc(blk, cert);
                 on_qc_finish(blk);
             }
             else {
-                //std::cout << "wait: " << blk->get_hash().to_hex() << std::endl;
+                std::cout << "wait: " << blk->get_hash().to_hex() << std::endl;
             }
         }
 
-        /*struct timeval timeEnd;
+        struct timeval timeEnd;
         gettimeofday(&timeEnd, NULL);
 
         std::cout << "Vote handling cost partially threaded: "
                   << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
                   << " us to execute."
-                  << std::endl;*/
+                  << std::endl;
 
     });
 
-    /*
     gettimeofday(&timeEnd, NULL);
 
     std::cout << "Vote handling cost: "
               << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
               << " us to execute."
-              << std::endl;*/
+              << std::endl;
 }
 
 void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
