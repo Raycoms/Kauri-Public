@@ -516,7 +516,7 @@ void HotStuffBase::do_broadcast_proposal(const Proposal &prop) {
 void HotStuffBase::do_vote(Proposal prop, const Vote &vote) {
     //std::cout << "Create cert and add vote1" << std::endl;
 
-    pmaker->beat_resp(prop.proposer).then([this, vote, prop, blk](ReplicaID proposer) {
+    pmaker->beat_resp(prop.proposer).then([this, vote, prop](ReplicaID proposer) {
 
         if (proposer == get_id())
         {
