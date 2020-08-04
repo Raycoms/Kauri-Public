@@ -353,7 +353,7 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
             struct timeval timeEnd;
             gettimeofday(&timeEnd, NULL);
 
-            std::cout << "Vote handling cost partially threaded: "
+            std::cout << "Vote relay handling cost partially threaded: "
                       << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
                       << " us to execute."
                       << std::endl;
@@ -567,6 +567,7 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
     auto maxFanout = fanout;
     uint8_t childrenCount = fanout;
     auto currentChildren = 0;
+    uint8_t preLevel = 0;
 
     for (size_t i = 0; i < replicas.size(); i++)
     {
@@ -620,7 +621,8 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
             children.insert(i);
         }
 
-        if (i % static_cast<size_t>(std::pow(fanout, level)) == 0) {
+        if (i == static_cast<size_t>(std::pow(fanout, level)) + preLevel) {
+            preLevel = static_cast<size_t>(std::pow(fanout, level));
             level++;
         }
     }
