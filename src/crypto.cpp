@@ -29,7 +29,8 @@ namespace hotstuff {
     }
 
     bool QuorumCertSecp256k1::verify(const ReplicaConfig &config) {
-        if (sigs.size() < config.nmajority) return false;
+        //todo the sig sizes don't work! We might want to remove this and test, but gotta make sure we don't break it and make it easier.
+        //if (sigs.size() < config.nmajority) return false;
         for (size_t i = 0; i < rids.size(); i++)
             if (rids.get(i)) {
                 HOTSTUFF_LOG_DEBUG("checking cert(%d), obj_hash=%s",
@@ -43,8 +44,8 @@ namespace hotstuff {
     }
 
     promise_t QuorumCertSecp256k1::verify(const ReplicaConfig &config, VeriPool &vpool) {
-        if (sigs.size() < config.nmajority)
-            return promise_t([](promise_t &pm) { pm.resolve(false); });
+        //if (sigs.size() < config.nmajority)
+            //return promise_t([](promise_t &pm) { pm.resolve(false); });
         std::vector<promise_t> vpm;
         for (size_t i = 0; i < rids.size(); i++)
             if (rids.get(i)) {
