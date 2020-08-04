@@ -249,10 +249,9 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
         //std::cout << "bye vote handler: " << msg.vote.blk_hash.to_hex() << " " << &blk->self_qc << std::endl;
         return;
     }
-    auto &cert = blk->self_qc;
-
 
     if (id != 0 ) {
+        auto &cert = blk->self_qc;
         cert->add_part(config, msg.vote.voter, *msg.vote.cert);
 
         if (!cert->has_n(numberOfChildren)) return;
@@ -285,22 +284,23 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
             }
         }
 
-        struct timeval timeEnd;
+        /*struct timeval timeEnd;
         gettimeofday(&timeEnd, NULL);
 
         std::cout << "Vote handling cost partially threaded: "
                   << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
                   << " us to execute."
-                  << std::endl;
+                  << std::endl;*/
 
     });
 
+    /*
     gettimeofday(&timeEnd, NULL);
 
     std::cout << "Vote handling cost: "
               << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
               << " us to execute."
-              << std::endl;
+              << std::endl;*/
 }
 
 void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
