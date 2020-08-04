@@ -274,14 +274,9 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
         cert->add_part(config, v->voter, *v->cert);
         if (cert != nullptr && cert->get_obj_hash() == blk->get_hash()) {
             if (cert->has_n(config.nmajority)) {
-                std::cout << "go to town: " << blk->get_hash().to_hex() << std::endl;
-                std::cout << "go to town: " << blk->get_hash().to_hex() << std::endl;
                 cert->compute();
                 update_hqc(blk, cert);
                 on_qc_finish(blk);
-            }
-            else {
-                std::cout << "wait: " << blk->get_hash().to_hex() << std::endl;
             }
         }
 
@@ -319,7 +314,7 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
     }
 
     if (blk->self_qc->has_n(config.nmajority)) {
-        //std::cout << "bye vote relay handler: " << msg.vote.blk_hash.to_hex() << " " << &blk->self_qc << std::endl;
+        std::cout << "bye vote relay handler: " << msg.vote.blk_hash.to_hex() << " " << &blk->self_qc << std::endl;
         return;
     }
 
@@ -332,9 +327,12 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
         if (!promise::any_cast<bool>(values[1]))
             LOG_WARN ("invalid vote-relay");
         auto &cert = blk->self_qc;
+        std::cout << "got relay and verified" << std::endl;
+
         if (cert != nullptr && cert->get_obj_hash() == blk->get_hash() && !cert->has_n(config.nmajority)) {
             cert->merge_quorum(*v->cert);
 
+            std::cout << "merge quorum" << std::endl;
             if (id != 0) {
                 if (!cert->has_n(numberOfChildren + 1)) return;
                 std::cout << "Send Vote Relay: " << v->blk_hash.to_hex() << std::endl;
@@ -346,7 +344,7 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
 
             if (!cert->has_n(config.nmajority)) return;
 
-            //std::cout << "go to town3: " << msg.vote.blk_hash.to_hex() << std::endl;
+            std::cout << "go to town: " << std::endl;
 
             cert->compute();
             update_hqc(blk, cert);
