@@ -506,6 +506,7 @@ class QuorumCertSecp256k1: public QuorumCert {
     }
 
     bool has_n(const uint8_t n) override {
+        std::cout << sigs.size() << " " << n << std::endl;
         return sigs.size() >= n;
     }
 
