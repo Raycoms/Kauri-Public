@@ -173,7 +173,10 @@ block_t HotStuffCore::on_propose(const std::vector<uint256_t> &cmds,
             nullptr
         ));
     const uint256_t bnew_hash = bnew->get_hash();
-    bnew->self_qc = create_quorum_cert(bnew_hash);
+    if (bnew->self_qc == nullptr) {
+        bnew->self_qc = create_quorum_cert(bnew_hash);
+    }
+
     on_deliver_blk(bnew);
     update(bnew);
     Proposal prop(id, bnew, nullptr);
