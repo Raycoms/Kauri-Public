@@ -241,6 +241,7 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
     block_t blk = get_potentially_not_delivered_blk(msg.vote.blk_hash);
     if (!blk->delivered) {
         blk->self_qc = create_quorum_cert(blk->get_hash());
+        std::cout << "create cert: " << msg.vote.blk_hash.to_hex() << " " << &blk->self_qc << std::endl;
     }
 
     std::cout << "vote handler: " << msg.vote.blk_hash.to_hex() << " " << &blk->self_qc << std::endl;
