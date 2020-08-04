@@ -310,7 +310,7 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
     //std::cout << "vote relay handler: " << msg.vote.blk_hash.to_hex() << std::endl;
 
     block_t blk = get_potentially_not_delivered_blk(msg.vote.blk_hash);
-    if (!blk->delivered && blk->self_qc == nullptr) {
+    if (!blk->delivered) {
         blk->self_qc = create_quorum_cert(blk->get_hash());
     }
 
@@ -527,7 +527,15 @@ void HotStuffBase::do_vote(Proposal prop, const Vote &vote) {
             //std::cout << "send vote" << std::endl;
             pn.send_msg(MsgVote(vote), parentPeer);
         } else {
+            //todo I think this goes at some mment later than receiving, and all breaks apart. We need this more resilient (If height >= blockheight we check in the quorum cert for it).
             block_t blk = get_delivered_blk(vote.blk_hash);
+            if (blk->self_qc == nullptr)
+            {
+                //std::cout << "create quorum cert 0" << std::endl;
+                blk->self_qc = create_quorum_cert(prop.blk->get_hash());
+            }
+
+            //std::cout << "Create cert and add vote2" << std::endl;
             blk->self_qc->add_part(config, vote.voter, *vote.cert);
         }
     });
