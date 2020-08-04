@@ -516,13 +516,6 @@ void HotStuffBase::do_broadcast_proposal(const Proposal &prop) {
 void HotStuffBase::do_vote(Proposal prop, const Vote &vote) {
     //std::cout << "Create cert and add vote1" << std::endl;
 
-    block_t blk = get_delivered_blk(vote.blk_hash);
-    if (!childPeers.empty()) {
-        if (prop.blk->self_qc == nullptr) {
-            blk->self_qc = create_quorum_cert(prop.blk->get_hash());
-        }
-    }
-
     pmaker->beat_resp(prop.proposer).then([this, vote, prop, blk](ReplicaID proposer) {
 
         if (proposer == get_id())
@@ -534,6 +527,7 @@ void HotStuffBase::do_vote(Proposal prop, const Vote &vote) {
             //std::cout << "send vote" << std::endl;
             pn.send_msg(MsgVote(vote), parentPeer);
         } else {
+            block_t blk = get_delivered_blk(vote.blk_hash);
             blk->self_qc->add_part(config, vote.voter, *vote.cert);
         }
     });

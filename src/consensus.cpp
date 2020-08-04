@@ -227,6 +227,10 @@ void HotStuffCore::on_receive_proposal(const Proposal &prop) {
         on_qc_finish(bnew->qc_ref);
     }
 
+    if (bnew->self_qc == nullptr) {
+        bnew->self_qc = create_quorum_cert(bnew->get_hash());
+    }
+
     on_receive_proposal_(prop);
     if (opinion && !vote_disabled)
         do_vote(prop,
