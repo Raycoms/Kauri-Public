@@ -239,8 +239,8 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
     msg.postponed_parse(this);
     //std::cout << "vote handler0: " << std::endl;
     block_t blk = get_potentially_not_delivered_blk(msg.vote.blk_hash);
-    while (!blk->delivered && blk->self_qc == nullptr) {
-        //blk->self_qc = create_quorum_cert(blk->get_hash());
+    if (!blk->delivered && blk->self_qc == nullptr) {
+        blk->self_qc = create_quorum_cert(blk->get_hash());
         std::cout << "create cert: " << msg.vote.blk_hash.to_hex() << " " << &blk->self_qc << std::endl;
     }
 
@@ -310,8 +310,8 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
     //std::cout << "vote relay handler: " << msg.vote.blk_hash.to_hex() << std::endl;
 
     block_t blk = get_potentially_not_delivered_blk(msg.vote.blk_hash);
-    while (!blk->delivered && blk->self_qc == nullptr) {
-        //blk->self_qc = create_quorum_cert(blk->get_hash());
+    if (!blk->delivered && blk->self_qc == nullptr) {
+        blk->self_qc = create_quorum_cert(blk->get_hash());
         std::cout << "create cert: " << msg.vote.blk_hash.to_hex() << " " << &blk->self_qc << std::endl;
     }
 
