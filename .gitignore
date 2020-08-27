@@ -10,6 +10,7 @@ libsecp256k1-prefix/
 libhotstuff.a
 src/*.swo
 src/*.swp
+_deps/
 include/hotstuff/config.h
 *.a
 *.o
