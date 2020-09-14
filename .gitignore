@@ -31,3 +31,13 @@ hotstuff-keygen_bls
 hotstuff.cbp
 
 log*
+
+scripts/argparse
+
+scripts/itertools
+
+scripts/nodes.txt
+
+scripts/re
+
+scripts/subprocess

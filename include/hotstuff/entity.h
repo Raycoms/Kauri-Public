@@ -63,8 +63,6 @@ class ReplicaConfig {
     size_t nreplicas;
     size_t nmajority;
 
-    PubKey* globalPub;
-
     uint8_t fanout;
 
     ReplicaConfig(): nreplicas(0), nmajority(0) {}

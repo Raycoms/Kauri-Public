@@ -3,7 +3,6 @@ set (CMAKE_CXX_STANDARD 11)
 
 # CMake 3.14+
 include(FetchContent)
-message("second")
 FetchContent_Declare(
   relic
   GIT_REPOSITORY https://github.com/relic-toolkit/relic.git

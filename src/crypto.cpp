@@ -19,6 +19,11 @@
 
 namespace hotstuff {
 
+    vector<uint8_t> arrToVec(const bytearray_t &arr)
+    {
+        return std::vector<uint8_t>(arr.begin(), arr.end());
+    }
+
     secp256k1_context_t secp256k1_default_sign_ctx = new Secp256k1Context(true);
     secp256k1_context_t secp256k1_default_verify_ctx = new Secp256k1Context(false);
 
@@ -63,38 +68,6 @@ namespace hotstuff {
         });
     }
 
-    QuorumCertBLS::QuorumCertBLS(
-            const ReplicaConfig &config, const uint256_t &obj_hash) :
-            QuorumCert(), obj_hash(obj_hash), rids(config.nreplicas), t(config.nmajority){
-        rids.clear();
-    }
-
-    bool QuorumCertBLS::verify(const ReplicaConfig &config) {
-        if (theSig == nullptr) return false;
-        HOTSTUFF_LOG_DEBUG("checking cert(%d), obj_hash=%s",
-                           i, get_hex10(obj_hash).c_str());
-        return theSig->verify(obj_hash, static_cast<const PubKeyBLS &>(*config.globalPub));
-    }
-
-    promise_t QuorumCertBLS::verify(const ReplicaConfig &config, VeriPool &vpool) {
-        if (theSig == nullptr)
-            return promise_t([](promise_t &pm) { pm.resolve(false); });
-
-        std::vector<promise_t> vpm;
-
-                HOTSTUFF_LOG_DEBUG("checking cert(%d), obj_hash=%s",
-                                   i, get_hex10(obj_hash).c_str());
-                vpm.push_back(vpool.verify(new SigVeriTaskBLS(obj_hash,
-                                                                 static_cast<const PubKeyBLS &>(*config.globalPub),
-                                                                 *theSig)));
-
-        return promise::all(vpm).then([](const promise::values_t &values) {
-            for (const auto &v: values)
-                if (!promise::any_cast<bool>(v)) return false;
-            return true;
-        });
-    }
-
     QuorumCertAggBLS::QuorumCertAggBLS(
             const ReplicaConfig &config, const uint256_t &obj_hash) :
             QuorumCert(), obj_hash(obj_hash), rids(config.nreplicas){
@@ -106,8 +79,7 @@ namespace hotstuff {
         HOTSTUFF_LOG_DEBUG("checking cert(%d), obj_hash=%s",
                            i, get_hex10(obj_hash).c_str());
 
-        theSig->data->SetAggregationInfo(bls::AggregationInfo::FromMsg(*pub, obj_hash.to_bytes().data(), obj_hash.to_bytes().size()));
-        return theSig->data->Verify();
+        return bls::PopSchemeMPL::Verify(*pub, arrToVec(obj_hash.to_bytes()), *theSig->data);
     }
 
     promise_t QuorumCertAggBLS::verify(const ReplicaConfig &config, VeriPool &vpool) {
@@ -119,8 +91,7 @@ namespace hotstuff {
                 timeEnd;
         gettimeofday(&timeStart, NULL);
 
-        theSig->data->SetAggregationInfo(bls::AggregationInfo::FromMsg(*pub, obj_hash.to_bytes().data(), obj_hash.to_bytes().size()));
-        bool veri = theSig->data->Verify();
+        bool veri = bls::PopSchemeMPL::Verify(*pub, arrToVec(obj_hash.to_bytes()), *theSig->data);
 
         gettimeofday(&timeEnd, NULL);
 
@@ -143,26 +114,22 @@ namespace hotstuff {
 
         if (theSig == nullptr) {
             theSig = new SigSecBLSAgg(*dynamic_cast<const PartCertBLSAgg &>(pc).data);
-            pub = new bls::PublicKey(*dynamic_cast<const PubKeyBLS & > (config.get_pubkey(rid)).data);
+            pub = new bls::G1Element(*dynamic_cast<const PubKeyBLS & > (config.get_pubkey(rid)).data);
             return;
         }
         uint8_t hash[bls::BLS::MESSAGE_HASH_LEN];
         bls::Util::Hash256(hash, obj_hash.to_bytes().data(),  obj_hash.to_bytes().size());
 
-        bls::Signature sig1 = *theSig->data;
-        sig1.SetAggregationInfo(bls::AggregationInfo::FromMsgHash(*pub, hash));
+        bls::G2Element sig1 = *theSig->data;
 
-        bls::Signature sig2 = *dynamic_cast<const SigSecBLSAgg &>(pc).data;
-        bls::PublicKey pub2 = *dynamic_cast<const PubKeyBLS & > (config.get_pubkey(rid)).data;
-        sig2.SetAggregationInfo(bls::AggregationInfo::FromMsgHash(pub2, hash));
-
-
+        bls::G2Element sig2 = *dynamic_cast<const SigSecBLSAgg &>(pc).data;
+        bls::G1Element pub2 = *dynamic_cast<const PubKeyBLS & > (config.get_pubkey(rid)).data;
 
         struct timeval timeStart,
                 timeEnd;
         gettimeofday(&timeStart, NULL);
-        bls::Signature sig = bls::Signature::Aggregate({sig1, sig2});
-        bls::PublicKey resultPub = bls::PublicKey::Aggregate({*pub, pub2});
+        bls::G2Element sig = bls::PopSchemeMPL::Aggregate({sig1, sig2});
+        bls::G1Element resultPub = *pub + pub2;
         gettimeofday(&timeEnd, NULL);
 
         std::cout << "This aggregating slow piece of code took "

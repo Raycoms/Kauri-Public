@@ -63,7 +63,7 @@ using hotstuff::MsgRespCmd;
 using hotstuff::get_hash;
 using hotstuff::promise_t;
 
-using HotStuff = hotstuff::HotStuffSecp256k1 ;
+using HotStuff = hotstuff::HotStuffAgg;
 
 class HotStuffApp: public HotStuff {
     double stat_period;
@@ -132,7 +132,7 @@ class HotStuffApp: public HotStuff {
                 const ClientNetwork<opcode_t>::Config &clinet_config);
 
     void start(const std::vector<std::tuple<NetAddr, bytearray_t, bytearray_t>> &reps);
-    void set_master_pub(const std::string &master, uint8_t fanout);
+    void set_fanout(uint8_t fanout);
     void stop();
 };
 
@@ -146,7 +146,7 @@ std::pair<std::string, std::string> split_ip_port_cport(const std::string &s) {
 salticidae::BoxObj<HotStuffApp> papp = nullptr;
 
 int main(int argc, char **argv) {
-    Config config("hotstuff.gen.conf");
+    Config config("../hotstuff.conf");
 
     ElapsedTime elapsed;
     elapsed.start();
@@ -174,7 +174,6 @@ int main(int argc, char **argv) {
     auto opt_notls = Config::OptValFlag::create(false);
     auto opt_max_rep_msg = Config::OptValInt::create(4 << 20); // 4M by default
     auto opt_max_cli_msg = Config::OptValInt::create(65536); // 64K by default
-    auto opt_master_pub = Config::OptValStr::create("");
     auto opt_fanout = Config::OptValInt::create(2); // 2 by default
 
     config.add_opt("block-size", opt_blk_size, Config::SET_VAL);
@@ -200,7 +199,6 @@ int main(int argc, char **argv) {
     config.add_opt("max-rep-msg", opt_max_rep_msg, Config::SET_VAL, 'S', "the maximum replica message size");
     config.add_opt("max-cli-msg", opt_max_cli_msg, Config::SET_VAL, 'S', "the maximum client message size");
     config.add_opt("help", opt_help, Config::SWITCH_ON, 'h', "show this help info");
-    config.add_opt("master-pub", opt_master_pub, Config::SET_VAL, 'x', "master public key for BLS");
     config.add_opt("fan-out", opt_fanout, Config::SET_VAL, 'y', "fanout");
 
     EventContext ec;
@@ -289,9 +287,7 @@ int main(int argc, char **argv) {
             hotstuff::from_hex(std::get<2>(r))));
     }
 
-    if (!opt_master_pub->get().empty()) {
-        papp->set_master_pub(opt_master_pub->get(), opt_fanout->get());
-    }
+    papp->set_fanout(opt_fanout->get());
 
     auto shutdown = [&](int) { papp->stop(); };
     salticidae::SigEvent ev_sigint(ec, shutdown);
@@ -424,6 +420,6 @@ void HotStuffApp::print_stat() const {
 #endif
 }
 
-void HotStuffApp::set_master_pub(const std::string& masterPub, uint8_t fanout) {
-    HotStuff::set_master_pub(hotstuff::from_hex(masterPub), fanout);
+void HotStuffApp::set_fanout(uint8_t fanout) {
+    HotStuff::set_fanout(fanout);
 }
