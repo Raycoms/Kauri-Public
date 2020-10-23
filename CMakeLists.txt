@@ -175,10 +175,6 @@ add_executable(hotstuff-tls-keygen
     src/hotstuff_tls_keygen.cpp)
 target_link_libraries(hotstuff-tls-keygen hotstuff_static blstmp relic_s pthread sodium)
 
-add_executable(hotstuff-keygen_bls
-        src/hotstuff_keygen_bls.cpp)
-target_link_libraries(hotstuff-keygen_bls hotstuff_static blstmp relic_s relic_s pthread sodium)
-
 find_package(Doxygen)
 if (DOXYGEN_FOUND)
     add_custom_target(doc

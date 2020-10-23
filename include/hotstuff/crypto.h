@@ -950,7 +950,6 @@ class QuorumCertSecp256k1: public QuorumCert {
         uint256_t obj_hash;
         salticidae::Bits rids;
         SigSecBLSAgg* theSig = nullptr;
-        bls::G1Element* pub = nullptr;
         uint8_t n = 0;
 
     public:
@@ -961,18 +960,12 @@ class QuorumCertSecp256k1: public QuorumCert {
             if (other.theSig != nullptr) {
                 theSig = new SigSecBLSAgg(*other.theSig);
             }
-
-            if (other.pub != nullptr) {
-                pub = new bls::G1Element(*other.pub);
-            }
         }
 
         ~QuorumCertAggBLS() override
         {
             delete theSig;
             theSig = nullptr;
-            delete pub;
-            pub = nullptr;
         }
 
         void calculateN() {
@@ -984,7 +977,35 @@ class QuorumCertSecp256k1: public QuorumCert {
             }
         }
 
-        void add_part(const ReplicaConfig &config, ReplicaID rid, const PartCert &pc);
+        void add_part(const ReplicaConfig &config, ReplicaID rid, const PartCert &pc) override {
+            if (pc.get_obj_hash() != obj_hash)
+                throw std::invalid_argument("PartCert does match the block hash");
+            rids.set(rid);
+            calculateN();
+
+            if (theSig == nullptr) {
+                theSig = new SigSecBLSAgg(*dynamic_cast<const PartCertBLSAgg &>(pc).data);
+                return;
+            }
+
+            bls::G2Element sig1 = *theSig->data;
+            bls::G2Element sig2 = *dynamic_cast<const SigSecBLSAgg &>(pc).data;
+
+            struct timeval timeStart,
+                    timeEnd;
+            gettimeofday(&timeStart, NULL);
+
+            bls::G2Element sig = bls::PopSchemeMPL::Aggregate({sig1, sig2});
+
+            gettimeofday(&timeEnd, NULL);
+
+            std::cout << "Aggregating Sigs: "
+                      << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
+                      << " us to execute."
+                      << std::endl;
+
+            *theSig->data = sig;
+        }
 
         void merge_quorum(const QuorumCert &qc) override {
             if (qc.get_obj_hash()!= obj_hash) throw std::invalid_argument("QuorumCert does match the block hash");
@@ -997,36 +1018,28 @@ class QuorumCertSecp256k1: public QuorumCert {
             }
             calculateN();
 
-            uint8_t hash[bls::BLS::MESSAGE_HASH_LEN];
-            bls::Util::Hash256(hash, obj_hash.to_bytes().data(),  obj_hash.to_bytes().size());
-
             if (theSig == nullptr) {
                 theSig = new SigSecBLSAgg(*dynamic_cast<const QuorumCertAggBLS &>(qc).theSig->data);
-                pub = new bls::G1Element(*dynamic_cast<const QuorumCertAggBLS &>(qc).pub);
                 return;
             }
 
             bls::G2Element sig1 = *theSig->data;
-
             bls::G2Element sig2 = *dynamic_cast<const QuorumCertAggBLS &>(qc).theSig->data;
-            bls::G1Element pub2 = *dynamic_cast<const QuorumCertAggBLS &>(qc).pub;
 
             struct timeval timeStart,
                     timeEnd;
             gettimeofday(&timeStart, NULL);
-            bls::G2Element sig = bls::PopSchemeMPL::Aggregate({sig1, sig2});
-            bls::G1Element resultPub = *pub + pub2;
 
+            bls::G2Element sig = bls::PopSchemeMPL::Aggregate({sig1, sig2});
 
             gettimeofday(&timeEnd, NULL);
 
-            std::cout << "This merging slow piece of code took "
+            std::cout << "Aggregating Sigs: "
                       << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
                       << " us to execute."
                       << std::endl;
 
             *theSig->data = sig;
-            *pub = resultPub;
         }
 
         bool has_n(const uint8_t t) override {
@@ -1046,36 +1059,20 @@ class QuorumCertSecp256k1: public QuorumCert {
 
         void serialize(DataStream &s) const override {
             bool combined = (theSig != nullptr);
-            bool hasPub = (pub != nullptr);
-            s << obj_hash << rids << combined << hasPub;
+            s << obj_hash << rids << combined;
             if (combined) {
                 theSig->serialize(s);
-            }
-
-            if (hasPub) {
-                static uint8_t output[bls::G1Element::SIZE];
-
-                int i = 0;
-                for (auto in : pub->Serialize())
-                {
-                    output[i++] = in;
-                }
-                s.put_data(output, output + bls::G1Element::SIZE);
             }
         }
 
         void unserialize(DataStream &s) override {
-            bool combined, hasPub;
-            s >> obj_hash >> rids >> combined >> hasPub;
+            bool combined;
+            s >> obj_hash >> rids >> combined;
             calculateN();
 
             if (combined) {
                 theSig = new SigSecBLSAgg();
                 theSig->unserialize(s);
-            }
-
-            if (hasPub) {
-                pub = new bls::G1Element(bls::G1Element::FromBytes(s.get_data_inplace(bls::G1Element::SIZE)));
             }
         }
     };

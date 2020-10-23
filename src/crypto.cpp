@@ -79,7 +79,14 @@ namespace hotstuff {
         HOTSTUFF_LOG_DEBUG("checking cert(%d), obj_hash=%s",
                            i, get_hex10(obj_hash).c_str());
 
-        return bls::PopSchemeMPL::Verify(*pub, arrToVec(obj_hash.to_bytes()), *theSig->data);
+        vector<bls::G1Element> pubs;
+        for (unsigned int i = 0; i < rids.size(); i++) {
+            if (rids[i] == 1) {
+                pubs.push_back(*static_cast<const PubKeyBLS &>(config.get_pubkey(i)).data);
+            }
+        }
+
+        return bls::PopSchemeMPL::Verify(bls::PopSchemeMPL::Aggregate(pubs), arrToVec(obj_hash.to_bytes()), *theSig->data);
     }
 
     promise_t QuorumCertAggBLS::verify(const ReplicaConfig &config, VeriPool &vpool) {
@@ -91,53 +98,22 @@ namespace hotstuff {
                 timeEnd;
         gettimeofday(&timeStart, NULL);
 
-        bool veri = bls::PopSchemeMPL::Verify(*pub, arrToVec(obj_hash.to_bytes()), *theSig->data);
+        vector<bls::G1Element> pubs;
+        for (unsigned int i = 0; i < rids.size(); i++) {
+            if (rids[i] == 1) {
+                pubs.push_back(*static_cast<const PubKeyBLS &>(config.get_pubkey(i)).data);
+            }
+        }
+
+        bool valid = bls::PopSchemeMPL::FastAggregateVerify(pubs, arrToVec(obj_hash.to_bytes()), *theSig->data);
 
         gettimeofday(&timeEnd, NULL);
 
-        std::cout << "This verifying agg piece of code took "
+        std::cout << "Fast Aggregate Verify:  "
                   << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
                   << " us to execute."
                   << std::endl;
 
-        if (veri) {
-            return promise_t([](promise_t &pm) { pm.resolve(true); });
-        }
-        return promise_t([](promise_t &pm) { pm.resolve(false); });
-    }
-
-    void QuorumCertAggBLS::add_part(const ReplicaConfig &config, ReplicaID rid, const PartCert &pc) {
-        if (pc.get_obj_hash() != obj_hash)
-            throw std::invalid_argument("PartCert does match the block hash");
-        rids.set(rid);
-        calculateN();
-
-        if (theSig == nullptr) {
-            theSig = new SigSecBLSAgg(*dynamic_cast<const PartCertBLSAgg &>(pc).data);
-            pub = new bls::G1Element(*dynamic_cast<const PubKeyBLS & > (config.get_pubkey(rid)).data);
-            return;
-        }
-        uint8_t hash[bls::BLS::MESSAGE_HASH_LEN];
-        bls::Util::Hash256(hash, obj_hash.to_bytes().data(),  obj_hash.to_bytes().size());
-
-        bls::G2Element sig1 = *theSig->data;
-
-        bls::G2Element sig2 = *dynamic_cast<const SigSecBLSAgg &>(pc).data;
-        bls::G1Element pub2 = *dynamic_cast<const PubKeyBLS & > (config.get_pubkey(rid)).data;
-
-        struct timeval timeStart,
-                timeEnd;
-        gettimeofday(&timeStart, NULL);
-        bls::G2Element sig = bls::PopSchemeMPL::Aggregate({sig1, sig2});
-        bls::G1Element resultPub = *pub + pub2;
-        gettimeofday(&timeEnd, NULL);
-
-        std::cout << "This aggregating slow piece of code took "
-                  << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
-                  << " us to execute."
-                  << std::endl;
-
-        *theSig->data = sig;
-        *pub = resultPub;
+        return promise_t([&valid](promise_t &pm) { pm.resolve(valid); });
     }
 }
