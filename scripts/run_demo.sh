@@ -1,24 +1,26 @@
 #!/bin/bash
+while read line; do
+  IFS=' ' read -ra arr <<< "$line"
+  ssh root@"${arr[0]}" "killall hotstuff-app" &
+done < ips
 
-rep=({0..10})
-if [[ $# -gt 0 ]]; then
-  rep=($@)
-fi
+j=$((0))
+while read line; do
+  echo $line;
+  IFS=' ' read -ra arr <<< "$line"
 
-for j in {1..10}; do
-
-  for i in "${rep[@]}"; do
-    echo "starting replica $i"
-    #valgrind --leak-check=full ./examples/hotstuff-app --conf hotstuff-sec${i}.conf > log${i} 2>&1 &
-    #gdb -ex r -ex bt -ex q --args ./examples/hotstuff-app --conf hotstuff-sec${i}.conf > log${i} 2>&1 &
-    ./examples/hotstuff-app --conf ./hotstuff.gen-sec${i}.conf > log${i} 2>&1 &
+  for (( i = 1; i <= arr[1]; i++ ))
+  do
+    echo "ssh root@${arr[0]}"
+    ssh root@"${arr[0]}" "cd test/libhotstuff && ./examples/hotstuff-app --conf ./hotstuff.gen-sec${j}.conf > log${j} 2>&1" &
+    j=$((j+1))
   done
 
-  echo "waiting...."
-  sleep 60
+done < ips
 
-  echo "shutting down and copying results"
-  killall hotstuff-app
-  grep " height=" log0 | tail -1 >> results
+sleep 600
 
-done
+while read line; do
+  IFS=' ' read -ra arr <<< "$line"
+  ssh root@"${arr[0]}" "killall hotstuff-app" &
+done < ips
