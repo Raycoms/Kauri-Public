@@ -15,13 +15,22 @@ if __name__ == "__main__":
     parser.add_argument('--nodes', type=str, default='nodes.txt')
     parser.add_argument('--block-size', type=int, default=1)
     parser.add_argument('--pace-maker', type=str, default='dummy')
+    parser.add_argument('--algo', type=str, default='bls')
+
     args = parser.parse_args()
 
 
     if args.ips is None:
         ips = ['127.0.0.1']
     else:
-        ips = [l.strip() for l in open(args.ips, 'r').readlines()]
+        ipSet = [l.strip() for l in open(args.ips, 'r').readlines()]
+        ips = []
+        for ipEl in ipSet:
+            ipElSet = ipEl.split(" ")
+            print(ipElSet)
+            for x in range(int(ipElSet[1])):
+                ips.append(ipElSet[0])
+
     prefix = args.prefix
     iter = args.iter
     base_pport = args.pport
@@ -31,10 +40,14 @@ if __name__ == "__main__":
 
     main_conf = open("{}.conf".format(prefix), 'w')
     nodes = open(args.nodes, 'w')
-    replicas = ["{}:{};{}".format(ip, base_pport + i, base_cport + i)
-                for ip in ips
-                for i in range(iter)]
-    p = subprocess.Popen([keygen_bin, '--num', str(len(replicas))],
+
+    i = 0
+    replicas = []
+    for ip in ips:
+        replicas.append("{}:{};{}".format(ip, base_pport + i, base_cport + i))
+        i+=1
+
+    p = subprocess.Popen([keygen_bin, '--num', str(len(replicas)), '--algo', args.algo],
                         stdout=subprocess.PIPE, stderr=open(os.devnull, 'w'))
     keys = [[t[4:] for t in l.decode('ascii').split()] for l in p.stdout]
     tls_p = subprocess.Popen([tls_keygen_bin, '--num', str(len(replicas))],
