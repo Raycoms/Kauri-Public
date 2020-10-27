@@ -1,7 +1,7 @@
 #!/bin/bash
 while read line; do
   IFS=' ' read -ra arr <<< "$line"
-  ssh root@"${arr[0]}" "killall hotstuff-app" &
+  ssh root@"${arr[0]}" "killall hotstuff-app 2>&1" &
 done < ips
 
 j=$((0))
@@ -18,9 +18,9 @@ while read line; do
 
 done < ips
 
-sleep 600
+sleep 60
 
 while read line; do
   IFS=' ' read -ra arr <<< "$line"
-  ssh root@"${arr[0]}" "killall hotstuff-app" &
+  ssh root@"${arr[0]}" "killall hotstuff-app 2>&1" &
 done < ips
