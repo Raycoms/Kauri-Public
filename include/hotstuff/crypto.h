@@ -380,18 +380,18 @@ class SigSecp256k1: public Serializable {
     void sign(const bytearray_t &msg, const PrivKeySecp256k1 &priv_key) {
         struct timeval timeStart,
                 timeEnd;
-        gettimeofday(&timeStart, NULL);
+        gettimeofday(&timeStart, nullptr);
 
         check_msg_length(msg);
         if (!secp256k1_ecdsa_sign(
                 ctx->ctx, &data,
                 (unsigned char *)&*msg.begin(),
                 (unsigned char *)priv_key.data,
-                NULL, // default nonce function
-                NULL))
+                nullptr, // default nonce function
+                nullptr))
             throw std::invalid_argument("failed to create secp256k1 signature");
 
-        gettimeofday(&timeEnd, NULL);
+        gettimeofday(&timeEnd, nullptr);
 
         std::cout << "This signing slow piece of code took "
                   << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
@@ -403,7 +403,7 @@ class SigSecp256k1: public Serializable {
                 const secp256k1_context_t &_ctx) const {
         struct timeval timeStart,
                 timeEnd;
-        gettimeofday(&timeStart, NULL);
+        gettimeofday(&timeStart, nullptr);
 
         check_msg_length(msg);
         bool td = secp256k1_ecdsa_verify(
@@ -411,7 +411,7 @@ class SigSecp256k1: public Serializable {
                 (unsigned char *)&*msg.begin(),
                 &pub_key.data) == 1;
 
-        gettimeofday(&timeEnd, NULL);
+        gettimeofday(&timeEnd, nullptr);
 
         std::cout << "This verifying slow piece of code took "
                   << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
@@ -712,12 +712,12 @@ class QuorumCertSecp256k1: public QuorumCert {
         void sign(const bytearray_t &msg, const PrivKeyBLS &priv_key) {
             struct timeval timeStart,
                     timeEnd;
-            gettimeofday(&timeStart, NULL);
+            gettimeofday(&timeStart, nullptr);
 
             check_msg_length(msg);
             data = new bls::G2Element(bls::PopSchemeMPL::Sign(*priv_key.data, arrToVec(msg)));
 
-            gettimeofday(&timeEnd, NULL);
+            gettimeofday(&timeEnd, nullptr);
 
             std::cout << "This signing slow piece of code took "
                       << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
@@ -731,10 +731,10 @@ class QuorumCertSecp256k1: public QuorumCert {
             
             struct timeval timeStart,
                     timeEnd;
-            gettimeofday(&timeStart, NULL);
+            gettimeofday(&timeStart, nullptr);
             bool td = bls::PopSchemeMPL::Verify(*(pub_key.data), arrToVec(msg), *data);
 
-            gettimeofday(&timeEnd, NULL);
+            gettimeofday(&timeEnd, nullptr);
 
             std::cout << "This verifying slow piece of code took "
                       << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
@@ -857,14 +857,14 @@ class QuorumCertSecp256k1: public QuorumCert {
         void sign(const bytearray_t &msg, const PrivKeyBLS &priv_key) {
             struct timeval timeStart,
                     timeEnd;
-            gettimeofday(&timeStart, NULL);
+            gettimeofday(&timeStart, nullptr);
 
             check_msg_length(msg);
             data = new bls::G2Element(bls::PopSchemeMPL::Sign(*priv_key.data, arrToVec(msg)));
 
-            gettimeofday(&timeEnd, NULL);
+            gettimeofday(&timeEnd, nullptr);
 
-            std::cout << "This signing slow piece of code took "
+            std::cout << "The signing took: "
                       << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
                       << " us to execute."
                       << std::endl;
@@ -876,13 +876,13 @@ class QuorumCertSecp256k1: public QuorumCert {
 
             struct timeval timeStart,
                     timeEnd;
-            gettimeofday(&timeStart, NULL);
+            gettimeofday(&timeStart, nullptr);
 
             bool td = bls::PopSchemeMPL::Verify(*(pub_key.data), arrToVec(msg), *data);
 
-            gettimeofday(&timeEnd, NULL);
+            gettimeofday(&timeEnd, nullptr);
 
-            std::cout << "This verifying slow piece of code took "
+            std::cout << "The verifying took: "
                       << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
                       << " us to execute."
                       << std::endl;
@@ -893,17 +893,30 @@ class QuorumCertSecp256k1: public QuorumCert {
 
     class SigVeriTaskBLSAgg: public VeriTask {
         uint256_t msg;
-        PubKeyBLS pubkey;
+        vector<bls::G1Element> pubs;
         SigSecBLSAgg sig;
     public:
-        SigVeriTaskBLSAgg(const uint256_t &msg,
-                          const PubKeyBLS &pubkey,
+        SigVeriTaskBLSAgg(uint256_t msg,
+                          vector<bls::G1Element> pubs,
                           const SigSecBLSAgg &sig):
-                msg(msg), pubkey(pubkey), sig(sig) {}
+                msg(std::move(msg)), pubs(std::move(pubs)), sig(sig) {}
         virtual ~SigVeriTaskBLSAgg() = default;
 
         bool verify() override {
-            return sig.verify(msg, pubkey);
+
+            struct timeval timeStart,
+                    timeEnd;
+            gettimeofday(&timeStart, nullptr);
+
+            bool valid = bls::PopSchemeMPL::FastAggregateVerify(pubs, arrToVec(msg.to_bytes()), *sig.data);
+
+            gettimeofday(&timeEnd, nullptr);
+
+            std::cout << "Fast Aggregate Verify:  "
+                      << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
+                      << " us to execute."
+                      << std::endl;
+            return valid;
         }
     };
 
@@ -919,13 +932,13 @@ class QuorumCertSecp256k1: public QuorumCert {
 
         bool verify(const PubKey &pub_key) override {
             return SigSecBLSAgg::verify(obj_hash,
-                                     static_cast<const PubKeyBLS &>(pub_key));
+                                        dynamic_cast<const PubKeyBLS &>(pub_key));
         }
 
         promise_t verify(const PubKey &pub_key, VeriPool &vpool) override {
-            return vpool.verify(new SigVeriTaskBLSAgg(obj_hash,
-                                                   static_cast<const PubKeyBLS &>(pub_key),
-                                                   static_cast<const SigSecBLSAgg &>(*this)));
+            return vpool.verify(new SigVeriTaskBLS(obj_hash,
+                                                   dynamic_cast<const PubKeyBLS &>(pub_key),
+                                                   SigSecBLS(*this->data)));
         }
 
         const uint256_t &get_obj_hash() const override { return obj_hash; }
@@ -993,11 +1006,11 @@ class QuorumCertSecp256k1: public QuorumCert {
 
             struct timeval timeStart,
                     timeEnd;
-            gettimeofday(&timeStart, NULL);
+            gettimeofday(&timeStart, nullptr);
 
             bls::G2Element sig = bls::PopSchemeMPL::Aggregate({sig1, sig2});
 
-            gettimeofday(&timeEnd, NULL);
+            gettimeofday(&timeEnd, nullptr);
 
             std::cout << "Aggregating Sigs: "
                       << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
@@ -1028,11 +1041,11 @@ class QuorumCertSecp256k1: public QuorumCert {
 
             struct timeval timeStart,
                     timeEnd;
-            gettimeofday(&timeStart, NULL);
+            gettimeofday(&timeStart, nullptr);
 
             bls::G2Element sig = bls::PopSchemeMPL::Aggregate({sig1, sig2});
 
-            gettimeofday(&timeEnd, NULL);
+            gettimeofday(&timeEnd, nullptr);
 
             std::cout << "Aggregating Sigs: "
                       << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)

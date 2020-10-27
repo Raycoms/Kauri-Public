@@ -79,6 +79,10 @@ namespace hotstuff {
         HOTSTUFF_LOG_DEBUG("checking cert(%d), obj_hash=%s",
                            i, get_hex10(obj_hash).c_str());
 
+        struct timeval timeStart,
+                timeEnd;
+        gettimeofday(&timeStart, nullptr);
+
         vector<bls::G1Element> pubs;
         for (unsigned int i = 0; i < rids.size(); i++) {
             if (rids[i] == 1) {
@@ -86,7 +90,15 @@ namespace hotstuff {
             }
         }
 
-        return bls::PopSchemeMPL::Verify(bls::PopSchemeMPL::Aggregate(pubs), arrToVec(obj_hash.to_bytes()), *theSig->data);
+        gettimeofday(&timeEnd, nullptr);
+
+        std::cout << "Aggregating Pubs: "
+                  << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
+                  << " us to execute."
+                  << std::endl;
+
+
+        return  bls::PopSchemeMPL::FastAggregateVerify(pubs, arrToVec(obj_hash.to_bytes()), *theSig->data);
     }
 
     promise_t QuorumCertAggBLS::verify(const ReplicaConfig &config, VeriPool &vpool) {
@@ -94,10 +106,6 @@ namespace hotstuff {
             return promise_t([](promise_t &pm) { pm.resolve(false); });
         std::vector<promise_t> vpm;
 
-        struct timeval timeStart,
-                timeEnd;
-        gettimeofday(&timeStart, NULL);
-
         vector<bls::G1Element> pubs;
         for (unsigned int i = 0; i < rids.size(); i++) {
             if (rids[i] == 1) {
@@ -105,15 +113,19 @@ namespace hotstuff {
             }
         }
 
-        bool valid = bls::PopSchemeMPL::FastAggregateVerify(pubs, arrToVec(obj_hash.to_bytes()), *theSig->data);
+        /*HOTSTUFF_LOG_DEBUG("checking cert(%d), obj_hash=%s",
+                           i, get_hex10(obj_hash).c_str());
 
-        gettimeofday(&timeEnd, NULL);
+        vpm.push_back(vpool.verify(new SigVeriTaskBLSAgg(obj_hash, pubs, *theSig)));
 
-        std::cout << "Fast Aggregate Verify:  "
-                  << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
-                  << " us to execute."
-                  << std::endl;
+        return promise::all(vpm).then([](const promise::values_t &values) {
+            for (const auto &v: values)
+                if (!promise::any_cast<bool>(v)) return false;
+            return true;
+        });*/
 
-        return promise_t([&valid](promise_t &pm) { pm.resolve(valid); });
+
+
+
     }
 }
