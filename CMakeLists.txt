@@ -77,6 +77,8 @@ set(QUIET 1 CACHE INTEGER "")
 set(PP_EXT "LAZYR" CACHE STRING "")
 set(PP_METHD "LAZYR;OATEP" CACHE STRING "")
 
+add_subdirectory(bls/src)
+
 include(FetchContent)
 
 FetchContent_Declare(
@@ -88,17 +90,16 @@ FetchContent_MakeAvailable(relic)
 
 include_directories(
         ${INCLUDE_DIRECTORIES}
+        salticidae/include
         ${relic_SOURCE_DIR}/include
         ${relic_BINARY_DIR}/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/../bls/contrib/catch
+        ${CMAKE_CURRENT_SOURCE_DIR}/../contrib/catch
         ${GMP_INCLUDES}
 )
 
 # ---------------------------
 
-add_subdirectory(bls/src)
 add_subdirectory(salticidae)
-include_directories(salticidae/include)
 
 find_package(OpenSSL REQUIRED)
 find_package(Threads REQUIRED)
@@ -132,18 +133,11 @@ add_library(hotstuff
     src/entity.cpp
     src/consensus.cpp
     src/hotstuff.cpp
-    )
+)
 
-option(BUILD_SHARED "build shared library." OFF)
-if(BUILD_SHARED)
-    set_property(TARGET hotstuff PROPERTY POSITION_INDEPENDENT_CODE 1)
-    add_library(hotstuff_shared SHARED $<TARGET_OBJECTS:hotstuff>)
-    set_target_properties(hotstuff_shared PROPERTIES OUTPUT_NAME "hotstuff")
-    target_link_libraries(hotstuff_shared salticidae_static secp256k1 crypto ${CMAKE_THREAD_LIBS_INIT} blstmp relic_s pthread sodium)
-endif()
 add_library(hotstuff_static STATIC $<TARGET_OBJECTS:hotstuff>)
 set_target_properties(hotstuff_static PROPERTIES OUTPUT_NAME "hotstuff")
-target_link_libraries(hotstuff_static salticidae_static secp256k1 crypto ${CMAKE_THREAD_LIBS_INIT} blstmp relic_s pthread sodium)
+target_link_libraries(hotstuff_static PRIVATE salticidae_static secp256k1 crypto ${CMAKE_THREAD_LIBS_INIT} ${GMP_LIBRARIES} ${GMPXX_LIBRARIES} blstmp relic_s pthread sodium)
 
 add_subdirectory(test)
 
