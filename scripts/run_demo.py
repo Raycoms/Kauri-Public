@@ -19,7 +19,7 @@ if __name__ == "__main__":
         ipElSet = ipEl.split(" ")
 
         ssh.connect(ipElSet[0],port,user,password,timeout = 10)
-        command = "killall hostuff-app"
+        command = "killall hotstuff-app"
         ssh.exec_command(command)
         ssh.close()
 
