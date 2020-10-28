@@ -19,6 +19,7 @@ if __name__ == "__main__":
 
         ssh.connect(ipElSet[0],port,user,password,timeout = 10)
         command = "killall hostuff-app"
+        ssh.exec_command(command)
         ssh.close()
 
         print(ipElSet)
@@ -36,7 +37,10 @@ if __name__ == "__main__":
         # Establish a connection
         ssh.connect(ip,port,user,password,timeout = 10)
         command = "cd test/libhotstuff && ./examples/hotstuff-app --conf ./hotstuff.gen-sec{}.conf > log{} &".format(i, i)
-        # Enter the Linux command
+        print(command)
+        ssh.exec_command(command)
+
+    # Enter the Linux command
         # Output command execution results
         print("finished!")
         ssh.close()
