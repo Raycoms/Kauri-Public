@@ -27,7 +27,7 @@ if __name__ == "__main__":
         password = ""
         # Establish a connection
         ssh.connect(ip,port,user,password,timeout = 10)
-        command = "cd test/libhotstuff && ./examples/hotstuff-app --conf ./hotstuff.gen-sec{}.conf > log{} 2>&1 &".format(i, i)
+        command = "cd test/libhotstuff && ./examples/hotstuff-app --conf ./hotstuff.gen-sec{}.conf > log{} &".format(i, i)
         # Enter the Linux command
         stdin,stdout,stderr = ssh.exec_command(command)
         # Output command execution results
