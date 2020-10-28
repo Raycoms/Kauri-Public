@@ -403,6 +403,7 @@ void HotStuffBase::resp_blk_handler(MsgRespBlock &&msg, const Net::conn_t &) {
 bool HotStuffBase::conn_handler(const salticidae::ConnPool::conn_t &conn, bool connected) {
     if (connected)
     {
+        if (!pn.enable_tls) return true;
         auto cert = conn->get_peer_cert();
         //SALTICIDAE_LOG_INFO("%s", salticidae::get_hash(cert->get_der()).to_hex().c_str());
         return valid_tls_certs.count(salticidae::get_hash(cert->get_der()));
