@@ -3,6 +3,7 @@ import subprocess
 import itertools
 import argparse
 import paramiko
+import time
 
 if __name__ == "__main__":
     ipSet = [l.strip() for l in open("ips", 'r').readlines()]
@@ -31,20 +32,28 @@ if __name__ == "__main__":
     print(ips)
 
     i = 0
-    replicas = []
-    for ip in ips:
+    for ipEl in ipSet:
+        ipElSet = ipEl.split(" ")
 
-        # Establish a connection
-        ssh.connect(ip,port,user,password,timeout = 10)
-        command = "cd test/libhotstuff && ./examples/hotstuff-app --conf ./hotstuff.gen-sec{}.conf > log{} 2>&1 &".format(i, i)
-        print(command)
-        ssh.exec_command(command)
+        ssh.connect(ipElSet[0],port,user,password,timeout = 10)
+        for x in range(int(ipElSet[1])):
+            command = "cd test/libhotstuff && ./examples/hotstuff-app --conf ./hotstuff.gen-sec{}.conf > log{} 2>&1 &".format(i, i)
+            print(command)
+            ssh.exec_command(command)
+            i+=1
 
-    # Enter the Linux command
-        # Output command execution results
-        print("finished!")
         ssh.close()
-        i+=1
 
-    #p = subprocess.Popen([keygen_bin, '--num', str(len(replicas)), '--algo', args.algo],stdout=subprocess.PIPE, stderr=open(os.devnull, 'w'))
+
+    time.sleep( 60 )
+
+    print("Killing all processes again!")
+
+    for ipEl in ipSet:
+        ipElSet = ipEl.split(" ")
+
+        ssh.connect(ipElSet[0],port,user,password,timeout = 10)
+        command = "killall hostuff-app"
+        ssh.exec_command(command)
+        ssh.close()
 
