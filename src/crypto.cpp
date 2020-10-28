@@ -113,6 +113,10 @@ namespace hotstuff {
             }
         }
 
+        struct timeval timeStart,
+                timeEnd;
+        gettimeofday(&timeStart, nullptr);
+
         /*HOTSTUFF_LOG_DEBUG("checking cert(%d), obj_hash=%s",
                            i, get_hex10(obj_hash).c_str());
 
@@ -125,7 +129,15 @@ namespace hotstuff {
         });*/
 
 
+        const bool valid =  bls::PopSchemeMPL::FastAggregateVerify(pubs, arrToVec(obj_hash.to_bytes()), *theSig->data);
 
+        gettimeofday(&timeEnd, nullptr);
 
+        std::cout << "Fast Agg Verify: "
+                  << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
+                  << " us to execute."
+                  << std::endl;
+
+        return promise_t([&valid](promise_t &pm) { pm.resolve(valid); });
     }
 }

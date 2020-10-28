@@ -57,14 +57,6 @@ if __name__ == "__main__":
         main_conf.write("block-size = {}\n".format(args.block_size))
     if args.nworker is not None:
         main_conf.write("nworker = {}\n".format(args.nworker))
-    if args.repnworker is not None:
-        main_conf.write("repnworker = {}\n".format(args.repnworker))
-    if args.clinworker is not None:
-        main_conf.write("clinworker = {}\n".format(args.clinworker))
-    if args.repburst is not None:
-        main_conf.write("repburst = {}\n".format(args.repburst))
-    if args.cliburst is not None:
-        main_conf.write("cliburst = {}\n".format(args.cliburst))
     if not (args.pace_maker is None):
         main_conf.write("pace-maker = {}\n".format(args.pace_maker))
     for r in zip(replicas, keys, tls_keys, itertools.count(0)):
