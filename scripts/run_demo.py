@@ -36,7 +36,7 @@ if __name__ == "__main__":
 
         # Establish a connection
         ssh.connect(ip,port,user,password,timeout = 10)
-        command = "cd test/libhotstuff && ./examples/hotstuff-app --conf ./hotstuff.gen-sec{}.conf > log{} &".format(i, i)
+        command = "cd test/libhotstuff && ./examples/hotstuff-app --conf ./hotstuff.gen-sec{}.conf > log{} 2>&1 &".format(i, i)
         print(command)
         ssh.exec_command(command)
 
