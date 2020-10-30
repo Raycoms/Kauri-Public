@@ -1071,7 +1071,7 @@ class QuorumCertSecp256k1: public QuorumCert {
             bool combined = (theSig != nullptr);
             s << obj_hash << rids << combined;
             if (combined) {
-                if (!sigs.empty()) {
+                if (theSig != nullptr && !sigs.empty()) {
                     *theSig->data = bls::PopSchemeMPL::Aggregate(sigs);
                     std::cout << "sigs not aggregated before sending!" << std::endl;
                 }
@@ -1083,7 +1083,6 @@ class QuorumCertSecp256k1: public QuorumCert {
         void unserialize(DataStream &s) override {
             bool combined;
             s >> obj_hash >> rids >> combined;
-            calculateN();
 
             if (combined) {
                 theSig = new SigSecBLSAgg();
