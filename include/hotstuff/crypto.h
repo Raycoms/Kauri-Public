@@ -956,6 +956,7 @@ class QuorumCertSecp256k1: public QuorumCert {
         uint256_t obj_hash;
         salticidae::Bits rids;
         SigSecBLSAgg* theSig = nullptr;
+        vector<bls::G2Element> sigs;
         uint8_t n = 0;
 
     public:
@@ -965,6 +966,7 @@ class QuorumCertSecp256k1: public QuorumCert {
         {
             if (other.theSig != nullptr) {
                 theSig = new SigSecBLSAgg(*other.theSig);
+                sigs.push_back(*theSig->data);
             }
         }
 
@@ -991,16 +993,18 @@ class QuorumCertSecp256k1: public QuorumCert {
 
             if (theSig == nullptr) {
                 theSig = new SigSecBLSAgg(*dynamic_cast<const PartCertBLSAgg &>(pc).data);
+                sigs.push_back(*theSig->data);
                 return;
             }
 
-            bls::G2Element sig1 = *theSig->data;
-            bls::G2Element sig2 = *dynamic_cast<const SigSecBLSAgg &>(pc).data;
+            sigs.push_back(*dynamic_cast<const SigSecBLSAgg &>(pc).data);
+            //bls::G2Element sig1 = *theSig->data;
+            //bls::G2Element sig2 = *dynamic_cast<const SigSecBLSAgg &>(pc).data;
 
             //struct timeval timeStart, timeEnd;
             //gettimeofday(&timeStart, nullptr);
 
-            bls::G2Element sig = bls::PopSchemeMPL::Aggregate({sig1, sig2});
+            //bls::G2Element sig = bls::PopSchemeMPL::Aggregate({sig1, sig2});
 
             //gettimeofday(&timeEnd, nullptr);
 
@@ -1009,7 +1013,7 @@ class QuorumCertSecp256k1: public QuorumCert {
             //          << " us to execute."
             //          << std::endl;
 
-            *theSig->data = sig;
+            //*theSig->data = sig;
         }
 
         void merge_quorum(const QuorumCert &qc) override {
@@ -1025,16 +1029,18 @@ class QuorumCertSecp256k1: public QuorumCert {
 
             if (theSig == nullptr) {
                 theSig = new SigSecBLSAgg(*dynamic_cast<const QuorumCertAggBLS &>(qc).theSig->data);
+                sigs.push_back(*theSig->data);
                 return;
             }
 
-            bls::G2Element sig1 = *theSig->data;
-            bls::G2Element sig2 = *dynamic_cast<const QuorumCertAggBLS &>(qc).theSig->data;
+            sigs.push_back(*dynamic_cast<const QuorumCertAggBLS &>(qc).theSig->data);
+            //bls::G2Element sig1 = *theSig->data;
+            //bls::G2Element sig2 = *dynamic_cast<const QuorumCertAggBLS &>(qc).theSig->data;
 
             struct timeval timeStart,timeEnd;
             gettimeofday(&timeStart, nullptr);
 
-            bls::G2Element sig = bls::PopSchemeMPL::Aggregate({sig1, sig2});
+            //bls::G2Element sig = bls::PopSchemeMPL::Aggregate({sig1, sig2});
 
             gettimeofday(&timeEnd, nullptr);
 
@@ -1043,14 +1049,17 @@ class QuorumCertSecp256k1: public QuorumCert {
                       << " us to execute."
                       << std::endl;
 
-            *theSig->data = sig;
+            //*theSig->data = sig;
         }
 
         bool has_n(const uint8_t t) override {
             return n >= t;
         }
 
-        void compute() override { }
+        void compute() override
+        {
+            *theSig->data = bls::PopSchemeMPL::Aggregate(sigs);
+        }
 
         bool verify(const ReplicaConfig &config) override;
         promise_t verify(const ReplicaConfig &config, VeriPool &vpool) override;
@@ -1065,6 +1074,11 @@ class QuorumCertSecp256k1: public QuorumCert {
             bool combined = (theSig != nullptr);
             s << obj_hash << rids << combined;
             if (combined) {
+                if (!sigs.empty()) {
+                    *theSig->data = bls::PopSchemeMPL::Aggregate(sigs);
+                    std::cout << "sigs not aggregated before sending!" << std::endl;
+                }
+
                 theSig->serialize(s);
             }
         }
