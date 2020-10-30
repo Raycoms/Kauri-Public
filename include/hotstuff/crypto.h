@@ -966,7 +966,10 @@ class QuorumCertSecp256k1: public QuorumCert {
         {
             if (other.theSig != nullptr) {
                 theSig = new SigSecBLSAgg(*other.theSig);
-                sigs.push_back(*theSig->data);
+            }
+
+            for (bls::G2Element el : other.sigs) {
+                sigs.push_back(el);
             }
         }
 
@@ -976,26 +979,26 @@ class QuorumCertSecp256k1: public QuorumCert {
             theSig = nullptr;
         }
 
-        void calculateN() {
-            n = 0;
-            for (unsigned int i = 0; i < rids.size(); i++) {
-                if (rids[i] == 1) {
-                    n++;
-                }
-            }
-        }
+        //void calculateN() {
+        //    n = 0;
+        //    for (unsigned int i = 0; i < rids.size(); i++) {
+        //        if (rids[i] == 1) {
+        //            n++;
+        //        }
+        //    }
+        //}
 
         void add_part(const ReplicaConfig &config, ReplicaID rid, const PartCert &pc) override {
             if (pc.get_obj_hash() != obj_hash)
                 throw std::invalid_argument("PartCert does match the block hash");
             rids.set(rid);
-            calculateN();
+            //calculateN();
 
-            if (theSig == nullptr) {
-                theSig = new SigSecBLSAgg(*dynamic_cast<const PartCertBLSAgg &>(pc).data);
-                sigs.push_back(*theSig->data);
-                return;
-            }
+            //if (theSig == nullptr) {
+            //    theSig = new SigSecBLSAgg(*dynamic_cast<const PartCertBLSAgg &>(pc).data);
+            //    sigs.push_back(*theSig->data);
+            //    return;
+            //}
 
             sigs.push_back(*dynamic_cast<const SigSecBLSAgg &>(pc).data);
             //bls::G2Element sig1 = *theSig->data;
@@ -1025,35 +1028,29 @@ class QuorumCertSecp256k1: public QuorumCert {
                     rids.set(i);
                 }
             }
-            calculateN();
-
-            if (theSig == nullptr) {
-                theSig = new SigSecBLSAgg(*dynamic_cast<const QuorumCertAggBLS &>(qc).theSig->data);
-                sigs.push_back(*theSig->data);
-                return;
-            }
+            //calculateN();
 
             sigs.push_back(*dynamic_cast<const QuorumCertAggBLS &>(qc).theSig->data);
             //bls::G2Element sig1 = *theSig->data;
             //bls::G2Element sig2 = *dynamic_cast<const QuorumCertAggBLS &>(qc).theSig->data;
 
-            struct timeval timeStart,timeEnd;
-            gettimeofday(&timeStart, nullptr);
+            //struct timeval timeStart,timeEnd;
+            //gettimeofday(&timeStart, nullptr);
 
             //bls::G2Element sig = bls::PopSchemeMPL::Aggregate({sig1, sig2});
 
-            gettimeofday(&timeEnd, nullptr);
+            //gettimeofday(&timeEnd, nullptr);
 
-            std::cout << "Aggregating Sigs: "
-                      << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
-                      << " us to execute."
-                      << std::endl;
+            //std::cout << "Aggregating Sigs: "
+            //          << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
+            //          << " us to execute."
+            //          << std::endl;
 
             //*theSig->data = sig;
         }
 
         bool has_n(const uint8_t t) override {
-            return n >= t;
+            return sigs.size() >= t;
         }
 
         void compute() override

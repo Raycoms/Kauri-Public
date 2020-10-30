@@ -259,6 +259,7 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
         cert->add_part(config, msg.vote.voter, *msg.vote.cert);
 
         if (!cert->has_n(numberOfChildren + 1)) return;
+        cert->compute();
         //std::cout << peers[id].to_hex() <<  " send relay message: " << v->blk_hash.to_hex() <<  std::endl;
         pn.send_msg(MsgRelay(VoteRelay(msg.vote.blk_hash, blk->self_qc->clone(), this)), parentPeer);
         async_deliver_blk(msg.vote.blk_hash, peer);
@@ -343,6 +344,7 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
             std::cout << "merge quorum" << std::endl;
             if (id != 0) {
                 if (!cert->has_n(numberOfChildren + 1)) return;
+                cert->compute();
                 std::cout << "Send Vote Relay: " << v->blk_hash.to_hex() << std::endl;
                 pn.send_msg(MsgRelay(VoteRelay(v->blk_hash, cert.get()->clone(), this)), parentPeer);
                 return;
