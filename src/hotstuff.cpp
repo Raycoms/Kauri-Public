@@ -244,10 +244,10 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
         part_cert_bt part = create_part_cert(*priv_key, blk->get_hash());
         blk->self_qc->add_part(config, id, *part);
 
-        //std::cout << "create cert: " << msg.vote.blk_hash.to_hex() << " " << &blk->self_qc << std::endl;
+        std::cout << "create cert: " << msg.vote.blk_hash.to_hex() << " " << &blk->self_qc << std::endl;
     }
 
-    //std::cout << "vote handler: " << msg.vote.blk_hash.to_hex() << " " << &blk->self_qc << std::endl;
+    std::cout << "vote handler: " << msg.vote.blk_hash.to_hex() << " " << &blk->self_qc << std::endl;
 
     if (blk->self_qc->has_n(config.nmajority)) {
         //std::cout << "bye vote handler: " << msg.vote.blk_hash.to_hex() << " " << &blk->self_qc << std::endl;
@@ -284,22 +284,22 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
             }
         }
 
-        //struct timeval timeEnd;
-        //gettimeofday(&timeEnd, NULL);
+        struct timeval timeEnd;
+        gettimeofday(&timeEnd, NULL);
 
-        //std::cout << "Vote handling cost partially threaded: "
-        //<< ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
-        //<< " us to execute."
-        //<< std::endl;
+        std::cout << "Vote handling cost partially threaded: "
+                  << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
+                  << " us to execute."
+                  << std::endl;
 
     });
 
-    //gettimeofday(&timeEnd, NULL);
+    gettimeofday(&timeEnd, NULL);
 
-    //std::cout << "Vote handling cost: "
-    //<< ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
-    //<< " us to execute."
-    //<< std::endl;
+    std::cout << "Vote handling cost: "
+              << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
+              << " us to execute."
+              << std::endl;
 }
 
 void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
@@ -318,11 +318,11 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
         part_cert_bt part = create_part_cert(*priv_key, blk->get_hash());
         blk->self_qc->add_part(config, id, *part);
 
-        //std::cout << "create cert: " << msg.vote.blk_hash.to_hex() << " " << &blk->self_qc << std::endl;
+        std::cout << "create cert: " << msg.vote.blk_hash.to_hex() << " " << &blk->self_qc << std::endl;
     }
 
     if (blk->self_qc->has_n(config.nmajority)) {
-        //std::cout << "bye vote relay handler: " << msg.vote.blk_hash.to_hex() << " " << &blk->self_qc << std::endl;
+        std::cout << "bye vote relay handler: " << msg.vote.blk_hash.to_hex() << " " << &blk->self_qc << std::endl;
         return;
     }
 
@@ -335,15 +335,15 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
         if (!promise::any_cast<bool>(values[1]))
             LOG_WARN ("invalid vote-relay");
         auto &cert = blk->self_qc;
-        //std::cout << "got relay and verified" << std::endl;
+        std::cout << "got relay and verified" << std::endl;
 
         if (cert != nullptr && cert->get_obj_hash() == blk->get_hash() && !cert->has_n(config.nmajority)) {
             cert->merge_quorum(*v->cert);
 
-            //std::cout << "merge quorum" << std::endl;
+            std::cout << "merge quorum" << std::endl;
             if (id != 0) {
                 if (!cert->has_n(numberOfChildren + 1)) return;
-                //std::cout << "Send Vote Relay: " << v->blk_hash.to_hex() << std::endl;
+                std::cout << "Send Vote Relay: " << v->blk_hash.to_hex() << std::endl;
                 pn.send_msg(MsgRelay(VoteRelay(v->blk_hash, cert.get()->clone(), this)), parentPeer);
                 return;
             }
@@ -352,19 +352,19 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
 
             if (!cert->has_n(config.nmajority)) return;
 
-            //std::cout << "go to town: " << std::endl;
+            std::cout << "go to town: " << std::endl;
 
             cert->compute();
             update_hqc(blk, cert);
             on_qc_finish(blk);
 
-            //struct timeval timeEnd;
-            //gettimeofday(&timeEnd, NULL);
+            struct timeval timeEnd;
+            gettimeofday(&timeEnd, NULL);
 
-            //std::cout << "Vote relay handling cost partially threaded: "
-            //          << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
-            //          << " us to execute."
-            //          << std::endl;
+            std::cout << "Vote relay handling cost partially threaded: "
+                      << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
+                      << " us to execute."
+                      << std::endl;
         }
     });
 
@@ -615,7 +615,7 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
         if (id == parent) {
             if (id != i) {
                 std::cout << id << " add child: " << i << " level: " << level << "ps: " << processesOnLevel << " "
-                         << std::to_string(remaining) << " " << std::to_string(maxFanout) << std::endl;
+                          << std::to_string(remaining) << " " << std::to_string(maxFanout) << std::endl;
                 childPeers.insert(peer);
                 children.insert(i);
             }
@@ -633,7 +633,7 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
         }
     }
 
-    //std::cout << " total children: " << children.size() << std::endl;
+    std::cout << " total children: " << children.size() << std::endl;
     numberOfChildren = children.size();
 
     /* ((n - 1) + 1 - 1) / 3 */
