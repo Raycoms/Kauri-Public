@@ -260,6 +260,9 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
 
         if (!cert->has_n(numberOfChildren + 1)) return;
         cert->compute();
+        if (!cert->verify(config)) {
+            throw std::runtime_error("Invalid Sigs in intermediate signature!");
+        }
         //std::cout << peers[id].to_hex() <<  " send relay message: " << v->blk_hash.to_hex() <<  std::endl;
         pn.send_msg(MsgRelay(VoteRelay(msg.vote.blk_hash, blk->self_qc->clone(), this)), parentPeer);
         async_deliver_blk(msg.vote.blk_hash, peer);
@@ -270,7 +273,7 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
     RcObj<Vote> v(new Vote(std::move(msg.vote)));
     promise::all(std::vector<promise_t>{
         async_deliver_blk(v->blk_hash, peer),
-        v->verify(vpool),
+        true, //v->verify(vpool),
     }).then([this, blk, v=std::move(v), timeStart](const promise::values_t values) {
         if (!promise::any_cast<bool>(values[1]))
             LOG_WARN("invalid vote from %d", v->voter);
@@ -280,6 +283,9 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
         if (cert != nullptr && cert->get_obj_hash() == blk->get_hash()) {
             if (cert->has_n(config.nmajority)) {
                 cert->compute();
+                if (!cert->verify(config)) {
+                    throw std::runtime_error("Invalid Sigs in intermediate signature!");
+                }
                 update_hqc(blk, cert);
                 on_qc_finish(blk);
             }
@@ -331,7 +337,7 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
     RcObj<VoteRelay> v(new VoteRelay(std::move(msg.vote)));
     promise::all(std::vector<promise_t>{
             async_deliver_blk(v->blk_hash, peer),
-            v->cert->verify(config, vpool),
+            true, //v->cert->verify(config, vpool),
     }).then([this, blk, v=std::move(v), timeStart](const promise::values_t values) {
         if (!promise::any_cast<bool>(values[1]))
             LOG_WARN ("invalid vote-relay");
@@ -345,6 +351,9 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
             if (id != 0) {
                 if (!cert->has_n(numberOfChildren + 1)) return;
                 cert->compute();
+                if (!cert->verify(config)) {
+                    throw std::runtime_error("Invalid Sigs in intermediate signature!");
+                }
                 std::cout << "Send Vote Relay: " << v->blk_hash.to_hex() << std::endl;
                 pn.send_msg(MsgRelay(VoteRelay(v->blk_hash, cert.get()->clone(), this)), parentPeer);
                 return;
@@ -357,6 +366,10 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
             std::cout << "go to town: " << std::endl;
 
             cert->compute();
+            if (!cert->verify(config)) {
+                throw std::runtime_error("Invalid Sigs in intermediate signature!");
+            }
+
             update_hqc(blk, cert);
             on_qc_finish(blk);
 

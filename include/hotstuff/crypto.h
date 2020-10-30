@@ -1062,8 +1062,7 @@ class QuorumCertSecp256k1: public QuorumCert {
             return n >= t;
         }
 
-        void compute() override
-        {
+        void compute() override {
             theSig = new SigSecBLSAgg(bls::PopSchemeMPL::Aggregate(sigs));
             sigs.clear();
         }
@@ -1084,7 +1083,6 @@ class QuorumCertSecp256k1: public QuorumCert {
                 if (theSig == nullptr || !sigs.empty()) {
                     throw std::runtime_error("sigs not aggregated before sending!");
                 }
-
                 theSig->serialize(s);
             }
         }
