@@ -100,13 +100,13 @@ namespace hotstuff {
 
         bool res = bls::PopSchemeMPL::FastAggregateVerify(pubs, arrToVec(obj_hash.to_bytes()), *theSig->data);
 
+        gettimeofday(&timeEnd, nullptr);
+
         std::cout << "FastAggVerify: "
                   << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
                   << " us to execute."
                   << std::endl;
-
-        gettimeofday(&timeEnd, nullptr);
-
+        
         return res;
     }
 
