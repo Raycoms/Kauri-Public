@@ -966,11 +966,6 @@ class QuorumCertSecp256k1: public QuorumCert {
         {
             if (other.theSig != nullptr) {
                 theSig = new SigSecBLSAgg(*other.theSig);
-                sigs.push_back(*theSig->data);
-            }
-
-            for (bls::G2Element el : other.sigs) {
-                sigs.push_back(el);
             }
         }
 
@@ -1032,9 +1027,11 @@ class QuorumCertSecp256k1: public QuorumCert {
                 }
             }
             calculateN();
+
             if (sigs.empty() && theSig != nullptr) {
                 sigs.push_back(*theSig->data);
             }
+
             for (bls::G2Element el : dynamic_cast<const QuorumCertAggBLS &>(qc).sigs) {
                 sigs.push_back(el);
             }
@@ -1067,7 +1064,8 @@ class QuorumCertSecp256k1: public QuorumCert {
 
         void compute() override
         {
-            *theSig->data = bls::PopSchemeMPL::Aggregate(sigs);
+            theSig = new SigSecBLSAgg(bls::PopSchemeMPL::Aggregate(sigs));
+            sigs.clear();
         }
 
         bool verify(const ReplicaConfig &config) override;
@@ -1083,9 +1081,8 @@ class QuorumCertSecp256k1: public QuorumCert {
             bool combined = (theSig != nullptr);
             s << obj_hash << rids << combined;
             if (combined) {
-                if (theSig != nullptr && !sigs.empty()) {
-                    *theSig->data = bls::PopSchemeMPL::Aggregate(sigs);
-                    std::cout << "sigs not aggregated before sending!" << std::endl;
+                if (theSig == nullptr || !sigs.empty()) {
+                    throw std::runtime_error("sigs not aggregated before sending!");
                 }
 
                 theSig->serialize(s);
