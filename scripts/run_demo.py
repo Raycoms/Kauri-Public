@@ -33,7 +33,7 @@ if __name__ == "__main__":
             ips.append(ipElSet[0])
 
     prefix = 'hotstuff.gen'
-
+    time.sleep(3)
     print(ips)
 
     i = 0
@@ -60,6 +60,9 @@ if __name__ == "__main__":
     time.sleep(10)
 
     ssh.connect("172.16.52.21",port,user,password,timeout = 10)
+    ssh.exec_command("killall hotstuff-client &")
+
+    time.sleep(3)
 
     for j in range(1, 10):
         print("Starting Client!")
