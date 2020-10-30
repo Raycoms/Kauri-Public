@@ -79,9 +79,8 @@ namespace hotstuff {
         HOTSTUFF_LOG_DEBUG("checking cert(%d), obj_hash=%s",
                            i, get_hex10(obj_hash).c_str());
 
-        struct timeval timeStart,
-                timeEnd;
-        gettimeofday(&timeStart, nullptr);
+        //struct timeval timeStart,timeEnd;
+        //gettimeofday(&timeStart, nullptr);
 
         vector<bls::G1Element> pubs;
         for (unsigned int i = 0; i < rids.size(); i++) {
@@ -90,12 +89,12 @@ namespace hotstuff {
             }
         }
 
-        gettimeofday(&timeEnd, nullptr);
+        //gettimeofday(&timeEnd, nullptr);
 
-        std::cout << "Aggregating Pubs: "
-                  << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
-                  << " us to execute."
-                  << std::endl;
+        //std::cout << "Aggregating Pubs: "
+        //          << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
+        //          << " us to execute."
+        //         << std::endl;
 
 
         return  bls::PopSchemeMPL::FastAggregateVerify(pubs, arrToVec(obj_hash.to_bytes()), *theSig->data);
@@ -113,9 +112,8 @@ namespace hotstuff {
             }
         }
 
-        struct timeval timeStart,
-                timeEnd;
-        gettimeofday(&timeStart, nullptr);
+        //struct timeval timeStart,timeEnd;
+        //gettimeofday(&timeStart, nullptr);
 
         /*HOTSTUFF_LOG_DEBUG("checking cert(%d), obj_hash=%s",
                            i, get_hex10(obj_hash).c_str());
@@ -131,12 +129,12 @@ namespace hotstuff {
 
         const bool valid =  bls::PopSchemeMPL::FastAggregateVerify(pubs, arrToVec(obj_hash.to_bytes()), *theSig->data);
 
-        gettimeofday(&timeEnd, nullptr);
+        //gettimeofday(&timeEnd, nullptr);
 
-        std::cout << "Fast Agg Verify: "
-                  << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
-                  << " us to execute."
-                  << std::endl;
+        //std::cout << "Fast Agg Verify: "
+        //          << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
+        //          << " us to execute."
+        //          << std::endl;
 
         return promise_t([&valid](promise_t &pm) { pm.resolve(valid); });
     }
