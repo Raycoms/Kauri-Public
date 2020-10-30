@@ -273,7 +273,7 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
     RcObj<Vote> v(new Vote(std::move(msg.vote)));
     promise::all(std::vector<promise_t>{
         async_deliver_blk(v->blk_hash, peer),
-        true, //v->verify(vpool),
+        promise_t([](promise_t &pm) { pm.resolve(true); }), //v->verify(vpool),
     }).then([this, blk, v=std::move(v), timeStart](const promise::values_t values) {
         if (!promise::any_cast<bool>(values[1]))
             LOG_WARN("invalid vote from %d", v->voter);
@@ -337,7 +337,7 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
     RcObj<VoteRelay> v(new VoteRelay(std::move(msg.vote)));
     promise::all(std::vector<promise_t>{
             async_deliver_blk(v->blk_hash, peer),
-            true, //v->cert->verify(config, vpool),
+            promise_t([](promise_t &pm) { pm.resolve(true); }), //v->cert->verify(config, vpool),
     }).then([this, blk, v=std::move(v), timeStart](const promise::values_t values) {
         if (!promise::any_cast<bool>(values[1]))
             LOG_WARN ("invalid vote-relay");
