@@ -571,7 +571,6 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
     std::set<uint16_t> children;
     auto level = 0;
     auto maxFanout = fanout;
-    uint8_t childrenCount = fanout;
     auto currentChildren = 0;
     uint8_t preLevel = 0;
 

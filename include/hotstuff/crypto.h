@@ -1031,17 +1031,17 @@ class QuorumCertSecp256k1: public QuorumCert {
             bls::G2Element sig1 = *theSig->data;
             bls::G2Element sig2 = *dynamic_cast<const QuorumCertAggBLS &>(qc).theSig->data;
 
-            //struct timeval timeStart,timeEnd;
-            //gettimeofday(&timeStart, nullptr);
+            struct timeval timeStart,timeEnd;
+            gettimeofday(&timeStart, nullptr);
 
             bls::G2Element sig = bls::PopSchemeMPL::Aggregate({sig1, sig2});
 
-            //gettimeofday(&timeEnd, nullptr);
+            gettimeofday(&timeEnd, nullptr);
 
-            //std::cout << "Aggregating Sigs: "
-            //          << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
-            //          << " us to execute."
-            //          << std::endl;
+            std::cout << "Aggregating Sigs: "
+                      << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
+                      << " us to execute."
+                      << std::endl;
 
             *theSig->data = sig;
         }
