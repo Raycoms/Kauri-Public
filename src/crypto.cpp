@@ -79,8 +79,8 @@ namespace hotstuff {
         HOTSTUFF_LOG_DEBUG("checking cert(%d), obj_hash=%s",
                            i, get_hex10(obj_hash).c_str());
 
-        //struct timeval timeStart,timeEnd;
-        //gettimeofday(&timeStart, nullptr);
+        struct timeval timeStart,timeEnd;
+        gettimeofday(&timeStart, nullptr);
 
         vector<bls::G1Element> pubs;
         for (unsigned int i = 0; i < rids.size(); i++) {
@@ -89,15 +89,25 @@ namespace hotstuff {
             }
         }
 
-        //gettimeofday(&timeEnd, nullptr);
+        gettimeofday(&timeEnd, nullptr);
 
-        //std::cout << "Aggregating Pubs: "
-        //          << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
-        //          << " us to execute."
-        //         << std::endl;
+        std::cout << "Aggregating Pubs: "
+                  << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
+                  << " us to execute."
+                 << std::endl;
 
+        gettimeofday(&timeStart, nullptr);
 
-        return  bls::PopSchemeMPL::FastAggregateVerify(pubs, arrToVec(obj_hash.to_bytes()), *theSig->data);
+        bool res = bls::PopSchemeMPL::FastAggregateVerify(pubs, arrToVec(obj_hash.to_bytes()), *theSig->data);
+
+        std::cout << "FastAggVerify: "
+                  << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
+                  << " us to execute."
+                  << std::endl;
+
+        gettimeofday(&timeEnd, nullptr);
+
+        return res;
     }
 
     promise_t QuorumCertAggBLS::verify(const ReplicaConfig &config, VeriPool &vpool) {

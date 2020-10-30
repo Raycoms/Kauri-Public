@@ -726,16 +726,16 @@ class QuorumCertSecp256k1: public QuorumCert {
 
             check_msg_length(msg);
 
-            //struct timeval timeStart, timeEnd;
-            //gettimeofday(&timeStart, nullptr);
+            struct timeval timeStart, timeEnd;
+            gettimeofday(&timeStart, nullptr);
             bool td = bls::PopSchemeMPL::Verify(*(pub_key.data), arrToVec(msg), *data);
 
-            //gettimeofday(&timeEnd, nullptr);
+            gettimeofday(&timeEnd, nullptr);
 
-            //std::cout << "This verifying slow piece of code took "
-            //          << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
-            //          << " us to execute."
-            //          << std::endl;
+            std::cout << "This verifying slow piece of code took "
+                      << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
+                      << " us to execute."
+                      << std::endl;
 
             return td;
         }
@@ -869,17 +869,17 @@ class QuorumCertSecp256k1: public QuorumCert {
 
             check_msg_length(msg);
 
-            //struct timeval timeStart, timeEnd;
-            //gettimeofday(&timeStart, nullptr);
+            struct timeval timeStart, timeEnd;
+            gettimeofday(&timeStart, nullptr);
 
             bool td = bls::PopSchemeMPL::Verify(*(pub_key.data), arrToVec(msg), *data);
 
-            //gettimeofday(&timeEnd, nullptr);
+            gettimeofday(&timeEnd, nullptr);
 
-            //std::cout << "The verifying took: "
-            //         << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
-            //         << " us to execute."
-            //         << std::endl;
+            std::cout << "The verifying took: "
+                     << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
+                     << " us to execute."
+                     << std::endl;
 
             return td;
         }
@@ -1063,8 +1063,18 @@ class QuorumCertSecp256k1: public QuorumCert {
         }
 
         void compute() override {
+            struct timeval timeStart,timeEnd;
+            gettimeofday(&timeStart, nullptr);
+
             theSig = new SigSecBLSAgg(bls::PopSchemeMPL::Aggregate(sigs));
             sigs.clear();
+
+            gettimeofday(&timeEnd, nullptr);
+
+            std::cout << "Aggregating Sigs: "
+                      << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
+                      << " us to execute."
+                      << std::endl;
         }
 
         bool verify(const ReplicaConfig &config) override;
