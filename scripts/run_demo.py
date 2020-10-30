@@ -59,7 +59,7 @@ if __name__ == "__main__":
 
     time.sleep(10)
 
-    ssh.connect("172.16.52.21",port,user,password,timeout = 10)
+    ssh.connect("172.16.52.23",port,user,password,timeout = 10)
     ssh.exec_command("killall hotstuff-client &")
 
     time.sleep(3)
