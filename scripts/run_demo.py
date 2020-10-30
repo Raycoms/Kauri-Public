@@ -57,9 +57,17 @@ if __name__ == "__main__":
 
             ssh.close()
 
+    time.sleep(10)
 
-    time.sleep( 60 )
+    ssh.connect("172.16.52.21",port,user,password,timeout = 10)
 
+    for j in range(1, 10):
+        print("Starting Client!")
+        ssh.exec_command("./examples/hotstuff-client --idx $((j%10)) --iter -1 --max-async 4 > clientlog{} &".format(j))
+
+    time.sleep( 300 )
+
+    ssh.exec_command("killall hotstuff-client &")
     print("Killing all processes again!")
 
     for ipEl in ipSet:
