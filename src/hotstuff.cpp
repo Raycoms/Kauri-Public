@@ -273,7 +273,7 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
     RcObj<Vote> v(new Vote(std::move(msg.vote)));
     promise::all(std::vector<promise_t>{
         async_deliver_blk(v->blk_hash, peer),
-        promise_t([](promise_t &pm) { pm.resolve(true); }), //v->verify(vpool),
+        config.fanout == config.nreplicas ? v->verify(vpool) : promise_t([](promise_t &pm) { pm.resolve(true); }),
     }).then([this, blk, v=std::move(v), timeStart](const promise::values_t values) {
         if (!promise::any_cast<bool>(values[1]))
             LOG_WARN("invalid vote from %d", v->voter);
@@ -283,7 +283,7 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
         if (cert != nullptr && cert->get_obj_hash() == blk->get_hash()) {
             if (cert->has_n(config.nmajority)) {
                 cert->compute();
-                if (!cert->verify(config)) {
+                if (config.fanout != config.nreplicas && !cert->verify(config)) {
                     throw std::runtime_error("Invalid Sigs in intermediate signature!");
                 }
                 update_hqc(blk, cert);
