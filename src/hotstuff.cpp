@@ -254,7 +254,7 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
         return;
     }
 
-    std::cout << config.fanout + " " + config.nreplicas << std::endl;
+    std::cout << "blah: " << config.fanout << " " << config.nreplicas << std::endl;
 
     if (id != 0 ) {
         auto &cert = blk->self_qc;
