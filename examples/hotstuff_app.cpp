@@ -168,11 +168,11 @@ int main(int argc, char **argv) {
     auto opt_imp_timeout = Config::OptValDouble::create(11);
     auto opt_nworker = Config::OptValInt::create(1);
     auto opt_repnworker = Config::OptValInt::create(1);
-    auto opt_repburst = Config::OptValInt::create(100);
+    auto opt_repburst = Config::OptValInt::create(1000);
     auto opt_clinworker = Config::OptValInt::create(8);
     auto opt_cliburst = Config::OptValInt::create(1000);
     auto opt_notls = Config::OptValFlag::create(false);
-    auto opt_max_rep_msg = Config::OptValInt::create(4 << 20); // 4M by default
+    auto opt_max_rep_msg = Config::OptValInt::create(8 << 20); // 4M by default
     auto opt_max_cli_msg = Config::OptValInt::create(65536); // 64K by default
     auto opt_fanout = Config::OptValInt::create(2); // 2 by default
 
@@ -245,6 +245,8 @@ int main(int argc, char **argv) {
     HotStuffApp::Net::Config repnet_config;
     ClientNetwork<opcode_t>::Config clinet_config;
     repnet_config.max_msg_size(opt_max_rep_msg->get());
+    repnet_config.conn_server_timeout(30);
+    repnet_config.conn_timeout(360);
     clinet_config.max_msg_size(opt_max_cli_msg->get());
     if (!opt_tls_privkey->get().empty() && !opt_notls->get())
     {
