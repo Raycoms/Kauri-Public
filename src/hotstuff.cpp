@@ -623,7 +623,6 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
             peers.push_back(peer);
             pn.add_peer(peer);
             pn.set_peer_addr(peer, addr);
-            pn.conn_peer(peer);
         }
 
         if (id == parent) {
@@ -645,6 +644,12 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
             preLevel = static_cast<size_t>(std::pow(fanout, level));
             level++;
         }
+    }
+
+    for (const PeerId& peer : peers)
+    {
+        pn.conn_peer(peer);
+        usleep(1000);
     }
 
     std::cout << " total children: " << children.size() << std::endl;
