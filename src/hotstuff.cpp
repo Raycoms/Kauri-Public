@@ -655,7 +655,7 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
     for (const PeerId& peer : newPeers)
     {
         pn.conn_peer(peer);
-        usleep(10000);
+        usleep(100);
     }
 
     std::cout << " total children: " << children.size() << std::endl;
