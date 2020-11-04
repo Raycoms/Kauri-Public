@@ -655,10 +655,11 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
     copy(peers.begin(), peers.end(), back_inserter(newPeers));
 
     std::shuffle(newPeers.begin(), newPeers.end(), std::mt19937(std::random_device()()));
-    for (const PeerId& peer : newPeers)
-    {
-        pn.conn_peer(peer);
-        usleep(1000);
+    for (const PeerId& peer : newPeers) {
+        if (childPeers.count(peer) > 0 || peer == peers[parent]) {
+            pn.conn_peer(peer);
+            usleep(1000);
+        }
     }
 
     std::cout << " total children: " << children.size() << std::endl;
