@@ -16,6 +16,8 @@
  */
 
 #include "hotstuff/hotstuff.h"
+
+#include <random>
 #include "hotstuff/client.h"
 #include "hotstuff/liveness.h"
 
@@ -646,10 +648,13 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
         }
     }
 
-    for (const PeerId& peer : peers)
+    vector<PeerId> newPeers;
+    copy(peers.begin(), peers.end(), back_inserter(newPeers));
+
+    std::shuffle(newPeers.begin(), newPeers.end(), std::mt19937(std::random_device()()));
+    for (const PeerId& peer : newPeers)
     {
         pn.conn_peer(peer);
-        usleep(10000);
     }
 
     std::cout << " total children: " << children.size() << std::endl;
