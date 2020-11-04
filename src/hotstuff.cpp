@@ -464,18 +464,21 @@ void HotStuffBase::print_stat() const {
     size_t _nrecv = 0;
     for (const auto &replica: peers)
     {
-        auto conn = pn.get_peer_conn(replica);
-        if (conn == nullptr) continue;
-        size_t ns = conn->get_nsent();
-        size_t nr = conn->get_nrecv();
-        size_t nsb = conn->get_nsentb();
-        size_t nrb = conn->get_nrecvb();
-        conn->clear_msgstat();
-        LOG_INFO("%s: %u(%u), %u(%u), %u",
-            get_hex10(replica).c_str(), ns, nsb, nr, nrb, part_fetched_replica[replica]);
-        _nsent += ns;
-        _nrecv += nr;
-        part_fetched_replica[replica] = 0;
+        try {
+            auto conn = pn.get_peer_conn(replica);
+            if (conn == nullptr) continue;
+            size_t ns = conn->get_nsent();
+            size_t nr = conn->get_nrecv();
+            size_t nsb = conn->get_nsentb();
+            size_t nrb = conn->get_nrecvb();
+            conn->clear_msgstat();
+            LOG_INFO("%s: %u(%u), %u(%u), %u",
+                     get_hex10(replica).c_str(), ns, nsb, nr, nrb, part_fetched_replica[replica]);
+            _nsent += ns;
+            _nrecv += nr;
+            part_fetched_replica[replica] = 0;
+        }
+        catch (...) { }
     }
     nsent += _nsent;
     nrecv += _nrecv;
