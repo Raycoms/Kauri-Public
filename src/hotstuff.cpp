@@ -249,7 +249,13 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
         std::cout << "create cert: " << msg.vote.blk_hash.to_hex() << " " << &blk->self_qc << std::endl;
     }
 
-    std::cout << "vote handler: " << msg.vote.blk_hash.to_hex() << " " << &blk->self_qc << std::endl;
+    if (id == 0) {
+        struct timeval time;
+        gettimeofday(&time, NULL);
+        std::cout << "vote handler: " << msg.vote.blk_hash.to_hex() << " " << time.tv_sec << std::endl;
+    } else {
+        std::cout << "vote handler: " << msg.vote.blk_hash.to_hex() << " " << std::endl;
+    }
 
     if (blk->self_qc->has_n(config.nmajority)) {
         //std::cout << "bye vote handler: " << msg.vote.blk_hash.to_hex() << " " << &blk->self_qc << std::endl;
