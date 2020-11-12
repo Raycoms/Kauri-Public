@@ -252,7 +252,7 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
     if (id == 0) {
         struct timeval time;
         gettimeofday(&time, NULL);
-        std::cout << "vote handler: " << msg.vote.blk_hash.to_hex() << " " << time.tv_sec << std::endl;
+        std::cout << "vote handler: " << msg.vote.blk_hash.to_hex() << " " << time.tv_usec << std::endl;
     } else {
         std::cout << "vote handler: " << msg.vote.blk_hash.to_hex() << " " << std::endl;
     }
