@@ -132,7 +132,7 @@ class HotStuffApp: public HotStuff {
                 const ClientNetwork<opcode_t>::Config &clinet_config);
 
     void start(const std::vector<std::tuple<NetAddr, bytearray_t, bytearray_t>> &reps);
-    void set_fanout(uint8_t fanout);
+    void set_fanout(int32_t fanout);
     void stop();
 };
 
@@ -146,7 +146,7 @@ std::pair<std::string, std::string> split_ip_port_cport(const std::string &s) {
 salticidae::BoxObj<HotStuffApp> papp = nullptr;
 
 int main(int argc, char **argv) {
-    Config config("hotstuff.gen.conf");
+    Config config("../hotstuff.gen.conf");
 
     ElapsedTime elapsed;
     elapsed.start();
@@ -422,6 +422,6 @@ void HotStuffApp::print_stat() const {
 #endif
 }
 
-void HotStuffApp::set_fanout(uint8_t fanout) {
+void HotStuffApp::set_fanout(int32_t fanout) {
     HotStuff::set_fanout(fanout);
 }

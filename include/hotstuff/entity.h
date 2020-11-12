@@ -63,7 +63,7 @@ class ReplicaConfig {
     size_t nreplicas;
     size_t nmajority;
 
-    uint8_t fanout;
+    int32_t fanout;
 
     ReplicaConfig(): nreplicas(0), nmajority(0) {}
 

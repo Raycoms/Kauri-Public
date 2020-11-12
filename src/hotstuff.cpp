@@ -599,14 +599,13 @@ HotStuffBase::~HotStuffBase() {}
 
 void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> &&replicas, bool ec_loop) {
 
-    const uint8_t fanout = config.fanout;
-
+    const int32_t fanout = config.fanout;
     uint16_t parent = 0;
     std::set<uint16_t> children;
     auto level = 0;
     auto maxFanout = fanout;
     auto currentChildren = 0;
-    uint8_t preLevel = 0;
+    auto preLevel = 0;
 
     for (size_t i = 0; i < replicas.size(); i++)
     {
@@ -621,17 +620,15 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
             currentChildren = 1;
         }
 
-        if (fanout < replicas.size()) {
-            if (currentChildren == 1 && processesOnLevel > remaining) {
-                auto previousProcesses = 0;
-                for (auto l = 0; l < level - 1; l++) {
-                    previousProcesses += std::ceil(std::pow(fanout, l));
-                }
-                auto doneParents = parent - previousProcesses;
-                auto parents = std::ceil(std::pow(fanout, level - 1));
-                auto perParent = std::floor(remaining / (parents - doneParents));
-                maxFanout = perParent;
+        if (currentChildren == 1 && processesOnLevel > remaining) {
+            auto previousProcesses = 0;
+            for (auto l = 0; l < level - 1; l++) {
+                previousProcesses += std::ceil(std::pow(fanout, l));
             }
+            auto doneParents = parent - previousProcesses;
+            auto parents = std::ceil(std::pow(fanout, level - 1));
+            auto perParent = std::floor(remaining / (parents - doneParents));
+            maxFanout = perParent;
         }
 
         auto &addr = std::get<0>(replicas[i]);

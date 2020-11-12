@@ -318,7 +318,7 @@ class HotStuff: public HotStuffBase {
         HotStuffBase::start(std::move(reps), ec_loop);
     }
 
-    void set_fanout(uint8_t fanout) {
+    void set_fanout(int32_t fanout) {
         HotStuffBase::set_fanout(fanout);
     }
 };

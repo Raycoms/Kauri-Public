@@ -95,7 +95,7 @@ public:
     void on_init(uint32_t nfaulty);
 
     /** Call to initialize the master public key.. */
-    void set_fanout(uint8_t fanout);
+    void set_fanout(int32_t fanout);
 
     /* TODO: better name for "delivery" ? */
     /** Call to inform the state machine that a block is ready to be handled.

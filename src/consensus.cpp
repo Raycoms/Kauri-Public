@@ -381,7 +381,7 @@ HotStuffCore::operator std::string () const {
     return s;
 }
 
-void HotStuffCore::set_fanout(uint8_t fanout) {
+void HotStuffCore::set_fanout(int32_t fanout) {
     config.fanout = fanout;
 }
 
