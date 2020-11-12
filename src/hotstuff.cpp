@@ -341,6 +341,14 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
         return;
     }
 
+    if (id == 0) {
+        struct timeval time;
+        gettimeofday(&time, NULL);
+        std::cout << "vote relay handler: " << msg.vote.blk_hash.to_hex() << " " << time.tv_sec << std::endl;
+    } else {
+        std::cout << "vote relay handler: " << msg.vote.blk_hash.to_hex() << " " << std::endl;
+    }
+
     //auto &vote = msg.vote;
     RcObj<VoteRelay> v(new VoteRelay(std::move(msg.vote)));
     promise::all(std::vector<promise_t>{
