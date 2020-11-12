@@ -621,15 +621,17 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
             currentChildren = 1;
         }
 
-        if (currentChildren == 1 && processesOnLevel > remaining) {
-            auto previousProcesses = 0;
-            for (auto l = 0; l < level - 1; l++) {
-                previousProcesses += std::ceil(std::pow(fanout, l));
+        if (fanout < replicas.size()) {
+            if (currentChildren == 1 && processesOnLevel > remaining) {
+                auto previousProcesses = 0;
+                for (auto l = 0; l < level - 1; l++) {
+                    previousProcesses += std::ceil(std::pow(fanout, l));
+                }
+                auto doneParents = parent - previousProcesses;
+                auto parents = std::ceil(std::pow(fanout, level - 1));
+                auto perParent = std::floor(remaining / (parents - doneParents));
+                maxFanout = perParent;
             }
-            auto doneParents = parent - previousProcesses;
-            auto parents = std::ceil(std::pow(fanout, level - 1));
-            auto perParent = std::floor(remaining / (parents - doneParents));
-            maxFanout = perParent;
         }
 
         auto &addr = std::get<0>(replicas[i]);
