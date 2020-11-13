@@ -125,7 +125,7 @@ namespace hotstuff {
             }
         }
         
-        /*
+
         HOTSTUFF_LOG_DEBUG("checking cert(%d), obj_hash=%s",
                            i, get_hex10(obj_hash).c_str());
 
@@ -135,9 +135,9 @@ namespace hotstuff {
             for (const auto &v: values)
                 if (!promise::any_cast<bool>(v)) return false;
             return true;
-        });*/
+        });
 
-
+        /*
         const bool valid =  bls::PopSchemeMPL::FastAggregateVerify(pubs, arrToVec(obj_hash.to_bytes()), *theSig->data);
 
         gettimeofday(&timeEnd, nullptr);
@@ -147,6 +147,6 @@ namespace hotstuff {
                   << " us to execute."
                   << std::endl;
 
-        return promise_t([&valid](promise_t &pm) { pm.resolve(valid); });
+        return promise_t([&valid](promise_t &pm) { pm.resolve(valid); }); */
     }
 }
