@@ -239,7 +239,8 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
     const auto &peer = conn->get_peer_id();
     if (peer.is_null()) return;
     msg.postponed_parse(this);
-    //std::cout << "vote handler0: " << std::endl;
+    HOTSTUFF_LOG_PROTO("received vote");
+
     block_t blk = get_potentially_not_delivered_blk(msg.vote.blk_hash);
     if (!blk->delivered && blk->self_qc == nullptr) {
         blk->self_qc = create_quorum_cert(blk->get_hash());
@@ -256,6 +257,7 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
     } else {
         std::cout << "vote handler: " << msg.vote.blk_hash.to_hex() << " " << std::endl;
     }
+    HOTSTUFF_LOG_PROTO("vote handler");
 
     if (blk->self_qc->has_n(config.nmajority)) {
         //std::cout << "bye vote handler: " << msg.vote.blk_hash.to_hex() << " " << &blk->self_qc << std::endl;
