@@ -63,7 +63,7 @@ class QuorumCert: public Serializable, public Cloneable {
     virtual ~QuorumCert() = default;
     virtual void add_part(const ReplicaConfig &config, ReplicaID replica, const PartCert &pc) = 0;
     virtual void merge_quorum(const QuorumCert &qc) = 0;
-    virtual bool has_n(uint8_t n) = 0;
+    virtual bool has_n(uint32_t n) = 0;
     virtual void compute() = 0;
     virtual promise_t verify(const ReplicaConfig &config, VeriPool &vpool) = 0;
     virtual bool verify(const ReplicaConfig &config) = 0;
@@ -202,7 +202,7 @@ class QuorumCertDummy: public QuorumCert {
     {
         qty += ((QuorumCertDummy&) qc).qty;
     }
-    bool has_n(const uint8_t n) override
+    bool has_n(const uint32_t n) override
     {
         return qty >= n;
     }
@@ -505,7 +505,7 @@ class QuorumCertSecp256k1: public QuorumCert {
         }
     }
 
-    bool has_n(const uint8_t n) override {
+    bool has_n(const uint32_t n) override {
         //std::cout << std::to_string(sigs.size()) << " " << std::to_string(n) << std::endl;
         return sigs.size() >= n;
     }
@@ -957,7 +957,7 @@ class QuorumCertSecp256k1: public QuorumCert {
         salticidae::Bits rids;
         SigSecBLSAgg* theSig = nullptr;
         vector<bls::G2Element> sigs;
-        uint8_t n = 0;
+        uint32_t n = 0;
 
     public:
         QuorumCertAggBLS() = default;
@@ -1058,8 +1058,8 @@ class QuorumCertSecp256k1: public QuorumCert {
             //*theSig->data = sig;
         }
 
-        bool has_n(const uint8_t t) override {
-            HOTSTUFF_LOG_PROTO("not enough %d of %d", n, t);
+        bool has_n(const uint32_t t) override {
+            //HOTSTUFF_LOG_PROTO("not enough %d of %d", n, t);
             return n >= t;
         }
 

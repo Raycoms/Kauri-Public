@@ -215,10 +215,10 @@ void HotStuffBase::propose_handler(MsgPropose &&msg, const Net::conn_t &conn) {
     block_t blk = prop.blk;
     if (!blk) return;
 
-    HOTSTUFF_LOG_PROTO("Verify proposal");
+    //HOTSTUFF_LOG_PROTO("Verify proposal");
     for (const PeerId& peerId : childPeers)
     {
-        HOTSTUFF_LOG_PROTO("Relay proposal");
+        //HOTSTUFF_LOG_PROTO("Relay proposal");
         pn.send_msg(MsgPropose(prop), peerId);
         //todo this happens to quickly. What do we do then? Just add it ourselves? (try?)
     }
@@ -239,7 +239,7 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
     const auto &peer = conn->get_peer_id();
     if (peer.is_null()) return;
     msg.postponed_parse(this);
-    HOTSTUFF_LOG_PROTO("received vote");
+    //HOTSTUFF_LOG_PROTO("received vote");
 
     block_t blk = get_potentially_not_delivered_blk(msg.vote.blk_hash);
     if (!blk->delivered && blk->self_qc == nullptr) {
@@ -257,10 +257,10 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
     } else {
         std::cout << "vote handler: " << msg.vote.blk_hash.to_hex() << " " << std::endl;
     }
-    HOTSTUFF_LOG_PROTO("vote handler %d %d", config.nmajority, config.nreplicas);
+    //HOTSTUFF_LOG_PROTO("vote handler %d %d", config.nmajority, config.nreplicas);
 
     if (blk->self_qc->has_n(config.nmajority)) {
-        HOTSTUFF_LOG_PROTO("bye vote handler");
+        //HOTSTUFF_LOG_PROTO("bye vote handler");
         //std::cout << "bye vote handler: " << msg.vote.blk_hash.to_hex() << " " << &blk->self_qc << std::endl;
         return;
     }
@@ -268,10 +268,10 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
     if (id != 0 ) {
         auto &cert = blk->self_qc;
         cert->add_part(config, msg.vote.voter, *msg.vote.cert);
-        HOTSTUFF_LOG_PROTO("add part");
+        //HOTSTUFF_LOG_PROTO("add part");
 
         if (!cert->has_n(numberOfChildren + 1)) {
-            HOTSTUFF_LOG_PROTO("not enough");
+            //HOTSTUFF_LOG_PROTO("not enough");
             return;
         }
 
@@ -383,7 +383,7 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
                 return;
             }
 
-            HOTSTUFF_LOG_PROTO("got %s", std::string(*v).c_str());
+            //HOTSTUFF_LOG_PROTO("got %s", std::string(*v).c_str());
 
             if (!cert->has_n(config.nmajority)) return;
 
@@ -563,7 +563,7 @@ void HotStuffBase::do_broadcast_proposal(const Proposal &prop) {
 }
 
 void HotStuffBase::do_vote(Proposal prop, const Vote &vote) {
-    HOTSTUFF_LOG_PROTO("do vote");
+    //HOTSTUFF_LOG_PROTO("do vote");
 
     pmaker->beat_resp(prop.proposer).then([this, vote, prop](ReplicaID proposer) {
 
@@ -573,14 +573,14 @@ void HotStuffBase::do_vote(Proposal prop, const Vote &vote) {
         }
 
         if (childPeers.empty()) {
-            HOTSTUFF_LOG_PROTO("send vote");
+            //HOTSTUFF_LOG_PROTO("send vote");
             pn.send_msg(MsgVote(vote), parentPeer);
         } else {
             //todo I think this goes at some mment later than receiving, and all breaks apart. We need this more resilient (If height >= blockheight we check in the quorum cert for it).
             block_t blk = get_delivered_blk(vote.blk_hash);
             if (blk->self_qc == nullptr)
             {
-                HOTSTUFF_LOG_PROTO("create cert");
+                //HOTSTUFF_LOG_PROTO("create cert");
 
                 blk->self_qc = create_quorum_cert(prop.blk->get_hash());
                 blk->self_qc->add_part(config, vote.voter, *vote.cert);
