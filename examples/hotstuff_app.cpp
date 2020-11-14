@@ -245,8 +245,8 @@ int main(int argc, char **argv) {
     HotStuffApp::Net::Config repnet_config;
     ClientNetwork<opcode_t>::Config clinet_config;
     repnet_config.max_msg_size(opt_max_rep_msg->get());
-    repnet_config.conn_server_timeout(3600);
-    repnet_config.conn_timeout(3600);
+    repnet_config.conn_server_timeout(30);
+    repnet_config.conn_timeout(360);
     clinet_config.max_msg_size(opt_max_cli_msg->get());
     if (!opt_tls_privkey->get().empty() && !opt_notls->get())
     {
