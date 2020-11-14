@@ -257,7 +257,7 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
     } else {
         std::cout << "vote handler: " << msg.vote.blk_hash.to_hex() << " " << std::endl;
     }
-    HOTSTUFF_LOG_PROTO("vote handler");
+    HOTSTUFF_LOG_PROTO("vote handler %d %d", config.nmajority, config.nreplicas);
 
     if (blk->self_qc->has_n(config.nmajority)) {
         HOTSTUFF_LOG_PROTO("bye vote handler");
