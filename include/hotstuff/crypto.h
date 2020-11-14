@@ -1059,6 +1059,7 @@ class QuorumCertSecp256k1: public QuorumCert {
         }
 
         bool has_n(const uint8_t t) override {
+            HOTSTUFF_LOG_PROTO("not enough %d of %d", n, t);
             return n >= t;
         }
 

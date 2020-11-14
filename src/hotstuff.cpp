@@ -260,6 +260,7 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
     HOTSTUFF_LOG_PROTO("vote handler");
 
     if (blk->self_qc->has_n(config.nmajority)) {
+        HOTSTUFF_LOG_PROTO("bye vote handler");
         //std::cout << "bye vote handler: " << msg.vote.blk_hash.to_hex() << " " << &blk->self_qc << std::endl;
         return;
     }
@@ -267,8 +268,13 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
     if (id != 0 ) {
         auto &cert = blk->self_qc;
         cert->add_part(config, msg.vote.voter, *msg.vote.cert);
+        HOTSTUFF_LOG_PROTO("add part");
 
-        if (!cert->has_n(numberOfChildren + 1)) return;
+        if (!cert->has_n(numberOfChildren + 1)) {
+            HOTSTUFF_LOG_PROTO("not enough");
+            return;
+        }
+
         cert->compute();
         if (!cert->verify(config)) {
             throw std::runtime_error("Invalid Sigs in intermediate signature!");
