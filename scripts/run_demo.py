@@ -7,6 +7,11 @@ import time
 import os
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Generate configuration file for a batch of replicas')
+    parser.add_argument('--latency', type=int, default=100)
+    parser.add_argument('--bandwidth', type=int, default=100)
+    args = parser.parse_args()
+
     ipSet = [l.strip() for l in open("ips", 'r').readlines()]
     ips = []
 
@@ -15,6 +20,8 @@ if __name__ == "__main__":
     port = 22
     user = "root"
     password = ""
+    latency = args.latency
+    bandwidth = args.bandwidth
 
     for ipEl in ipSet:
         ipElSet = ipEl.split(" ")
@@ -24,8 +31,8 @@ if __name__ == "__main__":
             os.system("killall hotstuff-app")
         else:
             ssh.connect(ipElSet[0],port,user,password,timeout = 10)
-            command = "killall hotstuff-app"
-            ssh.exec_command(command)
+            ssh.exec_command("killall hotstuff-app")
+            ssh.exec_command("sudo tc qdisc del dev enp5s0f0 root")
             ssh.close()
 
         print(ipElSet)
@@ -57,12 +64,27 @@ if __name__ == "__main__":
 
             ssh.close()
 
-    time.sleep(10)
+    time.sleep(3)
 
-    ssh.connect("172.16.52.21",port,user,password,timeout = 10)
+    i = 0
+    for ipEl in ipSet:
+        ipElSet = ipEl.split(" ")
+        if i == 0 :
+            command = "sudo tc qdisc add dev enp5s0f0 root netem delay {}ms rate {}mbit".format(latency, bandwidth)
+        else:
+            command = "sudo tc qdisc add dev enp5s0f0 root netem delay {}ms".format(latency)
+        i+=1
+
+        if ipElSet[0] != "127.0.0.1":
+            ssh.connect(ipElSet[0],port,user,password,timeout = 10)
+            print(command)
+            ssh.exec_command(command)
+            i+=1
+
+    ssh.connect("172.16.52.23",port,user,password,timeout = 10)
     ssh.exec_command("killall hotstuff-client &")
 
-    time.sleep(30)
+    time.sleep(3)
 
     for j in range(1, 10):
         print("Starting Client!")
@@ -83,5 +105,6 @@ if __name__ == "__main__":
             ssh.connect(ipElSet[0],port,user,password,timeout = 10)
             command = "killall hotstuff-app"
             ssh.exec_command(command)
+            ssh.exec_command("sudo tc qdisc del dev enp5s0f0 root")
             ssh.close()
 
