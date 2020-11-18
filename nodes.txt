@@ -1,4 +1,4 @@
-0:172.16.52.1:20000;30000	hotstuff.gen-sec0.conf
+0:172.16.52.2:20000;30000	hotstuff.gen-sec0.conf
 1:172.16.52.3:20001;30001	hotstuff.gen-sec1.conf
 2:172.16.52.3:20002;30002	hotstuff.gen-sec2.conf
 3:172.16.52.3:20003;30003	hotstuff.gen-sec3.conf
