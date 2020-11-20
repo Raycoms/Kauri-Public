@@ -219,7 +219,8 @@ void HotStuffBase::propose_handler(MsgPropose &&msg, const Net::conn_t &conn) {
     if (peer.is_null()) return;
     auto stream = msg.serialized;
 
-    auto future = std::async(send, stream, &pn, childPeers);
+    if (!childPeers.empty())
+        auto future = std::async(send, stream, &pn, childPeers);
 
     msg.postponed_parse(this);
     auto &prop = msg.proposal;
