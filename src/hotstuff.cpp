@@ -215,11 +215,12 @@ void HotStuffBase::propose_handler(MsgPropose &&msg, const Net::conn_t &conn) {
     block_t blk = prop.blk;
     if (!blk) return;
 
+    MsgPropose relay = MsgPropose(prop);
     //HOTSTUFF_LOG_PROTO("Verify proposal");
     for (const PeerId& peerId : childPeers)
     {
         //HOTSTUFF_LOG_PROTO("Relay proposal");
-        pn.send_msg(&msg, peerId);
+        pn.send_msg(relay, peerId);
         //todo this happens to quickly. What do we do then? Just add it ourselves? (try?)
     }
 
