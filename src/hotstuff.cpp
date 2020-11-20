@@ -719,6 +719,7 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
                     cmd_pending_buffer.pop();
                 }
                 pmaker->beat().then([this, cmds = std::move(cmds)](ReplicaID proposer) {
+                    HOTSTUFF_LOG_PROTO("Proposing: %d", cmds.size());
                     if (proposer == get_id())
                         on_propose(cmds, pmaker->get_parents());
                 });
