@@ -219,12 +219,10 @@ void HotStuffBase::propose_handler(MsgPropose &&msg, const Net::conn_t &conn) {
     gettimeofday(&timeStart, nullptr);
 
     //*theSig->data = sig;
-    MsgPropose relay = MsgPropose(prop);
-    //HOTSTUFF_LOG_PROTO("Verify proposal");
+    //MsgPropose relay = MsgPropose(prop);
     for (const PeerId& peerId : childPeers)
     {
-        //HOTSTUFF_LOG_PROTO("Relay proposal");
-        pn.send_msg(relay, peerId);
+        pn.send_msg(MsgPropose(prop), peerId);
     }
 
     gettimeofday(&timeEnd, nullptr);
