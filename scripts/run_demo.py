@@ -87,7 +87,7 @@ if __name__ == "__main__":
     time.sleep(3)
 
 
-    ssh.exec_command("cd test/libhotstuff && ./examples/hotstuff-client --idx {} --iter -1000 --max-async 10000 > clientlog{} 2>&1 &".format(1, 1))
+    ssh.exec_command("cd test/libhotstuff && ./examples/hotstuff-client --idx {} --iter -100 --max-async 100 > clientlog{} 2>&1 &".format(1, 1))
 
     time.sleep( 300 )
 
