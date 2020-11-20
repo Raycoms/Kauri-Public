@@ -219,7 +219,7 @@ void HotStuffBase::propose_handler(MsgPropose &&msg, const Net::conn_t &conn) {
     for (const PeerId& peerId : childPeers)
     {
         //HOTSTUFF_LOG_PROTO("Relay proposal");
-        pn.send_msg(msg, peerId);
+        pn.send_msg(&msg, peerId);
         //todo this happens to quickly. What do we do then? Just add it ourselves? (try?)
     }
 
