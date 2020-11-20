@@ -205,6 +205,15 @@ promise_t HotStuffBase::async_deliver_blk(const uint256_t &blk_hash, const PeerI
     return static_cast<promise_t &>(pm);
 }
 
+promise_t send(const DataStream stream, HotStuffBase::Net *pn, std::set<PeerId> childPeers) {
+    MsgPropose relay = MsgPropose(stream, true);
+    for (const PeerId &peerId : childPeers) {
+        pn->send_msg(relay, peerId);
+    }
+
+    return promise_t([&](promise_t &pm) { pm.resolve(); });
+}
+
 void HotStuffBase::propose_handler(MsgPropose &&msg, const Net::conn_t &conn) {
     //std::cout << "Propose handler" << std::endl;
     const PeerId &peer = conn->get_peer_id();
@@ -220,12 +229,11 @@ void HotStuffBase::propose_handler(MsgPropose &&msg, const Net::conn_t &conn) {
     gettimeofday(&timeStart, nullptr);
 
     //*theSig->data = sig;
-    MsgPropose relay = MsgPropose(stream, true);
-    for (const PeerId& peerId : childPeers)
-    {
-        pn.send_msg(relay, peerId);
-    }
 
+    promise::all(std::vector<promise_t>{
+            send(stream, &pn, childPeers)
+    });
+    
     gettimeofday(&timeEnd, nullptr);
 
     std::cout << "Relay Took: "
