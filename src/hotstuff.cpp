@@ -219,7 +219,7 @@ void HotStuffBase::propose_handler(MsgPropose &&msg, const Net::conn_t &conn) {
     gettimeofday(&timeStart, nullptr);
 
     //*theSig->data = sig;
-    MsgPropose relay = MsgPropose(msg);
+    MsgPropose relay = MsgPropose(msg.serialized);
     for (const PeerId& peerId : childPeers)
     {
         pn.send_msg(relay, peerId);
