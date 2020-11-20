@@ -18,6 +18,7 @@
 #include "hotstuff/hotstuff.h"
 
 #include <random>
+#include <future>
 #include "hotstuff/client.h"
 #include "hotstuff/liveness.h"
 
@@ -230,10 +231,8 @@ void HotStuffBase::propose_handler(MsgPropose &&msg, const Net::conn_t &conn) {
 
     //*theSig->data = sig;
 
-    promise::all(std::vector<promise_t>{
-            send(stream, &pn, childPeers)
-    });
-    
+    std::async(send, stream, &pn, childPeers);
+
     gettimeofday(&timeEnd, nullptr);
 
     std::cout << "Relay Took: "
