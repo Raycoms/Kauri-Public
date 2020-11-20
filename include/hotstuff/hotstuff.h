@@ -46,7 +46,7 @@ struct MsgPropose {
     MsgPropose(const Proposal &);
     /** Only move the data to serialized, do not parse immediately. */
     MsgPropose(DataStream &&s): serialized(std::move(s)) {}
-    MsgPropose(DataStream stream): serialized(std::move(stream)) {}
+    MsgPropose(DataStream stream, bool wut): serialized(std::move(stream)) {}
 
     /** Parse the serialized data to blks now, with `hsc->storage`. */
     void postponed_parse(HotStuffCore *hsc);
