@@ -209,6 +209,7 @@ void HotStuffBase::propose_handler(MsgPropose &&msg, const Net::conn_t &conn) {
     //std::cout << "Propose handler" << std::endl;
     const PeerId &peer = conn->get_peer_id();
     if (peer.is_null()) return;
+    auto stream = msg.serialized;
     msg.postponed_parse(this);
     auto &prop = msg.proposal;
 
@@ -219,7 +220,7 @@ void HotStuffBase::propose_handler(MsgPropose &&msg, const Net::conn_t &conn) {
     gettimeofday(&timeStart, nullptr);
 
     //*theSig->data = sig;
-    MsgPropose relay = MsgPropose(msg.serialized, true);
+    MsgPropose relay = MsgPropose(stream, true);
     for (const PeerId& peerId : childPeers)
     {
         pn.send_msg(relay, peerId);
