@@ -218,27 +218,15 @@ void HotStuffBase::propose_handler(MsgPropose &&msg, const Net::conn_t &conn) {
     const PeerId &peer = conn->get_peer_id();
     if (peer.is_null()) return;
     auto stream = msg.serialized;
+
+    auto future = std::async(send, stream, &pn, childPeers);
+
     msg.postponed_parse(this);
     auto &prop = msg.proposal;
 
     block_t blk = prop.blk;
     if (!blk) return;
-
-    struct timeval timeStart,timeEnd;
-    gettimeofday(&timeStart, nullptr);
-
-    //*theSig->data = sig;
-
-    auto future = std::async(send, stream, &pn, childPeers);
-
-    gettimeofday(&timeEnd, nullptr);
-
-    std::cout << "Relay Took: "
-              << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
-              << " us to execute."
-              << std::endl;
-
-
+    
     promise::all(std::vector<promise_t>{
         async_deliver_blk(blk->get_hash(), peer)
     }).then([this, prop = std::move(prop)]() {
