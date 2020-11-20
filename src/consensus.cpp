@@ -190,7 +190,7 @@ block_t HotStuffCore::on_propose(const std::vector<uint256_t> &cmds,
         Vote(id, bnew_hash,
             create_part_cert(*priv_key, bnew_hash), this));
     on_propose_(prop);
-    /* boradcast to other replicas */
+    /* broadcast to other replicas */
     do_broadcast_proposal(prop);
     return bnew;
 }

@@ -215,14 +215,25 @@ void HotStuffBase::propose_handler(MsgPropose &&msg, const Net::conn_t &conn) {
     block_t blk = prop.blk;
     if (!blk) return;
 
+    struct timeval timeStart,timeEnd;
+    gettimeofday(&timeStart, nullptr);
+
+    //*theSig->data = sig;
     MsgPropose relay = MsgPropose(prop);
     //HOTSTUFF_LOG_PROTO("Verify proposal");
     for (const PeerId& peerId : childPeers)
     {
         //HOTSTUFF_LOG_PROTO("Relay proposal");
         pn.send_msg(relay, peerId);
-        //todo this happens to quickly. What do we do then? Just add it ourselves? (try?)
     }
+
+    gettimeofday(&timeEnd, nullptr);
+
+    std::cout << "Relay Took: "
+              << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
+              << " us to execute."
+              << std::endl;
+
 
     promise::all(std::vector<promise_t>{
         async_deliver_blk(blk->get_hash(), peer)
