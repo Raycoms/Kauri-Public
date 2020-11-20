@@ -206,13 +206,11 @@ promise_t HotStuffBase::async_deliver_blk(const uint256_t &blk_hash, const PeerI
     return static_cast<promise_t &>(pm);
 }
 
-promise_t send(const DataStream stream, HotStuffBase::Net *pn, std::set<PeerId> childPeers) {
+void send(const DataStream& stream, HotStuffBase::Net *pn, const std::set<PeerId>& childPeers) {
     MsgPropose relay = MsgPropose(stream, true);
     for (const PeerId &peerId : childPeers) {
         pn->send_msg(relay, peerId);
     }
-
-    return promise_t([&](promise_t &pm) { pm.resolve(); });
 }
 
 void HotStuffBase::propose_handler(MsgPropose &&msg, const Net::conn_t &conn) {
@@ -231,7 +229,7 @@ void HotStuffBase::propose_handler(MsgPropose &&msg, const Net::conn_t &conn) {
 
     //*theSig->data = sig;
 
-    std::async(send, stream, &pn, childPeers);
+    auto future = std::async(send, stream, &pn, childPeers);
 
     gettimeofday(&timeEnd, nullptr);
 
