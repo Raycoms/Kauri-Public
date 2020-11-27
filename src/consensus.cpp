@@ -381,6 +381,7 @@ void HotStuffCore::on_qc_finish(const block_t &blk) {
     auto it = qc_waiting.find(blk);
     if (it != qc_waiting.end())
     {
+        std::cout << "async_qc_finish " << blk->get_hash().to_hex() << std::endl;
         it->second.resolve();
         qc_waiting.erase(it);
     }
