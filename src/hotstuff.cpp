@@ -107,6 +107,8 @@ void HotStuffBase::on_fetch_blk(const block_t &blk) {
 }
 
 bool HotStuffBase::on_deliver_blk(const block_t &blk) {
+    HOTSTUFF_LOG_PROTO("Base deliver");
+
     const uint256_t &blk_hash = blk->get_hash();
     bool valid;
     /* sanity check: all parents must be delivered */
@@ -214,10 +216,11 @@ void send(const DataStream& stream, HotStuffBase::Net *pn, const std::set<PeerId
 }
 
 void HotStuffBase::propose_handler(MsgPropose &&msg, const Net::conn_t &conn) {
-    //std::cout << "Propose handler" << std::endl;
+    std::cout << "Propose handler1" << std::endl;
     const PeerId &peer = conn->get_peer_id();
     if (peer.is_null()) return;
     auto stream = msg.serialized;
+
 
     if (!childPeers.empty())
         auto future = std::async(send, stream, &pn, childPeers);
@@ -227,10 +230,14 @@ void HotStuffBase::propose_handler(MsgPropose &&msg, const Net::conn_t &conn) {
 
     block_t blk = prop.blk;
     if (!blk) return;
-    
+
+    std::cout << "Propose handler2" << std::endl;
+
     promise::all(std::vector<promise_t>{
         async_deliver_blk(blk->get_hash(), peer)
     }).then([this, prop = std::move(prop)]() {
+        std::cout << "Propose handler3" << std::endl;
+
         on_receive_proposal(prop);
     });
 }
@@ -244,9 +251,27 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
     const auto &peer = conn->get_peer_id();
     if (peer.is_null()) return;
     msg.postponed_parse(this);
-    //HOTSTUFF_LOG_PROTO("received vote");
+    HOTSTUFF_LOG_PROTO("received vote");
+
+        if (id == pmaker->get_proposer() && b_piped != nullptr && b_piped->hash == msg.vote.blk_hash) {
+
+            HOTSTUFF_LOG_PROTO("Piped block");
+            block_t blk = storage->find_blk(msg.vote.blk_hash);
+            if (blk == nullptr) {
+                storage->add_blk(b_piped);
+                process_block(b_piped, false);
+                b_piped = nullptr;
+                HOTSTUFF_LOG_PROTO("Normalized Piped Block");
+            }
+
+            //todo: On receival here of the piped block, it has to go through all the steps normally the block production goes (setting at the right places etc)
+            //todo: only afterwards we can then do the -> bl = get_potentially_not_delivered_blk(msg.vote.blk_hash);
+
+        }
+
 
     block_t blk = get_potentially_not_delivered_blk(msg.vote.blk_hash);
+
     if (!blk->delivered && blk->self_qc == nullptr) {
         blk->self_qc = create_quorum_cert(blk->get_hash());
         part_cert_bt part = create_part_cert(*priv_key, blk->get_hash());
@@ -255,7 +280,7 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
         std::cout << "create cert: " << msg.vote.blk_hash.to_hex() << " " << &blk->self_qc << std::endl;
     }
 
-    if (id == 0) {
+    if (id == pmaker->get_proposer()) {
         struct timeval time;
         gettimeofday(&time, NULL);
         std::cout << "vote handler: " << msg.vote.blk_hash.to_hex() << " " << time.tv_usec << std::endl;
@@ -270,7 +295,7 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
         return;
     }
 
-    if (id != 0 ) {
+    if (id != pmaker->get_proposer() ) {
         auto &cert = blk->self_qc;
         cert->add_part(config, msg.vote.voter, *msg.vote.cert);
         //HOTSTUFF_LOG_PROTO("add part");
@@ -294,7 +319,7 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
     RcObj<Vote> v(new Vote(std::move(msg.vote)));
     promise::all(std::vector<promise_t>{
         async_deliver_blk(v->blk_hash, peer),
-        id == 0 ? v->verify(vpool) : promise_t([](promise_t &pm) { pm.resolve(true); }),
+        id == pmaker->get_proposer() ? v->verify(vpool) : promise_t([](promise_t &pm) { pm.resolve(true); }),
     }).then([this, blk, v=std::move(v), timeStart](const promise::values_t values) {
         if (!promise::any_cast<bool>(values[1]))
             LOG_WARN("invalid vote from %d", v->voter);
@@ -581,12 +606,10 @@ void HotStuffBase::do_vote(Proposal prop, const Vote &vote) {
             //HOTSTUFF_LOG_PROTO("send vote");
             pn.send_msg(MsgVote(vote), parentPeer);
         } else {
-            //todo I think this goes at some mment later than receiving, and all breaks apart. We need this more resilient (If height >= blockheight we check in the quorum cert for it).
             block_t blk = get_delivered_blk(vote.blk_hash);
             if (blk->self_qc == nullptr)
             {
                 //HOTSTUFF_LOG_PROTO("create cert");
-
                 blk->self_qc = create_quorum_cert(prop.blk->get_hash());
                 blk->self_qc->add_part(config, vote.voter, *vote.cert);
             }
@@ -713,20 +736,50 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
                 it = decision_waiting.insert(std::make_pair(cmd_hash, e.second)).first;
             else
                 e.second(Finality(id, 0, 0, 0, cmd_hash, uint256_t()));
-            if (proposer != get_id()) continue;
+            if (proposer != get_id()) {
+                continue;
+            }
+
             cmd_pending_buffer.push(cmd_hash);
             if (cmd_pending_buffer.size() >= blk_size)
             {
                 std::vector<uint256_t> cmds;
-                for (uint32_t i = 0; i < blk_size; i++)
-                {
+                for (uint32_t i = 0; i < blk_size; i++) {
                     cmds.push_back(cmd_pending_buffer.front());
                     cmd_pending_buffer.pop();
                 }
                 pmaker->beat().then([this, cmds = std::move(cmds)](ReplicaID proposer) {
                     HOTSTUFF_LOG_PROTO("Proposing: %d", cmds.size());
-                    if (proposer == get_id())
-                        on_propose(cmds, pmaker->get_parents());
+                    if (proposer == get_id()) {
+
+                        auto parents = pmaker->get_parents();
+
+                        struct timeval current_time;
+                        gettimeofday(&current_time, NULL);
+
+                        if (b_piped == nullptr && pmaker->get_current_proposal() != get_genesis() && ((current_time.tv_sec - last_block_time.tv_sec) * 1000000 + current_time.tv_usec - last_block_time.tv_usec) * 1000 > config.piped_latency) {
+
+                            block_t current = pmaker->get_current_proposal();
+                            b_piped = new Block(parents, cmds,
+                                              hqc.second->clone(), bytearray_t(),
+                                              parents[0]->height + 1,
+                                              current,
+                                              nullptr);
+
+                            Proposal prop(id, b_piped, nullptr);
+                            HOTSTUFF_LOG_PROTO("propose %s", std::string(*b_piped).c_str());
+                            /* broadcast to other replicas */
+                            do_broadcast_proposal(prop);
+
+                            gettimeofday(&last_block_time, NULL);
+                            //todo: On receival on the child processes we have to check the QC one further back, they can't approve one back, but two back.
+                        }
+                        else {
+                            on_propose(cmds, std::move(parents));
+                            gettimeofday(&last_block_time, NULL);
+                        }
+                    }
+
                 });
                 return true;
             }

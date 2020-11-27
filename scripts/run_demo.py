@@ -81,19 +81,31 @@ if __name__ == "__main__":
             ssh.exec_command(command)
             i+=1
 
-    ssh.connect("172.16.52.23",port,user,password,timeout = 10)
-    ssh.exec_command("killall hotstuff-client &")
+    if "127.0.0.1" in ipSet:
+        ssh.connect("172.16.52.23",port,user,password,timeout = 10)
+        ssh.exec_command("killall hotstuff-client &")
 
-    time.sleep(3)
+        time.sleep(3)
 
-    for j in range(1, 10):
-        print("Starting Client!")
-        ssh.exec_command("cd test/libhotstuff && ./examples/hotstuff-client --idx {} --iter -100 --max-async 500 > clientlog{} 2>&1 &".format(1, j))
+        for j in range(1, 10):
+            print("Starting Client!")
+            ssh.exec_command("cd test/libhotstuff && ./examples/hotstuff-client --idx {} --iter -100 --max-async 500 > clientlog{} 2>&1 &".format(1, j))
 
-    time.sleep( 300 )
+        time.sleep( 300 )
 
-    ssh.exec_command("killall hotstuff-client &")
-    print("Killing all processes again!")
+        ssh.exec_command("killall hotstuff-client &")
+        print("Killing all processes again!")
+    else:
+        os.system("killall hotstuff-client &")
+
+        time.sleep(3)
+
+        for j in range(1, 3):
+            os.system("./examples/hotstuff-client --idx {} --iter -10 --max-async 10 > clientlog{} 2>&1 &".format(1, j))
+
+        time.sleep( 300 )
+        os.system("killall hotstuff-client &")
+        print("Killing all processes again!")
 
     for ipEl in ipSet:
         ipElSet = ipEl.split(" ")
@@ -107,4 +119,3 @@ if __name__ == "__main__":
             ssh.exec_command(command)
             ssh.exec_command("sudo tc qdisc del dev enp5s0f0 root")
             ssh.close()
-

@@ -133,6 +133,7 @@ class HotStuffApp: public HotStuff {
 
     void start(const std::vector<std::tuple<NetAddr, bytearray_t, bytearray_t>> &reps);
     void set_fanout(int32_t fanout);
+    void set_piped_latency(int32_t piped_latency);
     void stop();
 };
 
@@ -153,7 +154,7 @@ int main(int argc, char **argv) {
 
     auto opt_blk_size = Config::OptValInt::create(1);
     auto opt_parent_limit = Config::OptValInt::create(-1);
-    auto opt_stat_period = Config::OptValDouble::create(10);
+    auto opt_stat_period = Config::OptValDouble::create(120);
     auto opt_replicas = Config::OptValStrVec::create();
     auto opt_idx = Config::OptValInt::create(0);
     auto opt_client_port = Config::OptValInt::create(-1);
@@ -175,6 +176,7 @@ int main(int argc, char **argv) {
     auto opt_max_rep_msg = Config::OptValInt::create(8 << 20); // 4M by default
     auto opt_max_cli_msg = Config::OptValInt::create(65536); // 64K by default
     auto opt_fanout = Config::OptValInt::create(2); // 2 by default
+    auto opt_piped_latency = Config::OptValInt::create(10); // 10ms by default
 
     config.add_opt("block-size", opt_blk_size, Config::SET_VAL);
     config.add_opt("parent-limit", opt_parent_limit, Config::SET_VAL);
@@ -199,7 +201,8 @@ int main(int argc, char **argv) {
     config.add_opt("max-rep-msg", opt_max_rep_msg, Config::SET_VAL, 'S', "the maximum replica message size");
     config.add_opt("max-cli-msg", opt_max_cli_msg, Config::SET_VAL, 'S', "the maximum client message size");
     config.add_opt("help", opt_help, Config::SWITCH_ON, 'h', "show this help info");
-    config.add_opt("fan-out", opt_fanout, Config::SET_VAL, 'y', "fanout");
+    config.add_opt("fan-out", opt_fanout, Config::SET_VAL, 'F', "fanout");
+    config.add_opt("piped_latency", opt_piped_latency, Config::SET_VAL, 'P', "Latency between the block pipelining");
 
     EventContext ec;
     config.parse(argc, argv);
@@ -290,6 +293,7 @@ int main(int argc, char **argv) {
     }
 
     papp->set_fanout(opt_fanout->get());
+    papp->set_piped_latency(opt_piped_latency->get());
 
     auto shutdown = [&](int) { papp->stop(); };
     salticidae::SigEvent ev_sigint(ec, shutdown);
@@ -424,4 +428,8 @@ void HotStuffApp::print_stat() const {
 
 void HotStuffApp::set_fanout(int32_t fanout) {
     HotStuff::set_fanout(fanout);
+}
+
+void HotStuffApp::set_piped_latency(int32_t piped_latency) {
+    HotStuff::set_piped_latency(piped_latency);
 }

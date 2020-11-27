@@ -53,6 +53,8 @@ class PaceMaker {
     virtual void impeach() {}
     virtual void on_consensus(const block_t &) {}
     virtual size_t get_pending_size() = 0;
+
+    virtual block_t get_current_proposal() { }
 };
 
 using pacemaker_bt = BoxObj<PaceMaker>;
@@ -140,16 +142,25 @@ class PMWaitQC: public virtual PaceMaker {
 
     protected:
     void schedule_next() {
-        if (!pending_beats.empty() && !locked)
+        if (!pending_beats.empty())
         {
-            auto pm = pending_beats.front();
-            pending_beats.pop();
-            pm_qc_finish.reject();
-            (pm_qc_finish = hsc->async_qc_finish(last_proposed))
-                .then([this, pm]() {
+            if (locked) {
+                if (hsc->b_piped == nullptr) {
+                    auto pm = pending_beats.front();
+                    pending_beats.pop();
                     pm.resolve(get_proposer());
-                });
-            locked = true;
+                }
+            }
+            else {
+                auto pm = pending_beats.front();
+                pending_beats.pop();
+                pm_qc_finish.reject();
+                (pm_qc_finish = hsc->async_qc_finish(last_proposed))
+                        .then([this, pm]() {
+                            pm.resolve(get_proposer());
+                        });
+                locked = true;
+            }
         }
     }
 
@@ -176,6 +187,10 @@ class PMWaitQC: public virtual PaceMaker {
 
     ReplicaID get_proposer() override {
         return hsc->get_id();
+    }
+
+    block_t get_current_proposal() {
+        return last_proposed;
     }
 
     promise_t beat() override {

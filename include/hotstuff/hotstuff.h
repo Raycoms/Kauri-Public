@@ -188,6 +188,8 @@ class HotStuffBase: public HotStuffCore {
     mutable double part_delivery_time_max;
     mutable std::unordered_map<const PeerId, uint32_t> part_fetched_replica;
 
+    mutable struct timeval last_block_time;
+
     mutable PeerId parentPeer;
     mutable std::set<PeerId> childPeers;
 
@@ -322,6 +324,10 @@ class HotStuff: public HotStuffBase {
 
     void set_fanout(int32_t fanout) {
         HotStuffBase::set_fanout(fanout);
+    }
+
+    void set_piped_latency(int32_t piped_latency) {
+        HotStuffBase::set_piped_latency(piped_latency);
     }
 };
 

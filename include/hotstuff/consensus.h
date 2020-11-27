@@ -38,15 +38,15 @@ struct VoteRelay;
 class HotStuffCore {
     block_t b0;                                  /** the genesis block */
     /* === state variables === */
-    /** block containing the QC for the highest block having one */
-    std::pair<block_t, quorum_cert_bt> hqc;   /**< highest QC */
+    /**< highest QC */
     block_t b_lock;                            /**< locked block */
     block_t b_exec;                            /**< last executed block */
-    uint32_t vheight;          /**< height of the block last voted for */
+    /**< height of the block last voted for */
     /**< private key for signing votes */
     std::set<block_t> tails;   /**< set of tail blocks */
     /**< replica configuration */
     /* === async event queues === */
+
     std::unordered_map<block_t, promise_t> qc_waiting;
     promise_t propose_waiting;
     promise_t receive_proposal_waiting;
@@ -56,11 +56,9 @@ class HotStuffCore {
     bool vote_disabled;
 
     void sanity_check_delivered(const block_t &blk);
-    void update(const block_t &nblk);
 
     void on_hqc_update();
 
-    void on_propose_(const Proposal &prop);
     void on_receive_proposal_(const Proposal &prop);
 
     protected:
@@ -78,6 +76,17 @@ class HotStuffCore {
 
 /* === auxilliary variables === */
 privkey_bt priv_key;
+/** block containing the QC for the highest block having one */
+std::pair<block_t, quorum_cert_bt> hqc;
+/** Add an additional block commit.*/
+bool rdy = false;
+
+    void update(const block_t &nblk);
+
+    uint32_t vheight;
+
+    void on_propose_(const Proposal &prop);
+
 public:
     BoxObj<EntityStorage> storage;
     uint16_t numberOfChildren;
@@ -94,8 +103,12 @@ public:
      * functions. */
     void on_init(uint32_t nfaulty);
 
-    /** Call to initialize the master public key.. */
+    /** Call to set the fanout. */
     void set_fanout(int32_t fanout);
+
+    /** Call to set the piped latency */
+    void set_piped_latency(int32_t piped_latency);
+
 
     /* TODO: better name for "delivery" ? */
     /** Call to inform the state machine that a block is ready to be handled.
@@ -127,7 +140,9 @@ public:
     /* Outputs of the state machine triggering external events.  The virtual
      * functions should be implemented by the user to specify the behavior upon
      * the events. */
-    protected:
+    // Pipelined block.
+    block_t b_piped = nullptr;
+protected:
     /** Called by HotStuffCore upon the decision being made for cmd. */
     virtual void do_decide(Finality &&fin) = 0;
     virtual void do_consensus(const block_t &blk) = 0;
@@ -180,6 +195,8 @@ public:
     const std::set<block_t> get_tails() const { return tails; }
     operator std::string () const;
     void set_vote_disabled(bool f) { vote_disabled = f; }
+
+    Proposal process_block(const block_t& bnew, bool adjustHeight);
 };
 
 /** Abstraction for proposal messages. */
