@@ -153,7 +153,7 @@ class PMWaitQC: public virtual PaceMaker {
                     pending_beats.pop();
                     pm.resolve(get_proposer());
                     hsc->piped_submittted = true;
-                    std::cout << "Extra block" << std::endl;
+                    HOTSTUFF_LOG_PROTO("Extra block");
                 }
             }
             else {

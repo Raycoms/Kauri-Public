@@ -366,7 +366,8 @@ promise_t HotStuffCore::async_qc_finish(const block_t &blk) {
     //std::cout << "test " << blk->voted.size() << " " << blk->self_qc->has_n(config.nmajority) << std::endl;
 
     if ((blk->self_qc != nullptr && blk->self_qc->has_n(config.nmajority) && !blk->voted.empty()) || blk->voted.size() >= config.nmajority) {
-        std::cout << "async_qc_finish " << blk->get_hash().to_hex() << std::endl;
+        HOTSTUFF_LOG_PROTO("async_qc_finish %s", blk->get_hash().to_hex().c_str());
+
         return promise_t([](promise_t &pm) {
             pm.resolve();
         });
@@ -381,7 +382,7 @@ void HotStuffCore::on_qc_finish(const block_t &blk) {
     auto it = qc_waiting.find(blk);
     if (it != qc_waiting.end())
     {
-        std::cout << "async_qc_finish " << blk->get_hash().to_hex() << std::endl;
+        HOTSTUFF_LOG_PROTO("async_qc_finish %s", blk->get_hash().to_hex().c_str());
         it->second.resolve();
         qc_waiting.erase(it);
     }
