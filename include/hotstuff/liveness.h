@@ -145,7 +145,7 @@ class PMWaitQC: public virtual PaceMaker {
         if (!pending_beats.empty())
         {
             if (locked) {
-                if (hsc->b_piped == nullptr) {
+                if (hsc->b_piped == nullptr && !hsc->piped_submittted) {
                     auto pm = pending_beats.front();
                     pending_beats.pop();
                     pm.resolve(get_proposer());

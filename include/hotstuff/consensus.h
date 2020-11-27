@@ -142,6 +142,9 @@ public:
      * the events. */
     // Pipelined block.
     block_t b_piped = nullptr;
+
+    // If already a piped block was submitted.
+    bool piped_submittted = false;
 protected:
     /** Called by HotStuffCore upon the decision being made for cmd. */
     virtual void do_decide(Finality &&fin) = 0;
