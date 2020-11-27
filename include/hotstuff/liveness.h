@@ -171,7 +171,7 @@ class PMWaitQC: public virtual PaceMaker {
         (pm_wait_propose = hsc->async_wait_proposal()).then(
                 [this](const Proposal &prop) {
 
-            std::cout << "last proposed block " << std::to_string(prop.blk) << std::endl;
+            std::cout << "last proposed block " << prop.blk->get_hash().to_hex() << std::endl;
             last_proposed = prop.blk;
             locked = false;
             schedule_next();
