@@ -253,22 +253,18 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
     msg.postponed_parse(this);
     HOTSTUFF_LOG_PROTO("received vote");
 
-        if (id == pmaker->get_proposer() && b_piped != nullptr && b_piped->hash == msg.vote.blk_hash) {
+    if (id == pmaker->get_proposer() && b_piped != nullptr && b_piped->hash == msg.vote.blk_hash) {
 
-            HOTSTUFF_LOG_PROTO("Piped block");
-            block_t blk = storage->find_blk(msg.vote.blk_hash);
-            if (blk == nullptr) {
-                storage->add_blk(b_piped);
-                process_block(b_piped, false);
-                b_piped = nullptr;
-                HOTSTUFF_LOG_PROTO("Normalized Piped Block");
-            }
-
-            //todo: On receival here of the piped block, it has to go through all the steps normally the block production goes (setting at the right places etc)
-            //todo: only afterwards we can then do the -> bl = get_potentially_not_delivered_blk(msg.vote.blk_hash);
-
+        HOTSTUFF_LOG_PROTO("Piped block");
+        block_t blk = storage->find_blk(msg.vote.blk_hash);
+        if (blk == nullptr) {
+            storage->add_blk(b_piped);
+            process_block(b_piped, false);
+            HOTSTUFF_LOG_PROTO("Normalized Piped Block");
+        } else if (blk->self_qc->has_n(config.nmajority) - 1) {
+            b_piped = nullptr;
         }
-
+    }
 
     block_t blk = get_potentially_not_delivered_blk(msg.vote.blk_hash);
 
