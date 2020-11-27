@@ -264,6 +264,8 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
         } else if (blk->self_qc->has_n(config.nmajority) - 1) {
             b_piped = nullptr;
             HOTSTUFF_LOG_PROTO("Reset Piped Block");
+            //todo: The problem is that after we normalize this block and then approve it, this will lead to a "consensus result" and directly a new block too.
+            //todo: thus, we can only produce the latency block one initially, and then we have to switch between piped and non-piped.
         }
     }
 
@@ -362,6 +364,22 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
     if (peer.is_null()) return;
     msg.postponed_parse(this);
     //std::cout << "vote relay handler: " << msg.vote.blk_hash.to_hex() << std::endl;
+
+    if (id == pmaker->get_proposer() && b_piped != nullptr && b_piped->hash == msg.vote.blk_hash) {
+
+        HOTSTUFF_LOG_PROTO("Piped block");
+        block_t blk = storage->find_blk(msg.vote.blk_hash);
+        if (blk == nullptr) {
+            storage->add_blk(b_piped);
+            process_block(b_piped, false);
+            HOTSTUFF_LOG_PROTO("Normalized Piped Block");
+        } else if (blk->self_qc->has_n(config.nmajority) - 1) {
+            b_piped = nullptr;
+            HOTSTUFF_LOG_PROTO("Reset Piped Block");
+            //todo: The problem is that after we normalize this block and then approve it, this will lead to a "consensus result" and directly a new block too.
+            //todo: thus, we can only produce the latency block one initially, and then we have to switch between piped and non-piped.
+        }
+    }
 
     block_t blk = get_potentially_not_delivered_blk(msg.vote.blk_hash);
     if (!blk->delivered && blk->self_qc == nullptr) {
@@ -769,7 +787,6 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
                             HOTSTUFF_LOG_PROTO("propose piped %s", std::string(*b_piped).c_str());
                             /* broadcast to other replicas */
                             do_broadcast_proposal(prop);
-
                             gettimeofday(&last_block_time, NULL);
                             //todo: On receival on the child processes we have to check the QC one further back, they can't approve one back, but two back.
                         }
