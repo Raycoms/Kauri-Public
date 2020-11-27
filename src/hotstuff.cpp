@@ -251,7 +251,7 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
     const auto &peer = conn->get_peer_id();
     if (peer.is_null()) return;
     msg.postponed_parse(this);
-    HOTSTUFF_LOG_PROTO("received vote");
+    //HOTSTUFF_LOG_PROTO("received vote");
 
     if (id == pmaker->get_proposer() && b_piped != nullptr && b_piped->hash == msg.vote.blk_hash) {
 

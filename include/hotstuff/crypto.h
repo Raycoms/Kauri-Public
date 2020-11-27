@@ -726,16 +726,16 @@ class QuorumCertSecp256k1: public QuorumCert {
 
             check_msg_length(msg);
 
-            struct timeval timeStart, timeEnd;
-            gettimeofday(&timeStart, nullptr);
+            //struct timeval timeStart, timeEnd;
+            //gettimeofday(&timeStart, nullptr);
             bool td = bls::PopSchemeMPL::Verify(*(pub_key.data), arrToVec(msg), *data);
 
-            gettimeofday(&timeEnd, nullptr);
+            /*gettimeofday(&timeEnd, nullptr);
 
             std::cout << "This verifying slow piece of code took "
                       << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
                       << " us to execute."
-                      << std::endl;
+                      << std::endl;*/
 
             return td;
         }
