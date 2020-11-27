@@ -365,10 +365,12 @@ void HotStuffCore::add_replica(ReplicaID rid, const PeerId &peer_id,
 promise_t HotStuffCore::async_qc_finish(const block_t &blk) {
     //std::cout << "test " << blk->voted.size() << " " << blk->self_qc->has_n(config.nmajority) << std::endl;
 
-    if ((blk->self_qc != nullptr && blk->self_qc->has_n(config.nmajority) && !blk->voted.empty()) || blk->voted.size() >= config.nmajority)
+    if ((blk->self_qc != nullptr && blk->self_qc->has_n(config.nmajority) && !blk->voted.empty()) || blk->voted.size() >= config.nmajority) {
+        std::cout << "async_qc_finish " << blk->get_hash().to_hex() << std::endl;
         return promise_t([](promise_t &pm) {
             pm.resolve();
         });
+    }
     auto it = qc_waiting.find(blk);
     if (it == qc_waiting.end())
         it = qc_waiting.insert(std::make_pair(blk, promise_t())).first;
