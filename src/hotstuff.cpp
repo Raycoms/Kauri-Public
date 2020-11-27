@@ -769,7 +769,7 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
                         struct timeval current_time;
                         gettimeofday(&current_time, NULL);
 
-                        if (b_piped == nullptr && pmaker->get_current_proposal() != get_genesis() && ((current_time.tv_sec - last_block_time.tv_sec) * 1000000 + current_time.tv_usec - last_block_time.tv_usec) * 1000 > config.piped_latency) {
+                        if (b_piped == nullptr && pmaker->get_current_proposal() != get_genesis() && ((current_time.tv_sec - last_block_time.tv_sec) * 1000000 + current_time.tv_usec - last_block_time.tv_usec) * 10000 > config.piped_latency) {
                             piped_submittted = true;
 
                             block_t current = pmaker->get_current_proposal();
@@ -783,12 +783,10 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
                             HOTSTUFF_LOG_PROTO("propose piped %s", std::string(*b_piped).c_str());
                             /* broadcast to other replicas */
                             do_broadcast_proposal(prop);
-                            gettimeofday(&last_block_time, NULL);
                             //todo: On receival on the child processes we have to check the QC one further back, they can't approve one back, but two back.
                         }
                         else {
                             on_propose(cmds, std::move(parents));
-                            gettimeofday(&last_block_time, NULL);
                         }
                     }
 
