@@ -208,22 +208,18 @@ promise_t HotStuffBase::async_deliver_blk(const uint256_t &blk_hash, const PeerI
     return static_cast<promise_t &>(pm);
 }
 
-void send(const DataStream& stream, HotStuffBase::Net *pn, const std::set<PeerId>& childPeers) {
-    MsgPropose relay = MsgPropose(stream, true);
-    for (const PeerId &peerId : childPeers) {
-        pn->send_msg(relay, peerId);
-    }
-}
-
 void HotStuffBase::propose_handler(MsgPropose &&msg, const Net::conn_t &conn) {
     std::cout << "Propose handler1" << std::endl;
     const PeerId &peer = conn->get_peer_id();
     if (peer.is_null()) return;
     auto stream = msg.serialized;
 
-
-    if (!childPeers.empty())
-        auto future = std::async(send, stream, &pn, childPeers);
+    if (!childPeers.empty()) {
+        MsgPropose relay = MsgPropose(stream, true);
+        for (const PeerId &peerId : childPeers) {
+            pn.send_msg(relay, peerId);
+        }
+    }
 
     msg.postponed_parse(this);
     auto &prop = msg.proposal;
