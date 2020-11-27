@@ -263,6 +263,7 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
             HOTSTUFF_LOG_PROTO("Normalized Piped Block");
         } else if (blk->self_qc->has_n(config.nmajority) - 1) {
             b_piped = nullptr;
+            HOTSTUFF_LOG_PROTO("Reset Piped Block");
         }
     }
 
@@ -279,9 +280,9 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
     if (id == pmaker->get_proposer()) {
         struct timeval time;
         gettimeofday(&time, NULL);
-        std::cout << "vote handler: " << msg.vote.blk_hash.to_hex() << " " << time.tv_usec << std::endl;
+        //std::cout << "vote handler: " << msg.vote.blk_hash.to_hex() << " " << time.tv_usec << std::endl;
     } else {
-        std::cout << "vote handler: " << msg.vote.blk_hash.to_hex() << " " << std::endl;
+        //std::cout << "vote handler: " << msg.vote.blk_hash.to_hex() << " " << std::endl;
     }
     //HOTSTUFF_LOG_PROTO("vote handler %d %d", config.nmajority, config.nreplicas);
 
@@ -333,22 +334,23 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
             }
         }
 
-        struct timeval timeEnd;
+        /*struct timeval timeEnd;
         gettimeofday(&timeEnd, NULL);
 
         std::cout << "Vote handling cost partially threaded: "
                   << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
                   << " us to execute."
-                  << std::endl;
+                  << std::endl;*/
 
     });
 
+    /*
     gettimeofday(&timeEnd, NULL);
 
     std::cout << "Vote handling cost: "
               << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
               << " us to execute."
-              << std::endl;
+              << std::endl;*/
 }
 
 void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
@@ -763,7 +765,7 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
                                               nullptr);
 
                             Proposal prop(id, b_piped, nullptr);
-                            HOTSTUFF_LOG_PROTO("propose %s", std::string(*b_piped).c_str());
+                            HOTSTUFF_LOG_PROTO("propose piped %s", std::string(*b_piped).c_str());
                             /* broadcast to other replicas */
                             do_broadcast_proposal(prop);
 

@@ -201,6 +201,7 @@ block_t HotStuffCore::on_propose(const std::vector<uint256_t> &cmds,
                 ));
     }
 
+    LOG_PROTO("propose %s", std::string(*bnew).c_str());
     Proposal prop = process_block(bnew, true);
     /* broadcast to other replicas */
     do_broadcast_proposal(prop);
@@ -219,7 +220,6 @@ Proposal HotStuffCore::process_block(const block_t& bnew, bool adjustHeight)
     LOG_PROTO("before update");
     update(bnew);
     Proposal prop(id, bnew, nullptr);
-    LOG_PROTO("propose %s", std::string(*bnew).c_str());
     //std::cout << "prop" << std::endl;
     /* self-vote */
     if (adjustHeight) {
