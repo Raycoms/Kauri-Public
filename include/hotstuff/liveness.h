@@ -145,7 +145,7 @@ class PMWaitQC: public virtual PaceMaker {
         if (!pending_beats.empty())
         {
             if (locked) {
-                if (false && hsc->b_piped == nullptr && !hsc->piped_submittted) {
+                if (hsc->b_piped == nullptr && !hsc->piped_submittted) {
                     auto pm = pending_beats.front();
                     pending_beats.pop();
                     pm.resolve(get_proposer());
@@ -170,6 +170,8 @@ class PMWaitQC: public virtual PaceMaker {
         pm_wait_propose.reject();
         (pm_wait_propose = hsc->async_wait_proposal()).then(
                 [this](const Proposal &prop) {
+
+            std::cout << "last proposed block " << std::to_string(prop.blk) << std::endl;
             last_proposed = prop.blk;
             locked = false;
             schedule_next();
