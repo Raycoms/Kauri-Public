@@ -770,7 +770,6 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
                         gettimeofday(&current_time, NULL);
 
                         if (b_piped == nullptr && pmaker->get_current_proposal() != get_genesis() && ((current_time.tv_sec - last_block_time.tv_sec) * 1000000 + current_time.tv_usec - last_block_time.tv_usec) * 10000 > config.piped_latency) {
-                            piped_submittted = true;
 
                             block_t current = pmaker->get_current_proposal();
                             b_piped = new Block(parents, cmds,
