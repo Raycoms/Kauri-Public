@@ -145,6 +145,9 @@ public:
 
     // If already a piped block was submitted.
     bool piped_submittted = false;
+
+    // Last sent out block time.
+    mutable struct timeval last_block_time;
 protected:
     /** Called by HotStuffCore upon the decision being made for cmd. */
     virtual void do_decide(Finality &&fin) = 0;

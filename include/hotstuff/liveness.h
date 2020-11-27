@@ -145,7 +145,10 @@ class PMWaitQC: public virtual PaceMaker {
         if (!pending_beats.empty())
         {
             if (locked) {
-                if (hsc->b_piped == nullptr && !hsc->piped_submittted) {
+                struct timeval current_time;
+                gettimeofday(&current_time, NULL);
+
+                if (hsc->b_piped == nullptr && !hsc->piped_submittted && ((current_time.tv_sec - hsc->last_block_time.tv_sec) * 1000000 + current_time.tv_usec - hsc->last_block_time.tv_usec) / 1000 > hsc->get_config().piped_latency) {
                     auto pm = pending_beats.front();
                     pending_beats.pop();
                     pm.resolve(get_proposer());

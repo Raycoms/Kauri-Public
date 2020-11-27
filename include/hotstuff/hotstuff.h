@@ -188,8 +188,6 @@ class HotStuffBase: public HotStuffCore {
     mutable double part_delivery_time_max;
     mutable std::unordered_map<const PeerId, uint32_t> part_fetched_replica;
 
-    mutable struct timeval last_block_time;
-
     mutable PeerId parentPeer;
     mutable std::set<PeerId> childPeers;
 
