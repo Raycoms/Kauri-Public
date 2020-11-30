@@ -164,7 +164,6 @@ class PMWaitQC: public virtual PaceMaker {
                         .then([this, pm]() {
                             pm.resolve(get_proposer());
                         });
-                HOTSTUFF_LOG_PROTO("Locking");
                 locked = true;
             }
         }
@@ -175,7 +174,6 @@ class PMWaitQC: public virtual PaceMaker {
         (pm_wait_propose = hsc->async_wait_proposal()).then(
                 [this](const Proposal &prop) {
             last_proposed = prop.blk;
-            HOTSTUFF_LOG_PROTO("Unlocking");
             locked = false;
             schedule_next();
             update_last_proposed();
