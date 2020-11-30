@@ -137,7 +137,6 @@ class PMWaitQC: public virtual PaceMaker {
     std::queue<promise_t> pending_beats;
     block_t last_proposed;
     bool locked;
-    promise_t pm_qc_finish;
     promise_t pm_wait_propose;
 
     protected:
@@ -159,8 +158,7 @@ class PMWaitQC: public virtual PaceMaker {
             else {
                 auto pm = pending_beats.front();
                 pending_beats.pop();
-                pm_qc_finish.reject();
-                (pm_qc_finish = hsc->async_qc_finish(last_proposed))
+                hsc->async_qc_finish(last_proposed)
                         .then([this, pm]() {
                             pm.resolve(get_proposer());
                         });
