@@ -299,6 +299,7 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
             //HOTSTUFF_LOG_PROTO("not enough");
             return;
         }
+        std::cout <<  " got enough votes: " << msg.vote.blk_hash.to_hex().c_str() <<  std::endl;
 
         cert->compute();
         if (!cert->verify(config)) {
