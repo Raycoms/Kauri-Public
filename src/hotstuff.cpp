@@ -304,7 +304,7 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
         if (!cert->verify(config)) {
             throw std::runtime_error("Invalid Sigs in intermediate signature!");
         }
-        //std::cout << peers[id].to_hex() <<  " send relay message: " << v->blk_hash.to_hex() <<  std::endl;
+        std::cout <<  " send relay message: " << msg.vote.blk_hash.to_hex().c_str() <<  std::endl;
         pn.send_msg(MsgRelay(VoteRelay(msg.vote.blk_hash, blk->self_qc->clone(), this)), parentPeer);
         async_deliver_blk(msg.vote.blk_hash, peer);
         return;
