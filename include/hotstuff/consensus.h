@@ -144,7 +144,7 @@ public:
     block_t b_piped = nullptr;
 
     // If already a piped block was submitted.
-    bool piped_submittted = false;
+    bool piped_submittted = true;
 
     // Last sent out block time.
     mutable struct timeval last_block_time;
