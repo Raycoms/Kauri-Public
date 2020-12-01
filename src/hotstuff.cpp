@@ -369,11 +369,9 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
             storage->add_blk(b_piped);
             process_block(b_piped, false);
             HOTSTUFF_LOG_PROTO("Normalized Piped Block");
-        } else if (blk->self_qc->has_n(config.nmajority) - 1) {
+        } else if (blk->self_qc->has_n(config.nmajority)) {
             b_piped = nullptr;
             HOTSTUFF_LOG_PROTO("Reset Piped Block");
-            //todo: The problem is that after we normalize this block and then approve it, this will lead to a "consensus result" and directly a new block too.
-            //todo: thus, we can only produce the latency block one initially, and then we have to switch between piped and non-piped.
         }
     }
 
