@@ -146,14 +146,14 @@ class PMWaitQC: public virtual PaceMaker {
             if (locked) {
                 struct timeval current_time;
                 gettimeofday(&current_time, NULL);
-                if (hsc->b_piped == nullptr && !hsc->piped_submittted) {
+                if (hsc->b_piped == nullptr && !hsc->piped_submitted && false) {
                     auto delay = ((current_time.tv_sec - hsc->last_block_time.tv_sec) * 1000000 + current_time.tv_usec - hsc->last_block_time.tv_usec) / 1000;
                     HOTSTUFF_LOG_PROTO("Attempt Extra %d of %d", delay, hsc->get_config().piped_latency);
                     if (delay > hsc->get_config().piped_latency) {
                         auto pm = pending_beats.front();
                         pending_beats.pop();
                         pm.resolve(get_proposer());
-                        hsc->piped_submittted = true;
+                        hsc->piped_submitted = true;
                         HOTSTUFF_LOG_PROTO("Extra block");
                     }
                 }
