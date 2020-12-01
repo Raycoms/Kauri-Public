@@ -771,17 +771,22 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
 
                         if ( b_piped == nullptr && pmaker->get_current_proposal() != get_genesis() ) {
 
-                            b_piped = new Block(parents, cmds,
-                                              hqc.second->clone(), bytearray_t(),
-                                              parents[0]->height + 1,
-                                              current,
-                                              nullptr);
+                            if (((current_time.tv_sec - last_block_time.tv_sec) * 1000000 + current_time.tv_usec - last_block_time.tv_usec) / 1000 < config.piped_latency) {
+                                piped_submitted = false;
+                            }
+                            else {
+                                b_piped = new Block(parents, cmds,
+                                                    hqc.second->clone(), bytearray_t(),
+                                                    parents[0]->height + 1,
+                                                    current,
+                                                    nullptr);
 
-                            Proposal prop(id, b_piped, nullptr);
-                            HOTSTUFF_LOG_PROTO("propose piped %s", std::string(*b_piped).c_str());
-                            /* broadcast to other replicas */
-                            do_broadcast_proposal(prop);
-                            gettimeofday(&last_block_time, NULL);
+                                Proposal prop(id, b_piped, nullptr);
+                                HOTSTUFF_LOG_PROTO("propose piped %s", std::string(*b_piped).c_str());
+                                /* broadcast to other replicas */
+                                do_broadcast_proposal(prop);
+                                gettimeofday(&last_block_time, NULL);
+                            }
                         }
                         else {
                             on_propose(cmds, std::move(parents));
