@@ -784,8 +784,6 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
                             /* broadcast to other replicas */
                             do_broadcast_proposal(prop);
                             gettimeofday(&last_block_time, NULL);
-
-                            //todo: On receival on the child processes we have to check the QC one further back, they can't approve one back, but two back.
                         }
                         else {
                             on_propose(cmds, std::move(parents));
