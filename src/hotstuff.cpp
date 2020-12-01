@@ -362,16 +362,12 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
     //std::cout << "vote relay handler: " << msg.vote.blk_hash.to_hex() << std::endl;
 
     if (id == pmaker->get_proposer() && b_piped != nullptr && b_piped->hash == msg.vote.blk_hash) {
-
         HOTSTUFF_LOG_PROTO("Piped block");
         block_t blk = storage->find_blk(msg.vote.blk_hash);
         if (blk == nullptr) {
             storage->add_blk(b_piped);
             process_block(b_piped, false);
             HOTSTUFF_LOG_PROTO("Normalized Piped Block");
-        } else if (blk->self_qc->has_n(config.nmajority)) {
-            b_piped = nullptr;
-            HOTSTUFF_LOG_PROTO("Reset Piped Block");
         }
     }
 
@@ -426,6 +422,11 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
             //HOTSTUFF_LOG_PROTO("got %s", std::string(*v).c_str());
 
             if (!cert->has_n(config.nmajority)) return;
+
+            if (blk->hash == b_piped->hash) {
+                b_piped = nullptr;
+                HOTSTUFF_LOG_PROTO("Reset Piped Block");
+            }
 
             std::cout << "go to town: " << std::endl;
 
@@ -769,7 +770,7 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
                         gettimeofday(&current_time, NULL);
                         block_t current = pmaker->get_current_proposal();
 
-                        if ( b_piped == nullptr && pmaker->get_current_proposal() != get_genesis() ) {
+                        if ( b_piped == nullptr && current != get_genesis() ) {
 
                             if (((current_time.tv_sec - last_block_time.tv_sec) * 1000000 + current_time.tv_usec - last_block_time.tv_usec) / 1000 < config.piped_latency) {
                                 piped_submitted = false;
