@@ -303,6 +303,7 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
 
         cert->compute();
         if (!cert->verify(config)) {
+            std::cout <<  " sig fail: " << msg.vote.blk_hash.to_hex().c_str() <<  std::endl;
             throw std::runtime_error("Invalid Sigs in intermediate signature!");
         }
         std::cout <<  " send relay message: " << msg.vote.blk_hash.to_hex().c_str() <<  std::endl;
