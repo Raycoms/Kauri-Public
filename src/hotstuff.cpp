@@ -293,9 +293,10 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
 
         cert->compute();
         if (!cert->verify(config)) {
-            std::cout <<  " sig fail: " << msg.vote.blk_hash.to_hex().c_str() <<  std::endl;
-            throw std::runtime_error("Invalid Sigs in intermediate signature!");
+            HOTSTUFF_LOG_PROTO("Error, Invalid Sig!!!");
+            return;
         }
+
         std::cout <<  " send relay message: " << msg.vote.blk_hash.to_hex().c_str() <<  std::endl;
         pn.send_msg(MsgRelay(VoteRelay(msg.vote.blk_hash, blk->self_qc->clone(), this)), parentPeer);
         async_deliver_blk(msg.vote.blk_hash, peer);
@@ -419,7 +420,7 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
             cert->compute();
             if (!cert->verify(config)) {
                 HOTSTUFF_LOG_PROTO("Error, Invalid Sig!!!");
-                throw std::runtime_error("Invalid Sigs in intermediate signature!");
+                return;
             }
 
             update_hqc(blk, cert);
