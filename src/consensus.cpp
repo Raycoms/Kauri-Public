@@ -364,6 +364,7 @@ void HotStuffCore::add_replica(ReplicaID rid, const PeerId &peer_id,
 
 promise_t HotStuffCore::async_qc_finish(const block_t &blk) {
     //std::cout << "test " << blk->voted.size() << " " << blk->self_qc->has_n(config.nmajority) << std::endl;
+    HOTSTUFF_LOG_PROTO("async_qc_enter %s", blk->get_hash().to_hex().c_str());
 
     if ((blk->self_qc != nullptr && blk->self_qc->has_n(config.nmajority) && !blk->voted.empty()) || blk->voted.size() >= config.nmajority) {
         HOTSTUFF_LOG_PROTO("async_qc_finish %s", blk->get_hash().to_hex().c_str());
@@ -372,11 +373,15 @@ promise_t HotStuffCore::async_qc_finish(const block_t &blk) {
             pm.resolve();
         });
     }
+    HOTSTUFF_LOG_PROTO("async_qc_find %s", blk->get_hash().to_hex().c_str());
+
     auto it = qc_waiting.find(blk);
     if (it == qc_waiting.end()) {
         it = qc_waiting.insert(std::make_pair(blk, promise_t())).first;
         HOTSTUFF_LOG_PROTO("Insert async_qc qc %s", blk->get_hash().to_hex().c_str());
     }
+    HOTSTUFF_LOG_PROTO("async_qc_return %s", blk->get_hash().to_hex().c_str());
+
     return it->second;
 }
 
