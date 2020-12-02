@@ -308,7 +308,7 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
     promise::all(std::vector<promise_t>{
         async_deliver_blk(v->blk_hash, peer),
         id == pmaker->get_proposer() ? v->verify(vpool) : promise_t([](promise_t &pm) { pm.resolve(true); }),
-    }).then([this, blk, v=std::move(v), timeStart](const promise::values_t values) {
+    }).then([this, blk, v=std::move(v)](const promise::values_t values) {
         if (!promise::any_cast<bool>(values[1]))
             LOG_WARN("invalid vote from %d", v->voter);
         auto &cert = blk->self_qc;
