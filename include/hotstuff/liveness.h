@@ -171,6 +171,7 @@ class PMWaitQC: public virtual PaceMaker {
         pm_wait_propose.reject();
         (pm_wait_propose = hsc->async_wait_proposal()).then(
                 [this](const Proposal &prop) {
+            HOTSTUFF_LOG_PROTO("async_qc update last proposed %s", prop.blk->get_hash().to_hex().c_str());
             last_proposed = prop.blk;
             locked = false;
             schedule_next();
