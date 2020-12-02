@@ -283,7 +283,7 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
         cert->add_part(config, msg.vote.voter, *msg.vote.cert);
         //HOTSTUFF_LOG_PROTO("add part");
 
-        if (!cert->has_n(numberOfChildren + 1)) {
+        if (!cert->has_n(numberOfChildren)) {
             //HOTSTUFF_LOG_PROTO("not enough");
             return;
         }
