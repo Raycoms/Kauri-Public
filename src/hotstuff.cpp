@@ -432,16 +432,16 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
             std::cout << "Vote relay handling cost partially threaded: "
                       << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
                       << " us to execute."
-                      << std::endl;/*
+                      << std::endl;*/
         }
     });
 
-    gettimeofday(&timeEnd, NULL);
+    /*gettimeofday(&timeEnd, NULL);
 
     std::cout << "Vote relay handling cost: "
               << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
               << " us to execute."
-              << std::endl;
+              << std::endl;*/
 }
 
 void HotStuffBase::req_blk_handler(MsgReqBlock &&msg, const Net::conn_t &conn) {
