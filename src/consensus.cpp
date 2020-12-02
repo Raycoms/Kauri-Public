@@ -373,8 +373,10 @@ promise_t HotStuffCore::async_qc_finish(const block_t &blk) {
         });
     }
     auto it = qc_waiting.find(blk);
-    if (it == qc_waiting.end())
+    if (it == qc_waiting.end()) {
         it = qc_waiting.insert(std::make_pair(blk, promise_t())).first;
+        HOTSTUFF_LOG_PROTO("Insert async_qc qc %s", blk->get_hash().to_hex().c_str());
+    }
     return it->second;
 }
 
@@ -387,7 +389,7 @@ void HotStuffCore::on_qc_finish(const block_t &blk) {
         qc_waiting.erase(it);
     }
     else {
-        HOTSTUFF_LOG_PROTO("Couldn't find waiting qc");
+        HOTSTUFF_LOG_PROTO("Couldn't find async_qc qc %s", blk->get_hash().to_hex().c_str());
     }
 }
 
