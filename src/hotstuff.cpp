@@ -209,7 +209,6 @@ promise_t HotStuffBase::async_deliver_blk(const uint256_t &blk_hash, const PeerI
 }
 
 void HotStuffBase::propose_handler(MsgPropose &&msg, const Net::conn_t &conn) {
-    std::cout << "Propose handler1" << std::endl;
     const PeerId &peer = conn->get_peer_id();
     if (peer.is_null()) return;
     auto stream = msg.serialized;
@@ -227,22 +226,17 @@ void HotStuffBase::propose_handler(MsgPropose &&msg, const Net::conn_t &conn) {
     block_t blk = prop.blk;
     if (!blk) return;
 
-    std::cout << "Propose handler2" << std::endl;
-
     promise::all(std::vector<promise_t>{
         async_deliver_blk(blk->get_hash(), peer)
     }).then([this, prop = std::move(prop)]() {
-        std::cout << "Propose handler3" << std::endl;
-
         on_receive_proposal(prop);
     });
 }
 
 void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
 
-    struct timeval timeStart,
-            timeEnd;
-    gettimeofday(&timeStart, NULL);
+    //struct timeval timeStart,timeEnd;
+    //gettimeofday(&timeStart, NULL);
 
     const auto &peer = conn->get_peer_id();
     if (peer.is_null()) return;
@@ -275,13 +269,7 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
         std::cout << "create cert: " << msg.vote.blk_hash.to_hex() << " " << &blk->self_qc << std::endl;
     }
 
-    if (id == pmaker->get_proposer()) {
-        struct timeval time;
-        gettimeofday(&time, NULL);
-        //std::cout << "vote handler: " << msg.vote.blk_hash.to_hex() << " " << time.tv_usec << std::endl;
-    } else {
-        //std::cout << "vote handler: " << msg.vote.blk_hash.to_hex() << " " << std::endl;
-    }
+    std::cout << "vote handler: " << msg.vote.blk_hash.to_hex() << " " << std::endl;
     //HOTSTUFF_LOG_PROTO("vote handler %d %d", config.nmajority, config.nreplicas);
 
     if (blk->self_qc->has_n(config.nmajority)) {
@@ -299,6 +287,8 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
             //HOTSTUFF_LOG_PROTO("not enough");
             return;
         }
+        //todo weirdly, at some moment, this starts failing, we compute the sig, but we don't actually print those two messages. so sth else must be wrong.
+        //todo we have to investigate this, this might be costing us a lot of performance!
         std::cout <<  " got enough votes: " << msg.vote.blk_hash.to_hex().c_str() <<  std::endl;
 
         cert->compute();
@@ -311,6 +301,7 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
         async_deliver_blk(msg.vote.blk_hash, peer);
         return;
     }
+    std::cout << "ERROR" << std::endl;
 
     //auto &vote = msg.vote;
     RcObj<Vote> v(new Vote(std::move(msg.vote)));
