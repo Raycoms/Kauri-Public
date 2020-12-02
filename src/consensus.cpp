@@ -386,6 +386,9 @@ void HotStuffCore::on_qc_finish(const block_t &blk) {
         it->second.resolve();
         qc_waiting.erase(it);
     }
+    else {
+        HOTSTUFF_LOG_PROTO("Couldn't find waiting qc");
+    }
 }
 
 promise_t HotStuffCore::async_wait_proposal() {

@@ -345,9 +345,8 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
 }
 
 void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
-    struct timeval timeStart,
-            timeEnd;
-    gettimeofday(&timeStart, NULL);
+    //struct timeval timeStart, timeEnd;
+    //gettimeofday(&timeStart, NULL);
 
     const auto &peer = conn->get_peer_id();
     if (peer.is_null()) return;
@@ -378,20 +377,14 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
         return;
     }
 
-    if (id == 0) {
-        struct timeval time;
-        gettimeofday(&time, NULL);
-        std::cout << "vote relay handler: " << msg.vote.blk_hash.to_hex() << " " << time.tv_sec << std::endl;
-    } else {
-        std::cout << "vote relay handler: " << msg.vote.blk_hash.to_hex() << " " << std::endl;
-    }
+    std::cout << "vote relay handler: " << msg.vote.blk_hash.to_hex() << " " << std::endl;
 
     //auto &vote = msg.vote;
     RcObj<VoteRelay> v(new VoteRelay(std::move(msg.vote)));
     promise::all(std::vector<promise_t>{
             async_deliver_blk(v->blk_hash, peer),
             promise_t([](promise_t &pm) { pm.resolve(true); }), //v->cert->verify(config, vpool),
-    }).then([this, blk, v=std::move(v), timeStart](const promise::values_t values) {
+    }).then([this, blk, v=std::move(v)](const promise::values_t values) {
         if (!promise::any_cast<bool>(values[1]))
             LOG_WARN ("invalid vote-relay");
         auto &cert = blk->self_qc;
@@ -425,19 +418,21 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
 
             cert->compute();
             if (!cert->verify(config)) {
+                HOTSTUFF_LOG_PROTO("Error, Invalid Sig!!!");
                 throw std::runtime_error("Invalid Sigs in intermediate signature!");
             }
 
             update_hqc(blk, cert);
             on_qc_finish(blk);
 
+            /*
             struct timeval timeEnd;
             gettimeofday(&timeEnd, NULL);
 
             std::cout << "Vote relay handling cost partially threaded: "
                       << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
                       << " us to execute."
-                      << std::endl;
+                      << std::endl;/*
         }
     });
 
