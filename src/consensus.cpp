@@ -400,6 +400,7 @@ void HotStuffCore::on_qc_finish(const block_t &blk) {
 
 promise_t HotStuffCore::async_wait_proposal() {
     return propose_waiting.then([](const Proposal &prop) {
+        HOTSTUFF_LOG_PROTO("async_qc propose waiting fulfilled %s", prop.blk->get_hash().to_hex().c_str());
         return prop;
     });
 }
