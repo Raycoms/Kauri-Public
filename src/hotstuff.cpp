@@ -302,7 +302,6 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
         async_deliver_blk(msg.vote.blk_hash, peer);
         return;
     }
-    std::cout << "ERROR" << std::endl;
 
     //auto &vote = msg.vote;
     RcObj<Vote> v(new Vote(std::move(msg.vote)));
