@@ -189,8 +189,11 @@ block_t HotStuffCore::on_propose(const std::vector<uint256_t> &cmds,
     } else {
         auto newParents = std::vector<block_t>(parents);
 
-        LOG_PROTO("b_piped is not null");
-        newParents.insert(newParents.begin(), b_piped);
+        if (newParents[0]->height <= b_piped->height) {
+            LOG_PROTO("b_piped is not null");
+            newParents.insert(newParents.begin(), b_piped);
+        }
+
         //todo: On normal propose (below) we have to check if we have a pending b_piped block with a higher height and then adjust the block we send out for that
         bnew = storage->add_blk(
                 new Block(newParents, cmds,
