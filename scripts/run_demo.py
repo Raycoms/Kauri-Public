@@ -57,7 +57,7 @@ if __name__ == "__main__":
             ssh.connect(ipElSet[0],port,user,password,timeout = 10)
             print("Run at {}".format(ipElSet[0]))
             for x in range(int(ipElSet[1])):
-                command = "cd test/libhotstuff && gdb -ex r -ex bt -ex q --args ./examples/hotstuff-app --conf ./hotstuff.gen-sec{}.conf > log{} 2>&1 &".format(i, i)
+                command = "cd test/libhotstuff && ./examples/hotstuff-app --conf ./hotstuff.gen-sec{}.conf > log{} 2>&1 &".format(i, i)
                 print(command)
                 ssh.exec_command(command)
                 i+=1
