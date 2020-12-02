@@ -156,7 +156,6 @@ class PMWaitQC: public virtual PaceMaker {
                     HOTSTUFF_LOG_PROTO("Extra block");
                 }
             } else {
-                HOTSTUFF_LOG_PROTO("async_qc pending beats start %s", last_proposed->get_hash().to_hex().c_str());
                 auto pm = pending_beats.front();
                 pending_beats.pop();
                 hsc->async_qc_finish(last_proposed)
@@ -164,7 +163,6 @@ class PMWaitQC: public virtual PaceMaker {
                             pm.resolve(get_proposer());
                         });
                 locked = true;
-                HOTSTUFF_LOG_PROTO("async_qc pending beats end %s", last_proposed->get_hash().to_hex().c_str());
             }
         }
     }
@@ -173,7 +171,6 @@ class PMWaitQC: public virtual PaceMaker {
         pm_wait_propose.reject();
         (pm_wait_propose = hsc->async_wait_proposal()).then(
                 [this](const Proposal &prop) {
-            HOTSTUFF_LOG_PROTO("async_qc update last proposed %s %d", prop.blk->get_hash().to_hex().c_str(), pending_beats.size());
             last_proposed = prop.blk;
             locked = false;
             schedule_next();
