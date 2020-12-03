@@ -384,7 +384,7 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
     RcObj<VoteRelay> v(new VoteRelay(std::move(msg.vote)));
     promise::all(std::vector<promise_t>{
             async_deliver_blk(v->blk_hash, peer),
-            promise_t([](promise_t &pm) { pm.resolve(true); }), //v->cert->verify(config, vpool),
+            v->cert->verify(config, vpool),
     }).then([this, blk, v=std::move(v)](const promise::values_t& values) {
         if (!promise::any_cast<bool>(values[1]))
             LOG_WARN ("invalid vote-relay");
