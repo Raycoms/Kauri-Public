@@ -142,7 +142,7 @@ public:
      * the events. */
     // Pipelined block.
     block_t b_piped = nullptr;
-    block_t* b_normal = nullptr;
+    block_t b_normal = nullptr;
 
     // If already a piped block was submitted.
     bool piped_submitted = false;

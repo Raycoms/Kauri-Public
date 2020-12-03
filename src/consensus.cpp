@@ -203,7 +203,7 @@ block_t HotStuffCore::on_propose(const std::vector<uint256_t> &cmds,
                 ));
     }
 
-    b_normal = &bnew;
+    b_normal = bnew;
 
     LOG_PROTO("propose %s", std::string(*bnew).c_str());
     Proposal prop = process_block(bnew, true);
