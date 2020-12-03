@@ -385,7 +385,7 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
     promise::all(std::vector<promise_t>{
             async_deliver_blk(v->blk_hash, peer),
             promise_t([](promise_t &pm) { pm.resolve(true); }), //v->cert->verify(config, vpool),
-    }).then([this, blk, v=std::move(v)](const promise::values_t values) {
+    }).then([this, blk, v=std::move(v)](const promise::values_t& values) {
         if (!promise::any_cast<bool>(values[1]))
             LOG_WARN ("invalid vote-relay");
         auto &cert = blk->self_qc;
@@ -410,7 +410,7 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
 
             if (!cert->has_n(config.nmajority)) return;
 
-            if (blk->hash == b_piped->hash) {
+            if (b_piped != nullptr && blk->hash == b_piped->hash) {
                 b_piped = nullptr;
                 HOTSTUFF_LOG_PROTO("Reset Piped Block");
             }
