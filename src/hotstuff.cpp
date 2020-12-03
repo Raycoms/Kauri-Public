@@ -280,15 +280,16 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
 
     if (id != pmaker->get_proposer() ) {
         auto &cert = blk->self_qc;
-        cert->add_part(config, msg.vote.voter, *msg.vote.cert);
-        //HOTSTUFF_LOG_PROTO("add part");
 
-        if (!cert->has_n(numberOfChildren)) {
-            //HOTSTUFF_LOG_PROTO("not enough");
+        if (cert->has_n(numberOfChildren)) {
             return;
         }
-        //todo weirdly, at some moment, this starts failing, we compute the sig, but we don't actually print those two messages. so sth else must be wrong.
-        //todo we have to investigate this, this might be costing us a lot of performance!
+
+        cert->add_part(config, msg.vote.voter, *msg.vote.cert);
+
+        if (!cert->has_n(numberOfChildren)) {
+            return;
+        }
         std::cout <<  " got enough votes: " << msg.vote.blk_hash.to_hex().c_str() <<  std::endl;
 
         cert->compute();
