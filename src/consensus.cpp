@@ -194,7 +194,6 @@ block_t HotStuffCore::on_propose(const std::vector<uint256_t> &cmds,
             newParents.insert(newParents.begin(), b_piped);
         }
 
-        //todo: On normal propose (below) we have to check if we have a pending b_piped block with a higher height and then adjust the block we send out for that
         bnew = storage->add_blk(
                 new Block(newParents, cmds,
                           hqc.second->clone(), std::move(extra),
@@ -203,6 +202,8 @@ block_t HotStuffCore::on_propose(const std::vector<uint256_t> &cmds,
                           nullptr
                 ));
     }
+
+    b_normal = &bnew;
 
     LOG_PROTO("propose %s", std::string(*bnew).c_str());
     Proposal prop = process_block(bnew, true);
