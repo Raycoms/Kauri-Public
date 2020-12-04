@@ -154,7 +154,12 @@ class PMWaitQC: public virtual PaceMaker {
                     pending_beats.pop();
                     pm.resolve(get_proposer());
                     hsc->piped_submitted = true;
-                    HOTSTUFF_LOG_PROTO("Extra block");
+                    if (hsc->b_normal != nullptr && hsc->b_piped != nullptr) {
+                        HOTSTUFF_LOG_PROTO("Extra block %d %d", hsc->b_normal->get_height(), hsc->b_piped->get_height());
+                    }
+                    else {
+                        HOTSTUFF_LOG_PROTO("Extra block");
+                    }
                 }
             } else {
                 auto pm = pending_beats.front();
