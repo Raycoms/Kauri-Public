@@ -86,9 +86,9 @@ if __name__ == "__main__":
 
     time.sleep(3)
 
-    for j in range(1, 50):
+    for j in range(1, 20):
         print("Starting Client!")
-        ssh.exec_command("cd test/libhotstuff && ./examples/hotstuff-client --idx {} --iter -750 --max-async 1000 > clientlog{} 2>&1 &".format(1, j))
+        ssh.exec_command("cd test/libhotstuff && ./examples/hotstuff-client --idx {} --iter -100 --max-async 500 > clientlog{} 2>&1 &".format(1, j))
 
     time.sleep( 300 )
 
