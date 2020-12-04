@@ -761,7 +761,7 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
 
                         if ( b_piped == nullptr && current != get_genesis() ) {
 
-                            if (false && ((current_time.tv_sec - last_block_time.tv_sec) * 1000000 + current_time.tv_usec - last_block_time.tv_usec) / 1000 < config.piped_latency) {
+                            if (((current_time.tv_sec - last_block_time.tv_sec) * 1000000 + current_time.tv_usec - last_block_time.tv_usec) / 1000 < config.piped_latency) {
                                 piped_submitted = false;
                             }
                             else {
