@@ -150,16 +150,16 @@ class PMWaitQC: public virtual PaceMaker {
                 || (hsc->b_piped != nullptr && hsc->b_normal != nullptr && hsc->b_piped->get_height() > 10 && hsc->b_normal->get_height() < hsc->b_piped->get_height() - 10))
                 && ((current_time.tv_sec - hsc->last_block_time.tv_sec) * 1000000 + current_time.tv_usec -
                      hsc->last_block_time.tv_usec) / 1000 > hsc->get_config().piped_latency) {
-                    auto pm = pending_beats.front();
-                    pending_beats.pop();
-                    pm.resolve(get_proposer());
-                    hsc->piped_submitted = true;
                     if (hsc->b_normal != nullptr && hsc->b_piped != nullptr) {
                         HOTSTUFF_LOG_PROTO("Extra block %d %d", hsc->b_normal->get_height(), hsc->b_piped->get_height());
                     }
                     else {
                         HOTSTUFF_LOG_PROTO("Extra block");
                     }
+                    auto pm = pending_beats.front();
+                    pending_beats.pop();
+                    hsc->piped_submitted = true;
+                    pm.resolve(get_proposer());
                 }
             } else {
                 auto pm = pending_beats.front();
