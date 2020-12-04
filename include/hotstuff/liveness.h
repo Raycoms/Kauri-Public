@@ -144,8 +144,6 @@ class PMWaitQC: public virtual PaceMaker {
         if (!pending_beats.empty())
         {
             if (locked) {
-                if (true)
-                    return;
                 struct timeval current_time;
                 gettimeofday(&current_time, NULL);
                 if (((hsc->b_piped == nullptr && !hsc->piped_submitted)
