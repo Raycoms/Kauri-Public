@@ -729,23 +729,21 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
         std::pair<uint256_t, commit_cb_t> e;
         while (q.try_dequeue(e))
         {
-            if (cmd_pending_buffer.size() >= blk_size) {
-                continue;
-            }
-
             ReplicaID proposer = pmaker->get_proposer();
-
-            const auto &cmd_hash = e.first;
-            auto it = decision_waiting.find(cmd_hash);
-            if (it == decision_waiting.end())
-                it = decision_waiting.insert(std::make_pair(cmd_hash, e.second)).first;
-            else
-                e.second(Finality(id, 0, 0, 0, cmd_hash, uint256_t()));
             if (proposer != get_id()) {
                 continue;
             }
 
-            cmd_pending_buffer.push_back(cmd_hash);
+            if (cmd_pending_buffer.size() < blk_size) {
+                const auto &cmd_hash = e.first;
+                auto it = decision_waiting.find(cmd_hash);
+                if (it == decision_waiting.end())
+                    it = decision_waiting.insert(std::make_pair(cmd_hash, e.second)).first;
+                else
+                    e.second(Finality(id, 0, 0, 0, cmd_hash, uint256_t()));
+                cmd_pending_buffer.push_back(cmd_hash);
+            }
+
             if (cmd_pending_buffer.size() >= blk_size)
             {
                 pmaker->beat().then([this, cmds = std::move(cmd_pending_buffer)](ReplicaID proposer) {

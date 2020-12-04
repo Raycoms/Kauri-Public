@@ -66,16 +66,17 @@ std::vector<std::pair<struct timeval, double>> elapsed;
 Net mn(ec, Net::Config());
 
 void connect_all() {
-    for (size_t i = 0; i < replicas.size(); i++)
-        conns.insert(std::make_pair(i, mn.connect_sync(replicas[i])));
+    conns.insert(std::make_pair(0, mn.connect_sync(replicas[0])));
 }
 
 bool try_send(bool check = true) {
-    if ((!check || waiting.size() < max_async_num) && max_iter_num)
+    if ((!check || waiting.size() < max_async_num || random() % 1000 <= 1) && max_iter_num)
     {
         auto cmd = new CommandDummy(cid, cnt++);
         MsgReqCmd msg(*cmd);
-        for (auto &p: conns) mn.send_msg(msg, p.second);
+        for (auto &p: conns)
+            mn.send_msg(msg, p.second);
+
 #ifndef HOTSTUFF_ENABLE_BENCHMARK
         HOTSTUFF_LOG_INFO("send new cmd %.10s",
                             get_hex(cmd->get_hash()).c_str());
