@@ -70,7 +70,7 @@ void connect_all() {
 }
 
 bool try_send(bool check = true) {
-    if ((!check || waiting.size() < max_async_num || random() % 1000 <= 1) && max_iter_num)
+    if ((!check || waiting.size() < max_async_num || random() % 100000 <= 1) && max_iter_num)
     {
         auto cmd = new CommandDummy(cid, cnt++);
         MsgReqCmd msg(*cmd);
