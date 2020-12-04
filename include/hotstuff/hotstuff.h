@@ -170,7 +170,7 @@ class HotStuffBase: public HotStuffCore {
     std::unordered_map<const uint256_t, commit_cb_t> decision_waiting;
     using cmd_queue_t = salticidae::MPSCQueueEventDriven<std::pair<uint256_t, commit_cb_t>>;
     cmd_queue_t cmd_pending;
-    std::queue<uint256_t> cmd_pending_buffer;
+    std::vector<uint256_t> cmd_pending_buffer;
 
     /* statistics */
     uint64_t fetched;

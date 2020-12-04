@@ -724,10 +724,15 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
     if (ec_loop)
         ec.dispatch();
 
+    cmd_pending_buffer.reserve(blk_size);
     cmd_pending.reg_handler(ec, [this](cmd_queue_t &q) {
         std::pair<uint256_t, commit_cb_t> e;
         while (q.try_dequeue(e))
         {
+            if (cmd_pending_buffer.size() >= blk_size) {
+                continue;
+            }
+
             ReplicaID proposer = pmaker->get_proposer();
 
             const auto &cmd_hash = e.first;
@@ -740,16 +745,10 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
                 continue;
             }
 
-            cmd_pending_buffer.push(cmd_hash);
+            cmd_pending_buffer.push_back(cmd_hash);
             if (cmd_pending_buffer.size() >= blk_size)
             {
-                std::vector<uint256_t> cmds;
-                for (uint32_t i = 0; i < blk_size; i++) {
-                    cmds.push_back(cmd_pending_buffer.front());
-                    cmd_pending_buffer.pop();
-                }
-
-                pmaker->beat().then([this, cmds = std::move(cmds)](ReplicaID proposer) {
+                pmaker->beat().then([this, cmds = std::move(cmd_pending_buffer)](ReplicaID proposer) {
                     HOTSTUFF_LOG_PROTO("Proposing: %d", cmds.size());
                     if (proposer == get_id()) {
 
@@ -765,7 +764,7 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
                                 piped_submitted = false;
                             }
                             else {
-                                b_piped = new Block(parents, cmds,
+                                b_piped = new Block(parents, cmd_pending_buffer,
                                                     hqc.second->clone(), bytearray_t(),
                                                     parents[0]->height + 1,
                                                     current,
@@ -779,7 +778,7 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
                             }
                         }
                         else {
-                            on_propose(cmds, std::move(parents));
+                            on_propose(cmd_pending_buffer, std::move(parents));
                             gettimeofday(&last_block_time, NULL);
                         }
                     }
