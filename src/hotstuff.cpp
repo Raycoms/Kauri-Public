@@ -734,7 +734,7 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
                 continue;
             }
 
-            if (cmd_pending_buffer.size() < blk_size) {
+            if (cmd_pending_buffer.size() < blk_size && final_buffer.empty()) {
                 const auto &cmd_hash = e.first;
                 auto it = decision_waiting.find(cmd_hash);
                 if (it == decision_waiting.end())
