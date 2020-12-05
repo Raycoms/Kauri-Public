@@ -746,6 +746,7 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
             else {
                 std::cout << "answer" << std::endl;
                 e.second(Finality(id, 0, 0, 0, e.first, uint256_t()));
+                return true;
             }
 
             if (cmd_pending_buffer.size() >= blk_size) {
@@ -755,7 +756,6 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
                 }
 
                 beat();
-                return true;
             }
         }
         return false;

@@ -98,7 +98,6 @@ void client_resp_cmd_handler(MsgRespCmd &&msg, const Net::conn_t &) {
     auto &et = it->second.et;
     if (it == waiting.end()) return;
     et.stop();
-    if (++it->second.confirmed <= nfaulty) return; // wait for f + 1 ack
 #ifndef HOTSTUFF_ENABLE_BENCHMARK
     HOTSTUFF_LOG_INFO("got %s, wall: %.3f, cpu: %.3f",
                         std::string(fin).c_str(),
