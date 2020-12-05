@@ -744,44 +744,45 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
                 cmd_pending_buffer.push_back(cmd_hash);
             }
 
-            if (cmd_pending_buffer.size() >= blk_size)
-            {
-                pmaker->beat().then([this, cmds = std::move(cmd_pending_buffer)](ReplicaID proposer) {
-                    HOTSTUFF_LOG_PROTO("Proposing: %d", cmds.size());
-                    if (proposer == get_id()) {
+            if (cmd_pending_buffer.size() >= blk_size && final_buffer.empty()) {
+                final_buffer = std::move(cmd_pending_buffer);
+                //todo: this 10k below is what we estimate to be a max. We might need more than this if we get close to it.
+                for (int i = 0; i < 10000; i++) {
+                    pmaker->beat().then([this](ReplicaID proposer) {
+                        HOTSTUFF_LOG_PROTO("Proposing: %d", final_buffer.size());
+                        if (proposer == get_id()) {
+                            auto parents = pmaker->get_parents();
 
-                        auto parents = pmaker->get_parents();
+                            struct timeval current_time;
+                            gettimeofday(&current_time, NULL);
+                            block_t current = pmaker->get_current_proposal();
 
-                        struct timeval current_time;
-                        gettimeofday(&current_time, NULL);
-                        block_t current = pmaker->get_current_proposal();
+                            if (b_piped == nullptr && current != get_genesis()) {
 
-                        if ( b_piped == nullptr && current != get_genesis() ) {
+                                if (((current_time.tv_sec - last_block_time.tv_sec) * 1000000 + current_time.tv_usec -
+                                     last_block_time.tv_usec) / 1000 < config.piped_latency) {
+                                    piped_submitted = false;
+                                } else {
+                                    b_piped = new Block(parents, final_buffer,
+                                                        hqc.second->clone(), bytearray_t(),
+                                                        parents[0]->height + 1,
+                                                        current,
+                                                        nullptr);
 
-                            if (((current_time.tv_sec - last_block_time.tv_sec) * 1000000 + current_time.tv_usec - last_block_time.tv_usec) / 1000 < config.piped_latency) {
-                                piped_submitted = false;
-                            }
-                            else {
-                                b_piped = new Block(parents, cmd_pending_buffer,
-                                                    hqc.second->clone(), bytearray_t(),
-                                                    parents[0]->height + 1,
-                                                    current,
-                                                    nullptr);
-
-                                Proposal prop(id, b_piped, nullptr);
-                                HOTSTUFF_LOG_PROTO("propose piped %s", std::string(*b_piped).c_str());
-                                /* broadcast to other replicas */
-                                do_broadcast_proposal(prop);
+                                    Proposal prop(id, b_piped, nullptr);
+                                    HOTSTUFF_LOG_PROTO("propose piped %s", std::string(*b_piped).c_str());
+                                    /* broadcast to other replicas */
+                                    do_broadcast_proposal(prop);
+                                    gettimeofday(&last_block_time, NULL);
+                                }
+                            } else {
+                                on_propose(final_buffer, std::move(parents));
                                 gettimeofday(&last_block_time, NULL);
                             }
                         }
-                        else {
-                            on_propose(cmd_pending_buffer, std::move(parents));
-                            gettimeofday(&last_block_time, NULL);
-                        }
-                    }
 
-                });
+                    });
+                }
                 return true;
             }
         }
