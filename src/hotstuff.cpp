@@ -744,12 +744,19 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
                 cmd_pending_buffer.push_back(cmd_hash);
             }
 
-            if (cmd_pending_buffer.size() >= blk_size && final_buffer.empty()) {
-                final_buffer = std::move(cmd_pending_buffer);
-                //todo: this 10k below is what we estimate to be a max. We might need more than this if we get close to it.
-                for (int i = 0; i < 10000; i++) {
+            if (cmd_pending_buffer.size() >= blk_size) {
+                if (final_buffer.empty())
+                {
+                    final_buffer = std::move(cmd_pending_buffer);
+                    //todo: this 10k below is what we estimate to be a max. We might need more than this if we get close to it.
+                    for (int i = 0; i < 10000; i++) {
+                        beat();
+                    }
+                }
+                else {
                     beat();
                 }
+
                 return true;
             }
         }
