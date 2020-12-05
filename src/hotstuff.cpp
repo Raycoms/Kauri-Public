@@ -743,20 +743,17 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
                     e.second(Finality(id, 0, 0, 0, cmd_hash, uint256_t()));
                 cmd_pending_buffer.push_back(cmd_hash);
             }
+            else {
+                e.second(std::move(Finality(id, 0, 0, 0, e.first, uint256_t())));
+            }
 
             if (cmd_pending_buffer.size() >= blk_size) {
                 if (final_buffer.empty())
                 {
                     final_buffer = std::move(cmd_pending_buffer);
-                    //todo: this 10k below is what we estimate to be a max. We might need more than this if we get close to it.
-                    for (int i = 0; i < 10000; i++) {
-                        beat();
-                    }
-                }
-                else {
-                    beat();
                 }
 
+                beat();
                 return true;
             }
         }
