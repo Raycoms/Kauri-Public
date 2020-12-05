@@ -747,7 +747,7 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
                 e.second(Finality(id, 0, 0, 0, e.first, uint256_t()));
             }
 
-            if (cmd_pending_buffer.size() >= blk_size) {
+            if (cmd_pending_buffer.size() >= blk_size || !final_buffer.empty()) {
                 if (final_buffer.empty())
                 {
                     final_buffer = std::move(cmd_pending_buffer);
