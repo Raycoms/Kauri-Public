@@ -75,8 +75,8 @@ bool HotStuffCore::on_deliver_blk(const block_t &blk) {
     }
     blk->parents.clear();
     for (const auto &hash: blk->parent_hashes) {
-        if (b_piped != nullptr && hash == b_piped) {
-            block_t piped_block = storage->find_blk(b_piped);
+        if (!b_piped.empty() && hash == b_piped.front()) {
+            block_t piped_block = storage->find_blk(b_piped.front());
             blk->parents.push_back(piped_block);
         }
         else {
@@ -178,7 +178,7 @@ block_t HotStuffCore::on_propose(const std::vector<uint256_t> &cmds,
     /* create the new block */
 
     block_t bnew;
-    if (b_piped == 0) {
+    if (b_piped.empty()) {
         LOG_PROTO("b_piped is null");
         bnew = storage->add_blk(
                 new Block(parents, cmds,
@@ -189,7 +189,7 @@ block_t HotStuffCore::on_propose(const std::vector<uint256_t> &cmds,
                 ));
     } else {
         auto newParents = std::vector<block_t>(parents);
-        block_t piped_block = storage->find_blk(b_piped);
+        block_t piped_block = storage->find_blk(b_piped.front());
 
         if (newParents[0]->height <= piped_block->height) {
             LOG_PROTO("b_piped is not null");

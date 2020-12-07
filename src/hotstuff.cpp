@@ -243,16 +243,16 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
     msg.postponed_parse(this);
     //HOTSTUFF_LOG_PROTO("received vote");
 
-    if (id == pmaker->get_proposer() && b_piped != nullptr && b_piped == msg.vote.blk_hash) {
+    if (id == pmaker->get_proposer() && !b_piped.empty() && b_piped.front() == msg.vote.blk_hash) {
 
         HOTSTUFF_LOG_PROTO("Piped block");
         block_t blk = storage->find_blk(msg.vote.blk_hash);
         if (blk == nullptr) {
-            block_t piped_block = storage->find_blk(b_piped);
+            block_t piped_block = storage->find_blk(b_piped.front());
             process_block(piped_block, false);
             HOTSTUFF_LOG_PROTO("Normalized Piped Block");
         } else if (blk->self_qc->has_n(config.nmajority) - 1) {
-            b_piped = 0;
+            b_piped.pop_front();
             HOTSTUFF_LOG_PROTO("Reset Piped Block");
             //todo: The problem is that after we normalize this block and then approve it, this will lead to a "consensus result" and directly a new block too.
             //todo: thus, we can only produce the latency block one initially, and then we have to switch between piped and non-piped.
@@ -354,11 +354,11 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
     msg.postponed_parse(this);
     //std::cout << "vote relay handler: " << msg.vote.blk_hash.to_hex() << std::endl;
 
-    if (id == pmaker->get_proposer() && b_piped != nullptr && b_piped == msg.vote.blk_hash) {
+    if (id == pmaker->get_proposer() && !b_piped.empty() && b_piped.front() == msg.vote.blk_hash) {
         HOTSTUFF_LOG_PROTO("Piped block");
         block_t blk = storage->find_blk(msg.vote.blk_hash);
         if (blk == nullptr) {
-            block_t piped_block = storage->find_blk(b_piped);
+            block_t piped_block = storage->find_blk(b_piped.front());
             process_block(piped_block, false);
             HOTSTUFF_LOG_PROTO("Normalized Piped Block");
         }
@@ -410,8 +410,8 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
 
             if (!cert->has_n(config.nmajority)) return;
 
-            if (b_piped != nullptr && blk->hash == b_piped) {
-                b_piped = 0;
+            if (!b_piped.empty() && blk->hash == b_piped.front()) {
+                b_piped.pop_front();
                 HOTSTUFF_LOG_PROTO("Reset Piped Block");
             }
 
@@ -771,7 +771,7 @@ void HotStuffBase::beat() {
             gettimeofday(&current_time, NULL);
             block_t current = pmaker->get_current_proposal();
 
-            if (b_piped == 0 && current != get_genesis()) {
+            if (b_piped.empty() && current != get_genesis()) {
 
                 if (((current_time.tv_sec - last_block_time.tv_sec) * 1000000 + current_time.tv_usec -
                 last_block_time.tv_usec) / 1000 < config.piped_latency) {
@@ -782,7 +782,7 @@ void HotStuffBase::beat() {
                                                              parents[0]->height + 1,
                                                              current,
                                                              nullptr));
-                    b_piped = piped_block->hash;
+                    b_piped.push_back(piped_block->hash);
 
                     Proposal prop(id, piped_block, nullptr);
                     HOTSTUFF_LOG_PROTO("propose piped %s", std::string(*piped_block).c_str());

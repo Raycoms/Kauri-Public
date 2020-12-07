@@ -142,7 +142,7 @@ public:
      * the events. */
 
     // Pipelined block hash.
-    uint256_t b_piped = 0;
+    std::deque<uint256_t> b_piped;
 
     // Last regular block height.
     int b_normal_height = 0;
