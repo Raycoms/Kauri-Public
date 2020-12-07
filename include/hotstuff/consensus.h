@@ -140,9 +140,12 @@ public:
     /* Outputs of the state machine triggering external events.  The virtual
      * functions should be implemented by the user to specify the behavior upon
      * the events. */
-    // Pipelined block.
-    block_t b_piped = nullptr;
-    block_t b_normal = nullptr;
+
+    // Pipelined block hash.
+    uint256_t b_piped = nullptr;
+
+    // Last regular block height.
+    int b_normal_height = 0;
 
     // If already a piped block was submitted.
     bool piped_submitted = false;

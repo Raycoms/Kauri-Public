@@ -75,8 +75,9 @@ bool HotStuffCore::on_deliver_blk(const block_t &blk) {
     }
     blk->parents.clear();
     for (const auto &hash: blk->parent_hashes) {
-        if (b_piped != nullptr && hash == b_piped->hash) {
-            blk->parents.push_back(b_piped);
+        if (b_piped != nullptr && hash == b_piped) {
+            block_t piped_block = storage->find_blk(b_piped);
+            blk->parents.push_back(piped_block);
         }
         else {
             blk->parents.push_back(get_delivered_blk(hash));
@@ -188,22 +189,23 @@ block_t HotStuffCore::on_propose(const std::vector<uint256_t> &cmds,
                 ));
     } else {
         auto newParents = std::vector<block_t>(parents);
+        block_t piped_block = storage->find_blk(b_piped);
 
-        if (newParents[0]->height <= b_piped->height) {
+        if (newParents[0]->height <= piped_block->height) {
             LOG_PROTO("b_piped is not null");
-            newParents.insert(newParents.begin(), b_piped);
+            newParents.insert(newParents.begin(), piped_block);
         }
 
         bnew = storage->add_blk(
                 new Block(newParents, cmds,
                           hqc.second->clone(), std::move(extra),
                           newParents[0]->height + 1,
-                          b_piped,
+                          piped_block,
                           nullptr
                 ));
     }
 
-    b_normal = bnew;
+    b_normal_height = bnew->get_height();
 
     LOG_PROTO("propose %s", std::string(*bnew).c_str());
     Proposal prop = process_block(bnew, true);

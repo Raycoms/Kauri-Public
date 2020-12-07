@@ -243,13 +243,13 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
     msg.postponed_parse(this);
     //HOTSTUFF_LOG_PROTO("received vote");
 
-    if (id == pmaker->get_proposer() && b_piped != nullptr && b_piped->hash == msg.vote.blk_hash) {
+    if (id == pmaker->get_proposer() && b_piped != nullptr && b_piped == msg.vote.blk_hash) {
 
         HOTSTUFF_LOG_PROTO("Piped block");
         block_t blk = storage->find_blk(msg.vote.blk_hash);
         if (blk == nullptr) {
-            storage->add_blk(b_piped);
-            process_block(b_piped, false);
+            block_t piped_block = storage->find_blk(b_piped);
+            process_block(piped_block, false);
             HOTSTUFF_LOG_PROTO("Normalized Piped Block");
         } else if (blk->self_qc->has_n(config.nmajority) - 1) {
             b_piped = nullptr;
@@ -354,12 +354,12 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
     msg.postponed_parse(this);
     //std::cout << "vote relay handler: " << msg.vote.blk_hash.to_hex() << std::endl;
 
-    if (id == pmaker->get_proposer() && b_piped != nullptr && b_piped->hash == msg.vote.blk_hash) {
+    if (id == pmaker->get_proposer() && b_piped != nullptr && b_piped == msg.vote.blk_hash) {
         HOTSTUFF_LOG_PROTO("Piped block");
         block_t blk = storage->find_blk(msg.vote.blk_hash);
         if (blk == nullptr) {
-            storage->add_blk(b_piped);
-            process_block(b_piped, false);
+            block_t piped_block = storage->find_blk(b_piped);
+            process_block(piped_block, false);
             HOTSTUFF_LOG_PROTO("Normalized Piped Block");
         }
     }
@@ -410,7 +410,7 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
 
             if (!cert->has_n(config.nmajority)) return;
 
-            if (b_piped != nullptr && blk->hash == b_piped->hash) {
+            if (b_piped != nullptr && blk->hash == b_piped) {
                 b_piped = nullptr;
                 HOTSTUFF_LOG_PROTO("Reset Piped Block");
             }
@@ -777,14 +777,15 @@ void HotStuffBase::beat() {
                 last_block_time.tv_usec) / 1000 < config.piped_latency) {
                     piped_submitted = false;
                 } else {
-                    b_piped = new Block(parents, final_buffer,
-                            hqc.second->clone(), bytearray_t(),
-                            parents[0]->height + 1,
-                            current,
-                            nullptr);
+                    block_t piped_block = storage->add_blk(new Block(parents, final_buffer,
+                                                             hqc.second->clone(), bytearray_t(),
+                                                             parents[0]->height + 1,
+                                                             current,
+                                                             nullptr));
+                    b_piped = piped_block->hash;
 
-                    Proposal prop(id, b_piped, nullptr);
-                    HOTSTUFF_LOG_PROTO("propose piped %s", std::string(*b_piped).c_str());
+                    Proposal prop(id, piped_block, nullptr);
+                    HOTSTUFF_LOG_PROTO("propose piped %s", std::string(*piped_block).c_str());
                     /* broadcast to other replicas */
                     do_broadcast_proposal(prop);
                     gettimeofday(&last_block_time, NULL);
