@@ -133,7 +133,7 @@ class HotStuffApp: public HotStuff {
 
     void start(const std::vector<std::tuple<NetAddr, bytearray_t, bytearray_t>> &reps);
     void set_fanout(int32_t fanout);
-    void set_piped_latency(int32_t piped_latency);
+    void set_piped_latency(int32_t piped_latency, int32_t async_blocks);
     void stop();
 };
 
@@ -177,6 +177,7 @@ int main(int argc, char **argv) {
     auto opt_max_cli_msg = Config::OptValInt::create(128536); // 64K by default
     auto opt_fanout = Config::OptValInt::create(2); // 2 by default
     auto opt_piped_latency = Config::OptValInt::create(10); // 10ms by default
+    auto opt_async_blocks = Config::OptValInt::create(0); // 0 by default
 
     config.add_opt("block-size", opt_blk_size, Config::SET_VAL);
     config.add_opt("parent-limit", opt_parent_limit, Config::SET_VAL);
@@ -203,6 +204,7 @@ int main(int argc, char **argv) {
     config.add_opt("help", opt_help, Config::SWITCH_ON, 'h', "show this help info");
     config.add_opt("fan-out", opt_fanout, Config::SET_VAL, 'F', "fanout");
     config.add_opt("piped_latency", opt_piped_latency, Config::SET_VAL, 'P', "Latency between the block pipelining");
+    config.add_opt("async_blocks", opt_async_blocks, Config::SET_VAL, 'A', "Async blocks to pipeline");
 
     EventContext ec;
     config.parse(argc, argv);
@@ -293,7 +295,7 @@ int main(int argc, char **argv) {
     }
 
     papp->set_fanout(opt_fanout->get());
-    papp->set_piped_latency(opt_piped_latency->get());
+    papp->set_piped_latency(opt_piped_latency->get(), opt_async_blocks->get());
 
     auto shutdown = [&](int) { papp->stop(); };
     salticidae::SigEvent ev_sigint(ec, shutdown);
@@ -430,6 +432,6 @@ void HotStuffApp::set_fanout(int32_t fanout) {
     HotStuff::set_fanout(fanout);
 }
 
-void HotStuffApp::set_piped_latency(int32_t piped_latency) {
-    HotStuff::set_piped_latency(piped_latency);
+void HotStuffApp::set_piped_latency(int32_t piped_latency, int32_t async_blocks) {
+    HotStuff::set_piped_latency(piped_latency, async_blocks);
 }

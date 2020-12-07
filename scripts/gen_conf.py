@@ -17,6 +17,7 @@ if __name__ == "__main__":
     parser.add_argument('--pace-maker', type=str, default='dummy')
     parser.add_argument('--algo', type=str, default='bls')
     parser.add_argument('--nworker', type=int, default=6)
+
     args = parser.parse_args()
 
 
@@ -62,6 +63,8 @@ if __name__ == "__main__":
 
     main_conf.write("proposer = {}\n".format(0))
     main_conf.write("fan-out = {}\n".format(10))
+    main_conf.write("piped_latency = {}\n".format(10))
+    main_conf.write("async_blocks = {}\n".format(1))
 
     for r in zip(replicas, keys, tls_keys, itertools.count(0)):
         main_conf.write("replica = {}, {}, {}\n".format(r[0], r[1][0], r[2][2]))

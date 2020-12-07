@@ -147,7 +147,7 @@ class PMWaitQC: public virtual PaceMaker {
                 struct timeval current_time;
                 gettimeofday(&current_time, NULL);
 
-                if (hsc->b_piped.empty() && !hsc->piped_submitted && ((current_time.tv_sec - hsc->last_block_time.tv_sec) * 1000000 + current_time.tv_usec - hsc->last_block_time.tv_usec) / 1000 > hsc->get_config().piped_latency) {
+                if (hsc->piped_queue.size() < hsc->get_config().async_blocks && !hsc->piped_submitted && ((current_time.tv_sec - hsc->last_block_time.tv_sec) * 1000000 + current_time.tv_usec - hsc->last_block_time.tv_usec) / 1000 > hsc->get_config().piped_latency) {
                     HOTSTUFF_LOG_PROTO("Extra block");
                     auto pm = pending_beats.front();
                     pending_beats.pop();
@@ -156,11 +156,11 @@ class PMWaitQC: public virtual PaceMaker {
                     return;
                 }
 
-                if (!hsc->b_piped.empty() && hsc->b_normal_height > 0) {
-                    block_t piped_block = hsc->storage->find_blk(hsc->b_piped.front());
+                if (!hsc->piped_queue.empty() && hsc->b_normal_height > 0) {
+                    block_t piped_block = hsc->storage->find_blk(hsc->piped_queue.back());
                     if ( piped_block->get_height() > 10 && hsc->b_normal_height < piped_block->get_height() - 10
                             && ((current_time.tv_sec - hsc->last_block_time.tv_sec) * 1000000 + current_time.tv_usec - hsc->last_block_time.tv_usec) / 1000 > hsc->get_config().piped_latency) {
-                        HOTSTUFF_LOG_PROTO("Extra block %d %d", hsc->b_normal_height, piped_block->get_height());
+                        HOTSTUFF_LOG_PROTO("Extra recovery block %d %d", hsc->b_normal_height, piped_block->get_height());
 
                         auto pm = pending_beats.front();
                         pending_beats.pop();

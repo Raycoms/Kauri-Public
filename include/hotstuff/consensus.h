@@ -107,7 +107,7 @@ public:
     void set_fanout(int32_t fanout);
 
     /** Call to set the piped latency */
-    void set_piped_latency(int32_t piped_latency);
+    void set_piped_latency(int32_t piped_latency, int32_t async_blocks);
 
 
     /* TODO: better name for "delivery" ? */
@@ -142,7 +142,7 @@ public:
      * the events. */
 
     // Pipelined block hash.
-    std::deque<uint256_t> b_piped;
+    std::deque<uint256_t> piped_queue;
 
     // Last regular block height.
     int b_normal_height = 0;

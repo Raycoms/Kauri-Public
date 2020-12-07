@@ -75,8 +75,8 @@ bool HotStuffCore::on_deliver_blk(const block_t &blk) {
     }
     blk->parents.clear();
     for (const auto &hash: blk->parent_hashes) {
-        if (!b_piped.empty() && hash == b_piped.front()) {
-            block_t piped_block = storage->find_blk(b_piped.front());
+        if (!piped_queue.empty() && std::find(piped_queue.begin(), piped_queue.end(), hash) != piped_queue.end()) {
+            block_t piped_block = storage->find_blk(hash);
             blk->parents.push_back(piped_block);
         }
         else {
@@ -178,7 +178,7 @@ block_t HotStuffCore::on_propose(const std::vector<uint256_t> &cmds,
     /* create the new block */
 
     block_t bnew;
-    if (b_piped.empty()) {
+    if (piped_queue.empty()) {
         LOG_PROTO("b_piped is null");
         bnew = storage->add_blk(
                 new Block(parents, cmds,
@@ -189,7 +189,7 @@ block_t HotStuffCore::on_propose(const std::vector<uint256_t> &cmds,
                 ));
     } else {
         auto newParents = std::vector<block_t>(parents);
-        block_t piped_block = storage->find_blk(b_piped.front());
+        block_t piped_block = storage->find_blk(piped_queue.back());
 
         if (newParents[0]->height <= piped_block->height) {
             LOG_PROTO("b_piped is not null");
@@ -200,7 +200,7 @@ block_t HotStuffCore::on_propose(const std::vector<uint256_t> &cmds,
                 new Block(newParents, cmds,
                           hqc.second->clone(), std::move(extra),
                           newParents[0]->height + 1,
-                          piped_block,
+                          hqc.first,
                           nullptr
                 ));
     }
@@ -448,8 +448,9 @@ void HotStuffCore::set_fanout(int32_t fanout) {
     config.fanout = fanout;
 }
 
-void HotStuffCore::set_piped_latency(int32_t piped_latency) {
+void HotStuffCore::set_piped_latency(int32_t piped_latency, int32_t async_blocks) {
     config.piped_latency = piped_latency;
+    config.async_blocks = async_blocks;
 }
 
 }

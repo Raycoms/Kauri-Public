@@ -327,8 +327,8 @@ class HotStuff: public HotStuffBase {
         HotStuffBase::set_fanout(fanout);
     }
 
-    void set_piped_latency(int32_t piped_latency) {
-        HotStuffBase::set_piped_latency(piped_latency);
+    void set_piped_latency(int32_t piped_latency, int32_t async_blocks) {
+        HotStuffBase::set_piped_latency(piped_latency, async_blocks);
     }
 };
 

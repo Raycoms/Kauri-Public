@@ -65,6 +65,7 @@ class ReplicaConfig {
 
     int32_t fanout;
     int32_t piped_latency;
+    int32_t async_blocks;
 
     ReplicaConfig(): nreplicas(0), nmajority(0) {}
 
