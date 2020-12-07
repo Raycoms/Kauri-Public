@@ -147,7 +147,9 @@ class PMWaitQC: public virtual PaceMaker {
                 struct timeval current_time;
                 gettimeofday(&current_time, NULL);
 
-                if (hsc->piped_queue.size() < hsc->get_config().async_blocks && !hsc->piped_submitted && ((current_time.tv_sec - hsc->last_block_time.tv_sec) * 1000000 + current_time.tv_usec - hsc->last_block_time.tv_usec) / 1000 > hsc->get_config().piped_latency) {
+                if (hsc->piped_queue.size() < hsc->get_config().async_blocks
+                && !hsc->piped_submitted
+                && ((current_time.tv_sec - hsc->last_block_time.tv_sec) * 1000000 + current_time.tv_usec - hsc->last_block_time.tv_usec) / 1000 > hsc->get_config().piped_latency) {
                     HOTSTUFF_LOG_PROTO("Extra block");
                     auto pm = pending_beats.front();
                     pending_beats.pop();

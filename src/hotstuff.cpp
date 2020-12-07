@@ -285,12 +285,14 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
         }
         std::cout <<  " got enough votes: " << msg.vote.blk_hash.to_hex().c_str() <<  std::endl;
 
-        if (!piped_queue.empty() && blk->hash == piped_queue.front()) {
-            piped_queue.pop_front();
-            HOTSTUFF_LOG_PROTO("Reset Piped block");
-        }
-        else {
-            HOTSTUFF_LOG_PROTO("Failed resetting piped block, wasn't front!!!");
+        if (!piped_queue.empty()) {
+            if (blk->hash == piped_queue.front()){
+                piped_queue.pop_front();
+                HOTSTUFF_LOG_PROTO("Reset Piped block");
+            }
+            else {
+                HOTSTUFF_LOG_PROTO("Failed resetting piped block, wasn't front!!!");
+            }
         }
 
         cert->compute();
@@ -803,12 +805,12 @@ void HotStuffBase::beat() {
                     Proposal prop(id, piped_block, nullptr);
                     HOTSTUFF_LOG_PROTO("propose piped %s", std::string(*piped_block).c_str());
                     /* broadcast to other replicas */
-                    do_broadcast_proposal(prop);
                     gettimeofday(&last_block_time, NULL);
+                    do_broadcast_proposal(prop);
                 }
             } else {
-                on_propose(final_buffer, std::move(parents));
                 gettimeofday(&last_block_time, NULL);
+                on_propose(final_buffer, std::move(parents));
             }
         }
 
