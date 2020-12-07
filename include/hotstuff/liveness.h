@@ -153,6 +153,7 @@ class PMWaitQC: public virtual PaceMaker {
                     pending_beats.pop();
                     hsc->piped_submitted = true;
                     pm.resolve(get_proposer());
+                    return;
                 }
 
                 if (hsc->b_piped != nullptr && hsc->b_normal_height > 0) {
