@@ -178,6 +178,9 @@ class PMWaitQC: public virtual PaceMaker {
                 locked = true;
             }
         }
+        else {
+            HOTSTUFF_LOG_PROTO("No block, empty beats");
+        }
     }
 
     void update_last_proposed() {
