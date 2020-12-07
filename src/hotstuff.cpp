@@ -244,18 +244,12 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
     //HOTSTUFF_LOG_PROTO("received vote");
 
     if (id == pmaker->get_proposer() && !b_piped.empty() && b_piped.front() == msg.vote.blk_hash) {
-
         HOTSTUFF_LOG_PROTO("Piped block");
         block_t blk = storage->find_blk(msg.vote.blk_hash);
-        if (blk == nullptr) {
+        if (!blk->delivered) {
             block_t piped_block = storage->find_blk(b_piped.front());
             process_block(piped_block, false);
-            HOTSTUFF_LOG_PROTO("Normalized Piped Block");
-        } else if (blk->self_qc->has_n(config.nmajority) - 1) {
-            b_piped.pop_front();
-            HOTSTUFF_LOG_PROTO("Reset Piped Block");
-            //todo: The problem is that after we normalize this block and then approve it, this will lead to a "consensus result" and directly a new block too.
-            //todo: thus, we can only produce the latency block one initially, and then we have to switch between piped and non-piped.
+            HOTSTUFF_LOG_PROTO("Normalized Piped block");
         }
     }
 
@@ -291,6 +285,11 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
             return;
         }
         std::cout <<  " got enough votes: " << msg.vote.blk_hash.to_hex().c_str() <<  std::endl;
+
+        if (!b_piped.empty() && blk->hash == b_piped.front()) {
+            b_piped.pop_front();
+            HOTSTUFF_LOG_PROTO("Reset Piped block");
+        }
 
         cert->compute();
         if (!cert->verify(config)) {
@@ -357,10 +356,10 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
     if (id == pmaker->get_proposer() && !b_piped.empty() && b_piped.front() == msg.vote.blk_hash) {
         HOTSTUFF_LOG_PROTO("Piped block");
         block_t blk = storage->find_blk(msg.vote.blk_hash);
-        if (blk == nullptr) {
+        if (!blk->delivered) {
             block_t piped_block = storage->find_blk(b_piped.front());
             process_block(piped_block, false);
-            HOTSTUFF_LOG_PROTO("Normalized Piped Block");
+            HOTSTUFF_LOG_PROTO("Normalized Piped block");
         }
     }
 
@@ -412,7 +411,7 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
 
             if (!b_piped.empty() && blk->hash == b_piped.front()) {
                 b_piped.pop_front();
-                HOTSTUFF_LOG_PROTO("Reset Piped Block");
+                HOTSTUFF_LOG_PROTO("Reset Piped block");
             }
 
             std::cout << "go to town: " << std::endl;
