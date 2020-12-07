@@ -142,7 +142,7 @@ public:
      * the events. */
 
     // Pipelined block hash.
-    uint256_t b_piped;
+    uint256_t b_piped = 0;
 
     // Last regular block height.
     int b_normal_height = 0;

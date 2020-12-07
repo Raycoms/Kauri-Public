@@ -178,7 +178,7 @@ block_t HotStuffCore::on_propose(const std::vector<uint256_t> &cmds,
     /* create the new block */
 
     block_t bnew;
-    if (b_piped == nullptr) {
+    if (b_piped == 0) {
         LOG_PROTO("b_piped is null");
         bnew = storage->add_blk(
                 new Block(parents, cmds,
