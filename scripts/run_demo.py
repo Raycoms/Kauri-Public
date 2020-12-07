@@ -90,7 +90,7 @@ if __name__ == "__main__":
     print("Starting Client!")
     ssh.exec_command("cd test/libhotstuff && ./examples/hotstuff-client --idx {} --iter -500 --max-async 500 > clientlog{} 2>&1 &".format(1, 1))
 
-    time.sleep( 30 )
+    time.sleep( 300 )
 
     ssh.exec_command("killall hotstuff-client &")
     print("Killing all processes again!")
