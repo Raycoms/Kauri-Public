@@ -258,6 +258,14 @@ void HotStuffCore::on_receive_proposal(const Proposal &prop) {
     bool opinion = false;
     if (bnew->height > vheight)
     {
+        for (auto hash = std::begin(piped_queue); hash != std::end(piped_queue); ++hash) {
+            block_t b = storage->find_blk(*hash);
+            if (*hash == bnew->qc_ref->hash) {
+                piped_queue.erase(hash);
+                HOTSTUFF_LOG_PROTO("Confirm Piped block");
+            }
+        }
+
         if (bnew->qc_ref && bnew->qc_ref->height > b_lock->height)
         {
             opinion = true; // liveness condition

@@ -287,10 +287,10 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
 
         if (!piped_queue.empty()) {
 
-            for (auto hash : piped_queue) {
-                block_t b = storage->find_blk(hash);
+            for (auto hash = std::begin(piped_queue); hash != std::end(piped_queue); ++hash) {
+                block_t b = storage->find_blk(*hash);
                 if (b->delivered && b->qc->has_n(config.nmajority)) {
-                    piped_queue.pop_front();
+                    piped_queue.erase(hash);
                     HOTSTUFF_LOG_PROTO("Confirm Piped block");
                 }
             }
