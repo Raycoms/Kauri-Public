@@ -778,12 +778,12 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
 
 void HotStuffBase::beat() {
     pmaker->beat().then([this](ReplicaID proposer) {
+        if (piped_queue.size() > get_config().async_blocks) {
+            return;
+        }
+
         HOTSTUFF_LOG_PROTO("Proposing: %d", final_buffer.size());
         if (proposer == get_id()) {
-
-            if (piped_queue.size() > get_config().async_blocks) {
-                return;
-            }
 
             auto parents = pmaker->get_parents();
 
