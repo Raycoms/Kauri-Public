@@ -386,6 +386,10 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
 
     if (blk->self_qc->has_n(config.nmajority)) {
         std::cout << "bye vote relay handler: " << msg.vote.blk_hash.to_hex() << " " << &blk->self_qc << std::endl;
+        if (blk->hash == piped_queue.front()) {
+            piped_queue.pop_front();
+            HOTSTUFF_LOG_PROTO("Reset Piped block");
+        }
         return;
     }
 
