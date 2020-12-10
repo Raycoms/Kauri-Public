@@ -421,14 +421,14 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
 
             if (!cert->has_n(config.nmajority)) return;
 
-            if (!piped_queue.empty() && blk->hash == piped_queue.front()) {
-                piped_queue.pop_front();
-                HOTSTUFF_LOG_PROTO("Reset Piped block");
+            if (!piped_queue.empty()) {
+                if (blk->hash == piped_queue.front()) {
+                    piped_queue.pop_front();
+                    HOTSTUFF_LOG_PROTO("Reset Piped block");
+                } else if (std::find(piped_queue.begin(), piped_queue.end(), blk->hash) != piped_queue.end()) {
+                    HOTSTUFF_LOG_PROTO("Failed resetting piped block, wasn't front!!!");
+                }
             }
-            else {
-                HOTSTUFF_LOG_PROTO("Failed resetting piped block, wasn't front!!!");
-            }
-
 
             std::cout << "go to town: " << std::endl;
 
