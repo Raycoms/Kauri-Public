@@ -180,6 +180,10 @@ class PMWaitQC: public virtual PaceMaker {
                 locked = true;
             }
         }
+        else
+        {
+            std::cout << "not enough client tx" << std::endl;
+        }
     }
 
     void update_last_proposed() {
