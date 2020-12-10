@@ -799,7 +799,7 @@ void HotStuffBase::beat() {
 
                 if (((current_time.tv_sec - last_block_time.tv_sec) * 1000000 + current_time.tv_usec -
                 last_block_time.tv_usec) / 1000 < config.piped_latency) {
-                    piped_submitted = false;
+                    HOTSTUFF_LOG_PROTO("omitting propose");
                 } else {
                     block_t highest = current;
                     for (auto p_hash : piped_queue) {
