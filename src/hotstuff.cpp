@@ -797,8 +797,7 @@ void HotStuffBase::beat() {
 
             if (piped_queue.size() < get_config().async_blocks && current != get_genesis()) {
 
-                if (((current_time.tv_sec - last_block_time.tv_sec) * 1000000 + current_time.tv_usec -
-                last_block_time.tv_usec) / 1000 < config.piped_latency) {
+                if (piped_queue.empty() && ((current_time.tv_sec - last_block_time.tv_sec) * 1000000 + current_time.tv_usec -last_block_time.tv_usec) / 1000 < config.piped_latency) {
                     HOTSTUFF_LOG_PROTO("omitting propose");
                 } else {
                     block_t highest = current;
