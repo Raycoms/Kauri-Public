@@ -70,9 +70,9 @@ if __name__ == "__main__":
     for ipEl in ipSet:
         ipElSet = ipEl.split(" ")
         if i == 0 :
-            command = "sudo tc qdisc add dev enp5s0f0 root netem delay {}ms limit 200000 rate {}mbit".format(latency, bandwidth)
+            command = "sudo tc qdisc add dev enp5s0f0 root netem delay {}ms limit 400000 rate {}mbit".format(latency, bandwidth)
         else:
-            command = "sudo tc qdisc add dev enp5s0f0 root netem delay {}ms limit 200000".format(latency)
+            command = "sudo tc qdisc add dev enp5s0f0 root netem delay {}ms limit 400000".format(latency)
         i+=1
 
         if ipElSet[0] != "127.0.0.1":
