@@ -431,7 +431,15 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
 
             //HOTSTUFF_LOG_PROTO("got %s", std::string(*v).c_str());
 
-            if (!cert->has_n(config.nmajority)) return;
+            if (!cert->has_n(config.nmajority)) {
+                if (id == get_pace_maker()->get_proposer()) {
+                    gettimeofday(&timeEnd, NULL);
+                    long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
+                    stats.insert(std::make_pair(blk->hash, stats[blk->hash] + usec));
+                    HOTSTUFF_LOG_PROTO("result: %s, %s ", blk->hash.to_hex().c_str(), std::to_string(stats[blk->hash]).c_str());
+                }
+                return;
+            }
 
             if (!piped_queue.empty()) {
                 if (blk->hash == piped_queue.front()) {
