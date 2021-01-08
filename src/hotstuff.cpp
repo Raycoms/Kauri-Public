@@ -843,7 +843,7 @@ void HotStuffBase::beat() {
                     if (id == get_pace_maker()->get_proposer()) {
                         gettimeofday(&timeEnd, NULL);
                         long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
-                        stats[piped_block->hash] = usec;
+                        stats.insert(std::make_pair(piped_block->hash, usec));
                     }
                 }
             } else {
