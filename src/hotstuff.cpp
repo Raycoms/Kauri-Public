@@ -330,6 +330,7 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
         if (!promise::any_cast<bool>(values[1]))
             LOG_WARN("invalid vote from %d", v->voter);
         auto &cert = blk->self_qc;
+        struct timeval timeEnd;
 
         cert->add_part(config, v->voter, *v->cert);
         if (cert != nullptr && cert->get_obj_hash() == blk->get_hash()) {
@@ -344,11 +345,11 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
         }
 
         if (id == get_pace_maker()->get_proposer()) {
-            struct timeval timeEnd;
             gettimeofday(&timeEnd, NULL);
             long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
+            std::cout << usec << " a:a " << stats[blk->hash] << std::endl;
             stats[blk->hash] = stats[blk->hash] + usec;
-            HOTSTUFF_LOG_PROTO("result: %s, %s ", blk->hash.to_hex().c_str(), std::to_string(stats[blk->parent_hashes[0]]).c_str());
+            std::cout << usec << " b:b " << stats[blk->hash] << std::endl;
         }
 
         /*struct timeval timeEnd;
