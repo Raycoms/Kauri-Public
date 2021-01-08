@@ -358,8 +358,8 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
 }
 
 void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
-    //struct timeval timeStart, timeEnd;
-    //gettimeofday(&timeStart, NULL);
+    struct timeval timeStart, timeEnd;
+    gettimeofday(&timeStart, NULL);
 
     const auto &peer = conn->get_peer_id();
     if (peer.is_null()) return;
@@ -390,6 +390,13 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
             piped_queue.pop_front();
             HOTSTUFF_LOG_PROTO("Reset Piped block");
         }
+
+        if (id == get_pace_maker()->get_proposer()) {
+            gettimeofday(&timeEnd, NULL);
+            long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
+            stats[blk->hash] += usec;
+            HOTSTUFF_LOG_PROTO("%s, %s ", blk->hash.to_hex().c_str(), std::to_string(stats[blk->hash]).c_str());
+        }
         return;
     }
 
@@ -400,7 +407,7 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
     promise::all(std::vector<promise_t>{
             async_deliver_blk(v->blk_hash, peer),
             v->cert->verify(config, vpool),
-    }).then([this, blk, v=std::move(v)](const promise::values_t& values) {
+    }).then([this, blk, v=std::move(v), &timeEnd, &timeStart](const promise::values_t& values) {
         if (!promise::any_cast<bool>(values[1]))
             LOG_WARN ("invalid vote-relay");
         auto &cert = blk->self_qc;
@@ -418,6 +425,12 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
                 }
                 std::cout << "Send Vote Relay: " << v->blk_hash.to_hex() << std::endl;
                 pn.send_msg(MsgRelay(VoteRelay(v->blk_hash, cert.get()->clone(), this)), parentPeer);
+
+                if (id == get_pace_maker()->get_proposer()) {
+                    gettimeofday(&timeEnd, NULL);
+                    long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
+                    stats[blk->hash] += usec;
+                }
                 return;
             }
 
@@ -444,6 +457,12 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
 
             update_hqc(blk, cert);
             on_qc_finish(blk);
+
+            if (id == get_pace_maker()->get_proposer()) {
+                gettimeofday(&timeEnd, NULL);
+                long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
+                stats[blk->hash] += usec;
+            }
 
             /*
             struct timeval timeEnd;
@@ -788,6 +807,8 @@ void HotStuffBase::beat() {
 
         HOTSTUFF_LOG_PROTO("Proposing: %d", final_buffer.size());
         if (proposer == get_id()) {
+            struct timeval timeStart, timeEnd;
+            gettimeofday(&timeStart, NULL);
 
             auto parents = pmaker->get_parents();
 
@@ -824,13 +845,18 @@ void HotStuffBase::beat() {
                     /* broadcast to other replicas */
                     gettimeofday(&last_block_time, NULL);
                     do_broadcast_proposal(prop);
+
+                    if (id == get_pace_maker()->get_proposer()) {
+                        gettimeofday(&timeEnd, NULL);
+                        long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
+                        stats[piped_block->hash] += usec;
+                    }
                 }
             } else {
                 gettimeofday(&last_block_time, NULL);
                 on_propose(final_buffer, std::move(parents));
             }
         }
-
     });
 }
 }

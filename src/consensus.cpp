@@ -172,6 +172,9 @@ void HotStuffCore::update(const block_t &nblk) {
 block_t HotStuffCore::on_propose(const std::vector<uint256_t> &cmds,
                             const std::vector<block_t> &parents,
                             bytearray_t &&extra) {
+    struct timeval timeStart, timeEnd;
+    gettimeofday(&timeStart, NULL);
+
     if (parents.empty())
         throw std::runtime_error("empty parents");
     for (const auto &_: parents) tails.erase(_);
@@ -211,6 +214,12 @@ block_t HotStuffCore::on_propose(const std::vector<uint256_t> &cmds,
     Proposal prop = process_block(bnew, true);
     /* broadcast to other replicas */
     do_broadcast_proposal(prop);
+
+    if (id == 0) {
+        gettimeofday(&timeEnd, NULL);
+        long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
+        stats[bnew->hash] += usec;
+    }
 
     return bnew;
 }

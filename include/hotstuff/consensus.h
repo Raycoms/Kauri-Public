@@ -147,6 +147,9 @@ public:
     // Last regular block height.
     int b_normal_height = 0;
 
+    /* Block hex to us time spent on block*/
+    std::map<uint256_t, long> stats;
+
     // If already a piped block was submitted.
     bool piped_submitted = false;
 
