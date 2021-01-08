@@ -425,12 +425,6 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
                 }
                 std::cout << "Send Vote Relay: " << v->blk_hash.to_hex() << std::endl;
                 pn.send_msg(MsgRelay(VoteRelay(v->blk_hash, cert.get()->clone(), this)), parentPeer);
-
-                if (id == get_pace_maker()->get_proposer()) {
-                    gettimeofday(&timeEnd, NULL);
-                    long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
-                    stats[blk->hash] += usec;
-                }
                 return;
             }
 
@@ -849,7 +843,7 @@ void HotStuffBase::beat() {
                     if (id == get_pace_maker()->get_proposer()) {
                         gettimeofday(&timeEnd, NULL);
                         long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
-                        stats[piped_block->hash] += usec;
+                        stats[piped_block->hash] = usec;
                     }
                 }
             } else {
