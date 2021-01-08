@@ -265,7 +265,7 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
     //HOTSTUFF_LOG_PROTO("vote handler %d %d", config.nmajority, config.nreplicas);
 
     if (blk->self_qc->has_n(config.nmajority)) {
-        //HOTSTUFF_LOG_PROTO("bye vote handler");
+        HOTSTUFF_LOG_PROTO("bye vote handler");
         //std::cout << "bye vote handler: " << msg.vote.blk_hash.to_hex() << " " << &blk->self_qc << std::endl;
         if (id == get_pace_maker()->get_proposer()) {
             gettimeofday(&timeEnd, NULL);
@@ -326,7 +326,7 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
     promise::all(std::vector<promise_t>{
         async_deliver_blk(v->blk_hash, peer),
         id == pmaker->get_proposer() ? v->verify(vpool) : promise_t([](promise_t &pm) { pm.resolve(true); }),
-    }).then([this, blk, v=std::move(v), &timeStart](const promise::values_t values) {
+    }).then([this, blk, v=std::move(v), timeStart](const promise::values_t values) {
         if (!promise::any_cast<bool>(values[1]))
             LOG_WARN("invalid vote from %d", v->voter);
         auto &cert = blk->self_qc;
