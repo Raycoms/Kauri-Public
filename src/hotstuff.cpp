@@ -234,9 +234,8 @@ void HotStuffBase::propose_handler(MsgPropose &&msg, const Net::conn_t &conn) {
 }
 
 void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
-
-    //struct timeval timeStart,timeEnd;
-    //gettimeofday(&timeStart, NULL);
+    struct timeval timeStart,timeEnd;
+    gettimeofday(&timeStart, NULL);
 
     const auto &peer = conn->get_peer_id();
     if (peer.is_null()) return;
@@ -268,6 +267,12 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
     if (blk->self_qc->has_n(config.nmajority)) {
         //HOTSTUFF_LOG_PROTO("bye vote handler");
         //std::cout << "bye vote handler: " << msg.vote.blk_hash.to_hex() << " " << &blk->self_qc << std::endl;
+        if (id == get_pace_maker()->get_proposer()) {
+            gettimeofday(&timeEnd, NULL);
+            long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
+            stats[blk->hash] = stats[blk->hash] + usec;
+            HOTSTUFF_LOG_PROTO("result: %s, %s ", blk->hash.to_hex().c_str(), std::to_string(stats[blk->parent_hashes[0]]).c_str());
+        }
         return;
     }
 
@@ -321,7 +326,7 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
     promise::all(std::vector<promise_t>{
         async_deliver_blk(v->blk_hash, peer),
         id == pmaker->get_proposer() ? v->verify(vpool) : promise_t([](promise_t &pm) { pm.resolve(true); }),
-    }).then([this, blk, v=std::move(v)](const promise::values_t values) {
+    }).then([this, blk, v=std::move(v), &timeStart](const promise::values_t values) {
         if (!promise::any_cast<bool>(values[1]))
             LOG_WARN("invalid vote from %d", v->voter);
         auto &cert = blk->self_qc;
@@ -336,6 +341,14 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
                 update_hqc(blk, cert);
                 on_qc_finish(blk);
             }
+        }
+
+        if (id == get_pace_maker()->get_proposer()) {
+            struct timeval timeEnd;
+            gettimeofday(&timeEnd, NULL);
+            long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
+            stats[blk->hash] = stats[blk->hash] + usec;
+            HOTSTUFF_LOG_PROTO("result: %s, %s ", blk->hash.to_hex().c_str(), std::to_string(stats[blk->parent_hashes[0]]).c_str());
         }
 
         /*struct timeval timeEnd;
