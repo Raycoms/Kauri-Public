@@ -746,8 +746,6 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
             }
             for (size_t j = start; j < start + curr_fanout; j++) { // j = 1 -> 10 // j = 11 -> 21 // (i = 11) j = 22 - 32
                 if (j >= size) {
-                    HOTSTUFF_LOG_PROTO("total children: %d", children.size());
-                    numberOfChildren = children.size();
                     done = true;
                     break;
                 }
