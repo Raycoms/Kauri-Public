@@ -703,80 +703,79 @@ HotStuffBase::~HotStuffBase() {}
 
 void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> &&replicas, bool ec_loop) {
 
-    const int32_t fanout = config.fanout;
-    uint16_t parent = 0;
     std::set<uint16_t> children;
-    auto level = 0;
-    auto maxFanout = fanout;
-    auto currentChildren = 0;
-    auto preLevel = 0;
+    auto size = replicas.size();
 
-    for (size_t i = 0; i < replicas.size(); i++)
-    {
-        const auto remaining = replicas.size() - i;
-        const double processesOnLevel = std::ceil(std::pow(fanout, level));
+    childPeers.clear();
+    for (size_t i = 0; i < size; i++) {
 
-        if (i != 0) {
-            currentChildren++;
-        }
-        if (currentChildren > maxFanout) {
-            parent++;
-            currentChildren = 1;
-        }
-
-        if (currentChildren == 1 && processesOnLevel > remaining) {
-            auto previousProcesses = 0;
-            for (auto l = 0; l < level - 1; l++) {
-                previousProcesses += std::ceil(std::pow(fanout, l));
-            }
-            auto doneParents = parent - previousProcesses;
-            auto parents = std::ceil(std::pow(fanout, level - 1));
-            auto perParent = std::floor(remaining / (parents - doneParents));
-            maxFanout = perParent;
-        }
-
-        auto &addr = std::get<0>(replicas[i]);
         auto cert_hash = std::move(std::get<2>(replicas[i]));
-        valid_tls_certs.insert(cert_hash);
         salticidae::PeerId peer{cert_hash};
+        valid_tls_certs.insert(cert_hash);
+        auto &addr = std::get<0>(replicas[i]);
+
         HotStuffCore::add_replica(i, peer, std::move(std::get<1>(replicas[i])));
-        if (addr != listen_addr)
-        {
+        if (addr != listen_addr) {
             peers.push_back(peer);
             pn.add_peer(peer);
             pn.set_peer_addr(peer, addr);
         }
-
-        if (id == parent) {
-            if (id != i) {
-                std::cout << id << " add child: " << i << " level: " << level << "ps: " << processesOnLevel << " "
-                          << std::to_string(remaining) << " " << std::to_string(maxFanout) << std::endl;
-                childPeers.insert(peer);
-                children.insert(i);
-            }
-        } else if (id == i) {
-            std::cout << id << " set parent: " << parent << " " << maxFanout << " " << currentChildren << std::endl;
-            parentPeer = peers[parent];
-        } else if (i != 0 && children.find(parent) != children.end()) {
-            std::cout << id << " add indirect child: " << i << std::endl;
-            children.insert(i);
-        }
-
-        if (i == static_cast<size_t>(std::pow(fanout, level)) + preLevel) {
-            preLevel = static_cast<size_t>(std::pow(fanout, level));
-            level++;
-        }
     }
+
+    size_t fanout = config.fanout;
+    auto processesOnLevel = 1;
+
+    size_t i = 0;
+    while (i < size) { // 0 // 11
+        const size_t remaining = size - i; // 100 // 89
+
+        const size_t max_fanout = ceil(remaining / processesOnLevel); //100 // 9
+        auto curr_fanout = std::min(max_fanout, fanout); //10 // 9
+
+        auto parent_cert_hash = std::move(std::get<2>(replicas[i]));
+        salticidae::PeerId parent_peer{parent_cert_hash};
+
+        auto start = i + processesOnLevel; // 11
+        for (auto counter = 1; counter <= processesOnLevel; counter++) { // 1 run // 10 runs
+            for (size_t j = start; j < start + curr_fanout; j++) { // j = 1 -> 10 // j = 11 -> 21 // (i = 11) j = 22 - 32
+                if (j >= size) {
+                    HOTSTUFF_LOG_PROTO("total children: %d", children.size());
+                    numberOfChildren = children.size();
+                    return;
+                }
+                auto cert_hash = std::move(std::get<2>(replicas[j]));
+                salticidae::PeerId peer{cert_hash};
+
+                if (id == i) {
+                    HOTSTUFF_LOG_PROTO("Adding Child Process: %lld", j);
+                    children.insert(j);
+                    childPeers.insert(peer);
+                } else if (id == j) {
+                    HOTSTUFF_LOG_PROTO("Setting Parent Process: %lld", i);
+                    parentPeer = parent_peer;
+                } else if (childPeers.find(parent_peer) != childPeers.end()) {
+                    children.insert(j);
+                }
+            }
+            start += curr_fanout;
+            i++;
+            parent_cert_hash = std::move(std::get<2>(replicas[i]));
+            salticidae::PeerId temp_parent_peer{parent_cert_hash};
+            parent_peer = temp_parent_peer;
+        } // i = 1
+        processesOnLevel = std::min(curr_fanout * processesOnLevel, remaining); // 10
+    }
+
+    HOTSTUFF_LOG_PROTO("total children: %d", children.size());
+    numberOfChildren = children.size();
 
     vector<PeerId> newPeers;
     copy(peers.begin(), peers.end(), back_inserter(newPeers));
 
     std::shuffle(newPeers.begin(), newPeers.end(), std::mt19937(std::random_device()()));
     for (const PeerId& peer : newPeers) {
-        if (childPeers.count(peer) > 0 || peer == peers[parent]) {
-            pn.conn_peer(peer);
-            usleep(1000);
-        }
+        pn.conn_peer(peer);
+        usleep(1000);
     }
 
     std::cout << " total children: " << children.size() << std::endl;
