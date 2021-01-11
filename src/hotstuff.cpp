@@ -724,9 +724,13 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
 
     size_t fanout = config.fanout;
     auto processesOnLevel = 1;
+    bool done = false;
 
     size_t i = 0;
     while (i < size) { // 0 // 11
+        if (done) {
+            break;
+        }
         const size_t remaining = size - i; // 100 // 89
 
         const size_t max_fanout = ceil(remaining / processesOnLevel); //100 // 9
@@ -737,11 +741,15 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
 
         auto start = i + processesOnLevel; // 11
         for (auto counter = 1; counter <= processesOnLevel; counter++) { // 1 run // 10 runs
+            if (done) {
+                break;
+            }
             for (size_t j = start; j < start + curr_fanout; j++) { // j = 1 -> 10 // j = 11 -> 21 // (i = 11) j = 22 - 32
                 if (j >= size) {
                     HOTSTUFF_LOG_PROTO("total children: %d", children.size());
                     numberOfChildren = children.size();
-                    return;
+                    done = true;
+                    break;
                 }
                 auto cert_hash = std::move(std::get<2>(replicas[j]));
                 salticidae::PeerId peer{cert_hash};
