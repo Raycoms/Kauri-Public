@@ -34,6 +34,7 @@ const opcode_t MsgPropose::opcode;
 MsgPropose::MsgPropose(const Proposal &proposal) { serialized << proposal; }
 void MsgPropose::postponed_parse(HotStuffCore *hsc) {
     proposal.hsc = hsc;
+    HOTSTUFF_LOG_PROTO("Size of the block: %lld", sizeof(serialized));
     serialized >> proposal;
 }
 
