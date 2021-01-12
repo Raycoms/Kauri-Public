@@ -280,13 +280,13 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
     if (id != pmaker->get_proposer() ) {
         auto &cert = blk->self_qc;
 
-        if (cert->has_n(numberOfChildren - 1)) {
+        if (cert->has_n(numberOfChildren)) {
             return;
         }
 
         cert->add_part(config, msg.vote.voter, *msg.vote.cert);
 
-        if (!cert->has_n(numberOfChildren - 1)) {
+        if (!cert->has_n(numberOfChildren)) {
             return;
         }
         std::cout <<  " got enough votes: " << msg.vote.blk_hash.to_hex().c_str() <<  std::endl;
