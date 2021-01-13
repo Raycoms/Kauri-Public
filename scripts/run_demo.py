@@ -81,7 +81,7 @@ if __name__ == "__main__":
             ssh.exec_command(command)
             i+=1
 
-    ssh.connect("172.16.52.12",port,user,password,timeout = 10)
+    ssh.connect("172.16.52.2",port,user,password,timeout = 10)
     ssh.exec_command("killall hotstuff-client &")
 
     time.sleep(3)
