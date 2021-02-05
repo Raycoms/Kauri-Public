@@ -319,6 +319,7 @@ class PrivKeySecp256k1: public PrivKey {
     }
 
     void from_rand() override {
+        srand(5);
         if (!RAND_bytes(data, nbytes))
             throw std::runtime_error("cannot get rand bytes from openssl");
     }
@@ -634,6 +635,7 @@ class QuorumCertSecp256k1: public QuorumCert {
         }
 
         void from_rand() override {
+            srand(5);
             vector<uint8_t> seed = {0,  50, 6,  static_cast<unsigned char>(rand() % 250), 24,  199, 1,  25,  52,  88,  192,
                                     19, 18, 12, 89,  6,   static_cast<unsigned char>(rand() % 250), 18, 102, 58,  209, 82,
                                     12, 62, 89, 110, 182, static_cast<unsigned char>(rand() % 250),   44, 20,  254, 22};
