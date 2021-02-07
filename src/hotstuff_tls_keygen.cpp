@@ -24,8 +24,6 @@ using hotstuff::tls_pkey_bt;
 using hotstuff::tls_x509_bt;
 
 int main(int argc, char **argv) {
-    srand(5);
-
     Config config("hotstuff.gen.conf");
     tls_pkey_bt priv_key;
     tls_x509_bt pub_key;
