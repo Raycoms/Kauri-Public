@@ -719,6 +719,7 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
             peers.push_back(peer);
             pn.add_peer(peer);
             pn.set_peer_addr(peer, addr);
+            HOTSTUFF_LOG_PROTO("Peer: %s has Address: %d", peer.to_hex().c_str(), addr.ip);
         }
     }
 
@@ -781,6 +782,7 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
     std::shuffle(newPeers.begin(), newPeers.end(), std::mt19937(std::random_device()()));
     for (const PeerId& peer : newPeers) {
         pn.conn_peer(peer);
+        HOTSTUFF_LOG_PROTO("connecting: %s to %s", pn.get_peer_id().to_hex().c_str(), peer.to_hex().c_str());
         usleep(1000);
     }
 
