@@ -719,7 +719,20 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
             peers.push_back(peer);
             pn.add_peer(peer);
             pn.set_peer_addr(peer, addr);
-            HOTSTUFF_LOG_PROTO("Peer: %s has Address: %d", peer.to_hex().c_str(), addr.ip);
+
+            char buffer[INET_ADDRSTRLEN + 1];
+            auto result = inet_ntop(AF_INET, &addr, buffer, sizeof(buffer));
+            if (result == nullptr) throw std::runtime_error("Can't convert IP4 address");
+
+            HOTSTUFF_LOG_PROTO("Peer: %s has Address: %s", peer.to_hex().c_str(), buffer);
+        }
+        else
+        {
+            char buffer[INET_ADDRSTRLEN + 1];
+            auto result = inet_ntop(AF_INET, &addr, buffer, sizeof(buffer));
+            if (result == nullptr) throw std::runtime_error("Can't convert IP4 address");
+
+            HOTSTUFF_LOG_PROTO("THIS Peer: %s has Address: %s", peer.to_hex().c_str(), buffer);
         }
     }
 
