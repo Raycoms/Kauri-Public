@@ -60,7 +60,7 @@ if __name__ == "__main__":
     #    f.write(keys[0] + " " + keys[1] + " " + keys[2] + "\n")
     #f.close()
 
-    tls_keys2 = [[t[4:] for t in l.split()] for l in open("tlskeys.txt", 'r').readlines()]
+    tls_keys2 = [[n for n in line.strip().split(' ')] for line in open("tlskeys.txt", 'r').readlines()]
 
     if args.block_size is not None:
         main_conf.write("block-size = {}\n".format(args.block_size))
