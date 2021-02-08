@@ -244,11 +244,11 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
     //HOTSTUFF_LOG_PROTO("received vote");
 
     if (id == pmaker->get_proposer() && !piped_queue.empty() && std::find(piped_queue.begin(), piped_queue.end(), msg.vote.blk_hash) != piped_queue.end()) {
-        HOTSTUFF_LOG_PROTO("Piped block");
+        HOTSTUFF_LOG_PROTO("piped block");
         block_t blk = storage->find_blk(msg.vote.blk_hash);
         if (!blk->delivered) {
             process_block(blk, false);
-            HOTSTUFF_LOG_PROTO("Normalized Piped block");
+            HOTSTUFF_LOG_PROTO("Normalized piped block");
         }
     }
 
@@ -268,12 +268,12 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
     if (blk->self_qc->has_n(config.nmajority)) {
         HOTSTUFF_LOG_PROTO("bye vote handler");
         //std::cout << "bye vote handler: " << msg.vote.blk_hash.to_hex() << " " << &blk->self_qc << std::endl;
-        if (id == get_pace_maker()->get_proposer()) {
+        /*if (id == get_pace_maker()->get_proposer()) {
             gettimeofday(&timeEnd, NULL);
             long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
             stats[blk->hash] = stats[blk->hash] + usec;
             HOTSTUFF_LOG_PROTO("result: %s, %s ", blk->hash.to_hex().c_str(), std::to_string(stats[blk->parent_hashes[0]]).c_str());
-        }
+        }*/
         return;
     }
 
@@ -331,7 +331,7 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
         if (!promise::any_cast<bool>(values[1]))
             LOG_WARN("invalid vote from %d", v->voter);
         auto &cert = blk->self_qc;
-        struct timeval timeEnd;
+        //struct timeval timeEnd;
 
         cert->add_part(config, v->voter, *v->cert);
         if (cert != nullptr && cert->get_obj_hash() == blk->get_hash()) {
@@ -345,13 +345,13 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
             }
         }
 
-        if (id == get_pace_maker()->get_proposer()) {
+        /*if (id == get_pace_maker()->get_proposer()) {
             gettimeofday(&timeEnd, NULL);
             long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
             std::cout << usec << " a:a " << stats[blk->hash] << std::endl;
             stats[blk->hash] = stats[blk->hash] + usec;
             std::cout << usec << " b:b " << stats[blk->hash] << std::endl;
-        }
+        }*/
 
         /*struct timeval timeEnd;
         gettimeofday(&timeEnd, NULL);
@@ -382,11 +382,11 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
     //std::cout << "vote relay handler: " << msg.vote.blk_hash.to_hex() << std::endl;
 
     if (id == pmaker->get_proposer() && !piped_queue.empty() && std::find(piped_queue.begin(), piped_queue.end(), msg.vote.blk_hash) != piped_queue.end()) {
-        HOTSTUFF_LOG_PROTO("Piped block");
+        HOTSTUFF_LOG_PROTO("piped block");
         block_t blk = storage->find_blk(msg.vote.blk_hash);
         if (!blk->delivered) {
             process_block(blk, false);
-            HOTSTUFF_LOG_PROTO("Normalized Piped block");
+            HOTSTUFF_LOG_PROTO("Normalized piped block");
         }
     }
 
@@ -406,12 +406,12 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
             HOTSTUFF_LOG_PROTO("Reset Piped block");
         }
 
-        if (id == get_pace_maker()->get_proposer()) {
+        /*if (id == get_pace_maker()->get_proposer()) {
             gettimeofday(&timeEnd, NULL);
             long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
             stats[blk->hash] = stats[blk->hash] + usec;
             HOTSTUFF_LOG_PROTO("result: %s, %s ", blk->hash.to_hex().c_str(), std::to_string(stats[blk->parent_hashes[0]]).c_str());
-        }
+        }*/
         return;
     }
 
@@ -448,14 +448,13 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
             //HOTSTUFF_LOG_PROTO("got %s", std::string(*v).c_str());
 
             if (!cert->has_n(config.nmajority)) {
-                if (id == get_pace_maker()->get_proposer()) {
+                /*if (id == get_pace_maker()->get_proposer()) {
                     gettimeofday(&timeEnd, NULL);
                     long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
                     std::cout << usec << " a:a " << stats[blk->hash] << std::endl;
                     stats[blk->hash] = stats[blk->hash] + usec;
                     std::cout << usec << " b:b " << stats[blk->hash] << std::endl;
-
-                }
+                }*/
                 return;
             }
 
@@ -464,7 +463,7 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
                     piped_queue.pop_front();
                     HOTSTUFF_LOG_PROTO("Reset Piped block");
                 } else if (std::find(piped_queue.begin(), piped_queue.end(), blk->hash) != piped_queue.end()) {
-                    HOTSTUFF_LOG_PROTO("Failed resetting piped block, wasn't front!!!");
+                    HOTSTUFF_LOG_PROTO("Failed resetting piped block, wasn't front!!! %s", piped_queue.begin()->to_hex().c_str());
                 }
             }
 
@@ -719,20 +718,6 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
             peers.push_back(peer);
             pn.add_peer(peer);
             pn.set_peer_addr(peer, addr);
-
-            char buffer[INET_ADDRSTRLEN + 1];
-            auto result = inet_ntop(AF_INET, &addr, buffer, sizeof(buffer));
-            if (result == nullptr) throw std::runtime_error("Can't convert IP4 address");
-
-            HOTSTUFF_LOG_PROTO("Peer: %s has Address: %s", peer.to_hex().c_str(), buffer);
-        }
-        else
-        {
-            char buffer[INET_ADDRSTRLEN + 1];
-            auto result = inet_ntop(AF_INET, &addr, buffer, sizeof(buffer));
-            if (result == nullptr) throw std::runtime_error("Can't convert IP4 address");
-
-            HOTSTUFF_LOG_PROTO("THIS Peer: %s has Address: %s", peer.to_hex().c_str(), buffer);
         }
     }
 
@@ -795,7 +780,6 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
     std::shuffle(newPeers.begin(), newPeers.end(), std::mt19937(std::random_device()()));
     for (const PeerId& peer : newPeers) {
         pn.conn_peer(peer);
-        HOTSTUFF_LOG_PROTO("connecting: %s to %s", pn.get_peer_id().to_hex().c_str(), peer.to_hex().c_str());
         usleep(1000);
     }
 
@@ -895,11 +879,11 @@ void HotStuffBase::beat() {
                     gettimeofday(&last_block_time, NULL);
                     do_broadcast_proposal(prop);
 
-                    if (id == get_pace_maker()->get_proposer()) {
+                    /*if (id == get_pace_maker()->get_proposer()) {
                         gettimeofday(&timeEnd, NULL);
                         long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
                         stats.insert(std::make_pair(piped_block->hash, usec));
-                    }
+                    }*/
                 }
             } else {
                 gettimeofday(&last_block_time, NULL);
