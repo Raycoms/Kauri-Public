@@ -16,7 +16,7 @@ if __name__ == "__main__":
     parser.add_argument('--block-size', type=int, default=400)
     parser.add_argument('--pace-maker', type=str, default='dummy')
     parser.add_argument('--algo', type=str, default='bls')
-    parser.add_argument('--nworker', type=int, default=6)
+    parser.add_argument('--nworker', type=int, default=1)
 
     args = parser.parse_args()
 
