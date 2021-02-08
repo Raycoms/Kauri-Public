@@ -485,6 +485,8 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
                                 if (rdy_blk->get_parent_hashes()[0] == curr_blk->hash) {
                                     HOTSTUFF_LOG_PROTO("Resolved block in rdy queue %s", hash.to_hex().c_str());
                                     rdy_queue.erase(std::find(rdy_queue.begin(), rdy_queue.end(), hash));
+                                    piped_queue.erase(std::find(piped_queue.begin(), piped_queue.end(), hash));
+
                                     update_hqc(rdy_blk, rdy_blk->self_qc);
                                     on_qc_finish(rdy_blk);
                                     foundChildren = true;
@@ -499,7 +501,6 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
                     if (place != piped_queue.end()) {
                         HOTSTUFF_LOG_PROTO("Failed resetting piped block, wasn't front! Adding to rdy_queue %s", blk->hash.to_hex().c_str());
                         rdy_queue.push_back(blk->hash);
-                        piped_queue.erase(place);
 
                         // Don't finish this block until the previous one was finished.
                         return;
