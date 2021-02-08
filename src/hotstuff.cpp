@@ -458,32 +458,62 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
                 return;
             }
 
-            if (!piped_queue.empty()) {
-                if (blk->hash == piped_queue.front()) {
-                    piped_queue.pop_front();
-                    HOTSTUFF_LOG_PROTO("Reset Piped block");
-                } else if (std::find(piped_queue.begin(), piped_queue.end(), blk->hash) != piped_queue.end()) {
-                    HOTSTUFF_LOG_PROTO("Failed resetting piped block, wasn't front!!! %s", piped_queue.begin()->to_hex().c_str());
-                }
-            }
-
-            std::cout << "go to town: " << std::endl;
-
             cert->compute();
             if (!cert->verify(config)) {
                 HOTSTUFF_LOG_PROTO("Error, Invalid Sig!!!");
                 return;
             }
 
-            update_hqc(blk, cert);
-            on_qc_finish(blk);
+            //todo, this is a concurrency problem, I think these tasks run in parallel. This means one block can be approved before the other and meh!
+            if (!piped_queue.empty()) {
+                if (blk->hash == piped_queue.front()) {
+                    piped_queue.pop_front();
+                    HOTSTUFF_LOG_PROTO("Reset Piped block");
 
-            if (id == get_pace_maker()->get_proposer()) {
+                    std::cout << "go to town: " << std::endl;
+
+                    update_hqc(blk, cert);
+                    on_qc_finish(blk);
+
+                    if (!rdy_queue.empty()) {
+                        auto curr_blk = blk;
+                        bool foundChildren = true;
+                        while (foundChildren) {
+                            foundChildren = false;
+                            for (const auto &hash : rdy_queue) {
+                                block_t rdy_blk = storage->find_blk(hash);
+                                if (rdy_blk->get_parent_hashes()[0] == curr_blk->hash)
+                                {
+                                    rdy_queue.erase(std::find(rdy_queue.begin(), rdy_queue.end(), hash));
+                                    update_hqc(blk, cert);
+                                    on_qc_finish(blk);
+                                    foundChildren = true;
+                                    curr_blk = rdy_blk;
+                                }
+                            }
+                        }
+                    }
+                }
+                else {
+                    auto place = std::find(piped_queue.begin(), piped_queue.end(), blk->hash);
+                    if (place != piped_queue.end()) {
+                        HOTSTUFF_LOG_PROTO("Failed resetting piped block, wasn't front! Adding to rdy_queue %s", piped_queue.begin()->to_hex().c_str());
+                        rdy_queue.push_back(*place);
+                        piped_queue.erase(place);
+
+                        // Don't finish this block until the previous one was finished.
+                        return;
+                    }
+                }
+            }
+
+
+            /*if (id == get_pace_maker()->get_proposer()) {
                 gettimeofday(&timeEnd, NULL);
                 long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
                 stats[blk->hash] = stats[blk->hash] + usec;
-                //HOTSTUFF_LOG_PROTO("result: %s, %s ", blk->hash.to_hex().c_str(), std::to_string(stats[blk->hash]).c_str());
-            }
+                HOTSTUFF_LOG_PROTO("result: %s, %s ", blk->hash.to_hex().c_str(), std::to_string(stats[blk->hash]).c_str());
+            }*/
 
             /*
             struct timeval timeEnd;
@@ -493,14 +523,15 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
                       << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
                       << " us to execute."
                       << std::endl;*/
-        } else {
+        }
+        /*else {
             if (id == get_pace_maker()->get_proposer()) {
                 gettimeofday(&timeEnd, NULL);
                 long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
                 stats[blk->hash] = stats[blk->hash] + usec;
                 HOTSTUFF_LOG_PROTO("result: %s, %s ", blk->hash.to_hex().c_str(), std::to_string(stats[blk->parent_hashes[0]]).c_str());
             }
-        }
+        }*/
     });
 
     /*gettimeofday(&timeEnd, NULL);
