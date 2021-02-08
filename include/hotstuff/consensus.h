@@ -144,6 +144,9 @@ public:
     // Pipelined block hash.
     std::deque<uint256_t> piped_queue;
 
+    // Pipelined block hash.
+    std::deque<uint256_t> rdy_queue;
+
     // Last regular block height.
     int b_normal_height = 0;
 

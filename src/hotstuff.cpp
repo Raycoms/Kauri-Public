@@ -484,6 +484,7 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
                                 block_t rdy_blk = storage->find_blk(hash);
                                 if (rdy_blk->get_parent_hashes()[0] == curr_blk->hash)
                                 {
+                                    HOTSTUFF_LOG_PROTO("Resolved block in rdy queue %s", hash.to_hex().c_str());
                                     rdy_queue.erase(std::find(rdy_queue.begin(), rdy_queue.end(), hash));
                                     update_hqc(blk, cert);
                                     on_qc_finish(blk);
