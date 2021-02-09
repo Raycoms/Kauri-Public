@@ -491,6 +491,7 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
                                     on_qc_finish(rdy_blk);
                                     foundChildren = true;
                                     curr_blk = rdy_blk;
+                                    break;
                                 }
                             }
                         }
