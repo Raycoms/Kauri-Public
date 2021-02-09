@@ -168,9 +168,9 @@ int main(int argc, char **argv) {
     auto opt_prop_delay = Config::OptValDouble::create(1);
     auto opt_imp_timeout = Config::OptValDouble::create(11);
     auto opt_nworker = Config::OptValInt::create(1);
-    auto opt_repnworker = Config::OptValInt::create(1);
+    auto opt_repnworker = Config::OptValInt::create(2);
     auto opt_repburst = Config::OptValInt::create(10000);
-    auto opt_clinworker = Config::OptValInt::create(8);
+    auto opt_clinworker = Config::OptValInt::create(2);
     auto opt_cliburst = Config::OptValInt::create(10000);
     auto opt_notls = Config::OptValFlag::create(false);
     auto opt_max_rep_msg = Config::OptValInt::create(16 << 20); // 4M by default
