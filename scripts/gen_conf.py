@@ -71,7 +71,7 @@ if __name__ == "__main__":
 
     main_conf.write("proposer = {}\n".format(0))
     main_conf.write("fan-out = {}\n".format(3))
-    main_conf.write("piped_latency = {}\n".format(10))
+    main_conf.write("piped_latency = {}\n".format(5))
     main_conf.write("async_blocks = {}\n".format(10))
 
     for r in zip(replicas, keys, tls_keys2[:len(keys)], itertools.count(0)):
