@@ -939,6 +939,7 @@ void HotStuffBase::beat() {
                         long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
                         stats.insert(std::make_pair(piped_block->hash, usec));
                     }*/
+                    piped_submitted = false;
                 }
             } else {
                 gettimeofday(&last_block_time, NULL);
