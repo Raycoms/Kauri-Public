@@ -160,7 +160,7 @@ class PMWaitQC: public virtual PaceMaker {
 
                 if (!hsc->piped_queue.empty() && hsc->b_normal_height > 0) {
                     block_t piped_block = hsc->storage->find_blk(hsc->piped_queue.back());
-                    if ( piped_block->get_height() > 10 && hsc->b_normal_height < piped_block->get_height() - 10
+                    if ( piped_block->get_height() > 10 && hsc->b_normal_height < piped_block->get_height() - hsc->get_config().async_blocks - 10
                             && ((current_time.tv_sec - hsc->last_block_time.tv_sec) * 1000000 + current_time.tv_usec - hsc->last_block_time.tv_usec) / 1000 > hsc->get_config().piped_latency) {
                         HOTSTUFF_LOG_PROTO("Extra recovery block %d %d", hsc->b_normal_height, piped_block->get_height());
 
