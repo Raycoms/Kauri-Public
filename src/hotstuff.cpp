@@ -404,6 +404,28 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
         if (blk->hash == piped_queue.front()) {
             piped_queue.pop_front();
             HOTSTUFF_LOG_PROTO("Reset Piped block");
+
+            if (!rdy_queue.empty()) {
+                auto curr_blk = blk;
+                bool foundChildren = true;
+                while (foundChildren) {
+                    foundChildren = false;
+                    for (const auto &hash : rdy_queue) {
+                        block_t rdy_blk = storage->find_blk(hash);
+                        if (rdy_blk->get_parent_hashes()[0] == curr_blk->hash) {
+                            HOTSTUFF_LOG_PROTO("Resolved block in rdy queue %s", hash.to_hex().c_str());
+                            rdy_queue.erase(std::find(rdy_queue.begin(), rdy_queue.end(), hash));
+                            piped_queue.erase(std::find(piped_queue.begin(), piped_queue.end(), hash));
+
+                            update_hqc(rdy_blk, rdy_blk->self_qc);
+                            on_qc_finish(rdy_blk);
+                            foundChildren = true;
+                            curr_blk = rdy_blk;
+                            break;
+                        }
+                    }
+                }
+            }
         }
 
         /*if (id == get_pace_maker()->get_proposer()) {
