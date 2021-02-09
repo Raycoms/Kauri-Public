@@ -173,8 +173,9 @@ int main(int argc, char **argv) {
     auto opt_clinworker = Config::OptValInt::create(2);
     auto opt_cliburst = Config::OptValInt::create(10000);
     auto opt_notls = Config::OptValFlag::create(false);
-    auto opt_max_rep_msg = Config::OptValInt::create(16 << 20); // 4M by default
-    auto opt_max_cli_msg = Config::OptValInt::create(128536); // 64K by default
+
+    auto opt_max_rep_msg = Config::OptValInt::create(12853600); // 12M by default
+    auto opt_max_cli_msg = Config::OptValInt::create(128536); // 128K by default
     auto opt_fanout = Config::OptValInt::create(2); // 2 by default
     auto opt_piped_latency = Config::OptValInt::create(10); // 10ms by default
     auto opt_async_blocks = Config::OptValInt::create(0); // 0 by default
@@ -250,8 +251,8 @@ int main(int argc, char **argv) {
     HotStuffApp::Net::Config repnet_config;
     ClientNetwork<opcode_t>::Config clinet_config;
     repnet_config.max_msg_size(opt_max_rep_msg->get());
-    repnet_config.conn_server_timeout(240);
-    repnet_config.conn_timeout(480);
+    repnet_config.conn_server_timeout(480);
+    repnet_config.conn_timeout(1000);
     clinet_config.max_msg_size(opt_max_cli_msg->get());
     if (!opt_tls_privkey->get().empty() && !opt_notls->get())
     {
@@ -268,6 +269,7 @@ int main(int argc, char **argv) {
     }
     repnet_config
         .burst_size(opt_repburst->get())
+        .max_listen_backlog(50)
         .nworker(opt_repnworker->get());
     clinet_config
         .burst_size(opt_cliburst->get())
