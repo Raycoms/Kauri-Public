@@ -251,8 +251,7 @@ int main(int argc, char **argv) {
     HotStuffApp::Net::Config repnet_config;
     ClientNetwork<opcode_t>::Config clinet_config;
     repnet_config.max_msg_size(opt_max_rep_msg->get());
-    repnet_config.conn_server_timeout(480);
-    repnet_config.conn_timeout(1000);
+    repnet_config.nworker(opt_repnworker->get());
     clinet_config.max_msg_size(opt_max_cli_msg->get());
     if (!opt_tls_privkey->get().empty() && !opt_notls->get())
     {
@@ -267,10 +266,6 @@ int main(int argc, char **argv) {
             .tls_key(tls_priv_key)
             .tls_cert(tls_cert);
     }
-    repnet_config
-        .burst_size(opt_repburst->get())
-        .max_listen_backlog(50)
-        .nworker(opt_repnworker->get());
     clinet_config
         .burst_size(opt_cliburst->get())
         .nworker(opt_clinworker->get());
