@@ -705,7 +705,7 @@ HotStuffBase::HotStuffBase(uint32_t blk_size,
 
 void HotStuffBase::do_broadcast_proposal(const Proposal &prop) {
     MsgPropose prop_msg(prop);
-    pn.multicast_msg(prop, std::vector(childPeers.begin(), childPeers.end()))
+    pn.multicast_msg(prop, std::vector(childPeers.begin(), childPeers.end()));
 }
 
 void HotStuffBase::do_vote(Proposal prop, const Vote &vote) {
