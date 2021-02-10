@@ -76,8 +76,7 @@ namespace hotstuff {
 
     bool QuorumCertAggBLS::verify(const ReplicaConfig &config) {
         if (theSig == nullptr) return false;
-        HOTSTUFF_LOG_DEBUG("checking cert(%d), obj_hash=%s",
-                           i, get_hex10(obj_hash).c_str());
+        //HOTSTUFF_LOG_DEBUG("checking cert(%d), obj_hash=%s",i, get_hex10(obj_hash).c_str());
 
         struct timeval timeStart,timeEnd;
         gettimeofday(&timeStart, nullptr);
@@ -124,10 +123,9 @@ namespace hotstuff {
                 pubs.push_back(*static_cast<const PubKeyBLS &>(config.get_pubkey(i)).data);
             }
         }
-        
 
-        HOTSTUFF_LOG_DEBUG("checking cert(%d), obj_hash=%s",
-                           i, get_hex10(obj_hash).c_str());
+
+        //HOTSTUFF_LOG_DEBUG("checking cert(%d), obj_hash=%s", i, get_hex10(obj_hash).c_str());
 
         vpm.push_back(vpool.verify(new SigVeriTaskBLSAgg(obj_hash, pubs, *theSig)));
 
