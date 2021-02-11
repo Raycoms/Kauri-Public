@@ -85,7 +85,7 @@ bool try_send(bool check = true) {
             cmd->get_hash(), Request(cmd)));
         if (max_iter_num > 0)
             max_iter_num--;
-        return true;
+        return false;
     }
     return false;
 }
@@ -107,7 +107,7 @@ void client_resp_cmd_handler(MsgRespCmd &&msg, const Net::conn_t &) {
     gettimeofday(&tv, nullptr);
     elapsed.push_back(std::make_pair(tv, et.elapsed_sec));
 #endif
-    usleep(10);
+    usleep(1000);
     waiting.erase(it);
     while (try_send());
 }
