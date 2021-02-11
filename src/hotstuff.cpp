@@ -859,8 +859,8 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
                 auto it = decision_waiting.find(cmd_hash);
                 if (it == decision_waiting.end())
                     it = decision_waiting.insert(std::make_pair(cmd_hash, e.second)).first;
-                else
-                    e.second(Finality(id, 0, 0, 0, cmd_hash, uint256_t()));
+                
+                e.second(Finality(id, 0, 0, 0, cmd_hash, uint256_t()));
                 cmd_pending_buffer.push_back(cmd_hash);
             }
             else {
