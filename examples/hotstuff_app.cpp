@@ -174,8 +174,8 @@ int main(int argc, char **argv) {
     auto opt_cliburst = Config::OptValInt::create(10000);
     auto opt_notls = Config::OptValFlag::create(false);
 
-    auto opt_max_rep_msg = Config::OptValInt::create(12853600); // 12M by default
-    auto opt_max_cli_msg = Config::OptValInt::create(128536); // 128K by default
+    auto opt_max_rep_msg = Config::OptValInt::create(4 << 20); // 4m by default
+    auto opt_max_cli_msg = Config::OptValInt::create(65536); // 64k by default
     auto opt_fanout = Config::OptValInt::create(2); // 2 by default
     auto opt_piped_latency = Config::OptValInt::create(10); // 10ms by default
     auto opt_async_blocks = Config::OptValInt::create(0); // 0 by default
