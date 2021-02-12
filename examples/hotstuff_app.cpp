@@ -252,7 +252,6 @@ int main(int argc, char **argv) {
     ClientNetwork<opcode_t>::Config clinet_config;
     repnet_config.max_msg_size(opt_max_rep_msg->get());
     repnet_config.nworker(opt_repnworker->get());
-    repnet_config.max_send_buff_size(10000);
     clinet_config.max_msg_size(opt_max_cli_msg->get());
     if (!opt_tls_privkey->get().empty() && !opt_notls->get())
     {
