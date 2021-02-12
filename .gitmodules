@@ -4,6 +4,3 @@
 [submodule "salticidae"]
 	path = salticidae
 	url = https://github.com/Raycoms/salticidae.git
-[submodule "scripts/deploy/minirun"]
-	path = scripts/deploy/minirun
-	url = https://github.com/Determinant/minirun.git
