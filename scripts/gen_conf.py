@@ -13,7 +13,7 @@ if __name__ == "__main__":
     parser.add_argument('--keygen', type=str, default='./hotstuff-keygen')
     parser.add_argument('--tls-keygen', type=str, default='./hotstuff-tls-keygen')
     parser.add_argument('--nodes', type=str, default='nodes.txt')
-    parser.add_argument('--block-size', type=int, default=800)
+    parser.add_argument('--block-size', type=int, default=1600)
     parser.add_argument('--pace-maker', type=str, default='dummy')
     parser.add_argument('--algo', type=str, default='bls')
     parser.add_argument('--nworker', type=int, default=1)
@@ -72,7 +72,7 @@ if __name__ == "__main__":
     main_conf.write("proposer = {}\n".format(0))
     main_conf.write("fan-out = {}\n".format(3))
     main_conf.write("piped_latency = {}\n".format(20))
-    main_conf.write("async_blocks = {}\n".format(5))
+    main_conf.write("async_blocks = {}\n".format(2))
 
     for r in zip(replicas, keys, tls_keys2[:len(keys)], itertools.count(0)):
         main_conf.write("replica = {}, {}, {}\n".format(r[0], r[1][0], r[2][2]))
