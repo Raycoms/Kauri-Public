@@ -72,6 +72,8 @@ if __name__ == "__main__":
     if not (args.pace_maker is None):
         main_conf.write("pace-maker = {}\n".format(args.pace_maker))
 
+    print("{} {} {} {}", args.fanout, args.pipelatency, args.pipedepth, args.crypto)
+
     main_conf.write("proposer = {}\n".format(0))
     main_conf.write("fan-out = {}\n".format(args.fanout))
     main_conf.write("piped_latency = {}\n".format(args.pipelatency))
