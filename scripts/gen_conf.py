@@ -70,7 +70,7 @@ if __name__ == "__main__":
         main_conf.write("pace-maker = {}\n".format(args.pace_maker))
 
     main_conf.write("proposer = {}\n".format(0))
-    main_conf.write("fan-out = {}\n".format(3))
+    main_conf.write("fan-out = {}\n".format(14))
     main_conf.write("piped_latency = {}\n".format(10))
     main_conf.write("async_blocks = {}\n".format(10))
 
