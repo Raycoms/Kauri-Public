@@ -530,8 +530,14 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
                     }
                 }
             }
+            else
+            {
+                std::cout << "go to town: " << std::endl;
 
-
+                update_hqc(blk, cert);
+                on_qc_finish(blk);
+            }
+            
             /*if (id == get_pace_maker()->get_proposer()) {
                 gettimeofday(&timeEnd, NULL);
                 long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
