@@ -146,7 +146,7 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
 endif()
 
 option(SALTICIDAE_DEBUG_LOG "enable debug log" ON)
-option(HOTSTUFF_DEBUG_LOG "enable debug log" ON)
+option(HOTSTUFF_DEBUG_LOG "enable debug log" OFF)
 option(HOTSTUFF_NORMAL_LOG "enable normal log" ON)
 option(HOTSTUFF_PROTO_LOG "enable protocol log" OFF)
 option(HOTSTUFF_MSG_STAT "eanble message statistics" ON)
