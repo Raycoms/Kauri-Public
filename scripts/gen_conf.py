@@ -16,7 +16,7 @@ if __name__ == "__main__":
     parser.add_argument('--block-size', type=int, default=400)
     parser.add_argument('--pace-maker', type=str, default='dummy')
     parser.add_argument('--crypto', type=str, default='bls')
-    parser.add_argument('--nworker', type=int, default=6)
+    parser.add_argument('--nworker', type=int, default=4)
     parser.add_argument('--fanout', type=int, default=10)
     parser.add_argument('--pipedepth', type=int, default=0)
     parser.add_argument('--pipelatency', type=int, default=10)
@@ -71,8 +71,6 @@ if __name__ == "__main__":
         main_conf.write("nworker = {}\n".format(args.nworker))
     if not (args.pace_maker is None):
         main_conf.write("pace-maker = {}\n".format(args.pace_maker))
-
-    print("{} {} {} {}", args.fanout, args.pipelatency, args.pipedepth, args.crypto)
 
     main_conf.write("proposer = {}\n".format(0))
     main_conf.write("fan-out = {}\n".format(args.fanout))
