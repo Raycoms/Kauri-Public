@@ -528,6 +528,12 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
                         // Don't finish this block until the previous one was finished.
                         return;
                     }
+                    else {
+                        std::cout << "go to town: " << std::endl;
+
+                        update_hqc(blk, cert);
+                        on_qc_finish(blk);
+                    }
                 }
             }
             else
