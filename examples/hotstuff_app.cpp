@@ -107,9 +107,6 @@ class HotStuffApp: public HotStuff {
 
     void state_machine_execute(const Finality &fin) override {
         reset_imp_timer();
-#ifndef HOTSTUFF_ENABLE_BENCHMARK
-        HOTSTUFF_LOG_INFO("replicated %s", std::string(fin).c_str());
-#endif
     }
 
 #ifdef HOTSTUFF_MSG_STAT
