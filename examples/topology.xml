@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<experiment boot="kollaps:1.0">
+    <services>
+        <!-- definition of the services (containers),  -->
+        <!-- kollaps dashboard to controll the experiments, should be present in all deployments -->
+        <service name="dashboard" image="kollaps/dashboard:1.0" supervisor="true" port="8088"/>
+        <!-- iperf clients -->
+        <!-- <service name="client1" image="kollaps/iperf3-client:1.0" command="['server', '0', '0']"/> -->
+
+        <!-- the "command" can be used to pass parameters to the container entrypoints.
+             In this example we are passsing "server" which will be used to discover the IPs
+             of the servers at run time -->
+        <!-- iperf server, declared once, but three instances will be started, see below -->
+        <service name="server0" image="hotstuff-bls-server" share="false" command="['bls','10','8','20']"/>
+        <service name="server1" image="hotstuff-bls-server" share="false" command="['bls','10','8','20']"/>
+        <service name="server" image="hotstuff-bls-server" share="false" command="['bls','10','8','20']"/>
+        <service name="client" image="hotstuff-bls-client" share="false" command="['bls','10','8','20']"/>
+    </services>
+    <bridges>
+        <!-- definition of the network elements (routers and switches) -->
+        <bridge name="s"/>
+        <bridge name="sclient"/>
+    </bridges>
+    <links>
+        <!-- definition of the links, the "network" should match the name of an existing container network -->
+        <link origin="server" dest="s" latency="50" upload="25Mbps" download="25Mbps" network="kollaps_network"/>
+        <link origin="server1" dest="s" latency="50" upload="25Mbps" download="25Mbps" network="kollaps_network"/>
+        <link origin="server0" dest="s" latency="50" upload="25Mbps" download="25Mbps" network="kollaps_network"/>
+        <link origin="server0" dest="sclient" latency="1" upload="1000Mbps" download="1000Mbps" network="kollaps_network"/>
+        <link origin="client" dest="sclient" latency="1" upload="1000Mbps" download="1000Mbps" network="kollaps_network"/>
+    </links>
+    <dynamic>
+        <!-- schedulle the dynamics of the experiment. These apply to services and links, see documentation for more details.
+             This section can be ommited in which case all the services will be started at the beginning of the experiment -->
+        <schedule name="server0" time="0.0" action="join"/>
+        <schedule name="server"  time="0.1" action="join" amount="89"/>
+        <schedule name="server"  time="0.1" action="join" amount="10"/>
+        <schedule name="client" time="20.0" action="join"/>
+
+        <schedule name="server"  time="323.0" action="leave" amount="89"/>
+        <schedule name="server"  time="323.0" action="leave" amount="10"/>
+        <schedule name="server0" time="323.0" action="leave"/>
+        <schedule name="client" time="323.0" action="leave"/>
+    </dynamic>
+</experiment>

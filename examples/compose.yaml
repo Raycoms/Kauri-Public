@@ -1,0 +1,40 @@
+version: "3.3"
+services:
+  server1-becd9691-b958-47c3-9ac3-688ca48fb6d6:
+    image: hotstuff-bls
+    command: ['bls','20','1','20', '100', '25']
+    hostname: server1
+    cap_add:
+      - NET_ADMIN
+    labels:
+      becd9691-b958-47c3-9ac3-688ca48fb6d6: "true"
+    deploy:
+      replicas: 11
+      endpoint_mode: dnsrr
+    environment:
+      KOLLAPS_UUID: 'becd9691-b958-47c3-9ac3-688ca48fb6d6'
+    networks:
+      - KollapsNet
+
+  server-becd9691-b958-47c3-9ac3-688ca48fb6d6:
+    image: hotstuff-bls
+    command: ['bls','20','1','20', '100', '25']
+    hostname: server
+    cap_add:
+      - NET_ADMIN
+    labels:
+      becd9691-b958-47c3-9ac3-688ca48fb6d6: "true"
+    deploy:
+      replicas: 89
+      endpoint_mode: dnsrr
+    environment:
+      KOLLAPS_UUID: 'becd9691-b958-47c3-9ac3-688ca48fb6d6'
+    networks:
+      - KollapsNet
+
+networks:
+  KollapsNet:
+    external:
+      name: kollaps_network
+  outside:
+    driver: overlay
