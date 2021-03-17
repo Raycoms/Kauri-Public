@@ -107,7 +107,7 @@ void client_resp_cmd_handler(MsgRespCmd &&msg, const Net::conn_t &) {
     gettimeofday(&tv, nullptr);
     elapsed.push_back(std::make_pair(tv, et.elapsed_sec));
 #endif
-    usleep(100);
+    usleep(10);
     waiting.erase(it);
     while (try_send());
 }
