@@ -841,8 +841,8 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
 
     std::shuffle(newPeers.begin(), newPeers.end(), std::mt19937(std::random_device()()));
     for (const PeerId& peer : newPeers) {
-        pn.conn_peer(peer);
-        usleep(1000);
+            pn.conn_peer(peer);
+        usleep(100);
     }
 
     std::cout << " total children: " << children.size() << std::endl;
