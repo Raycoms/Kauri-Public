@@ -997,6 +997,8 @@ class QuorumCertSecp256k1: public QuorumCert {
             //}
             if (sigs.empty() && theSig != nullptr) {
                 sigs.push_back(*theSig->data);
+                delete theSig;
+                theSig = nullptr;
             }
             sigs.push_back(*dynamic_cast<const SigSecBLSAgg &>(pc).data);
             //bls::G2Element sig1 = *theSig->data;
@@ -1030,6 +1032,8 @@ class QuorumCertSecp256k1: public QuorumCert {
 
             if (sigs.empty() && theSig != nullptr) {
                 sigs.push_back(*theSig->data);
+                delete theSig;
+                theSig = nullptr;
             }
 
             for (bls::G2Element el : dynamic_cast<const QuorumCertAggBLS &>(qc).sigs) {
