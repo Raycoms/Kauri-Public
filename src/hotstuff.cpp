@@ -458,7 +458,7 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
 
             std::cout << "merge quorum " << std::endl;
             if (id != pmaker->get_proposer()) {
-                if (!cert->has_n(childPeers.size() + 1)) return;
+                if (!cert->has_n(numberOfChildren)) return;
                 cert->compute();
                 if (!cert->verify(config)) {
                     throw std::runtime_error("Invalid Sigs in intermediate signature!");
