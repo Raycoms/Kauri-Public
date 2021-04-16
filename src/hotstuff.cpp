@@ -454,6 +454,11 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
         std::cout << "got relay and verified" << std::endl;
 
         if (cert != nullptr && cert->get_obj_hash() == blk->get_hash() && !cert->has_n(config.nmajority)) {
+            if (id != pmaker->get_proposer() && cert->has_n(numberOfChildren + 1))
+            {
+                return;
+            }
+
             cert->merge_quorum(*v->cert);
 
             std::cout << "merge quorum " << std::endl;
