@@ -402,7 +402,7 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
 
     if (blk->self_qc->has_n(config.nmajority)) {
         std::cout << "bye vote relay handler: " << msg.vote.blk_hash.to_hex() << " " << &blk->self_qc << std::endl;
-        if (blk->hash == piped_queue.front()) {
+        if (id == pmaker->get_proposer() && blk->hash == piped_queue.front()) {
             piped_queue.pop_front();
             HOTSTUFF_LOG_PROTO("Reset Piped block");
 
@@ -457,8 +457,8 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
             cert->merge_quorum(*v->cert);
 
             std::cout << "merge quorum" << std::endl;
-            if (id != 0) {
-                if (!cert->has_n(numberOfChildren + 1)) return;
+            if (id != pmaker->get_proposer()) {
+                if (!cert->has_n(numberOfChildren)) return;
                 cert->compute();
                 if (!cert->verify(config)) {
                     throw std::runtime_error("Invalid Sigs in intermediate signature!");
@@ -487,7 +487,6 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
                 return;
             }
 
-            //todo, this is a concurrency problem, I think these tasks run in parallel. This means one block can be approved before the other and meh!
             if (!piped_queue.empty()) {
                 if (blk->hash == piped_queue.front()) {
                     piped_queue.pop_front();
