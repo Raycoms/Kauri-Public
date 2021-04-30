@@ -821,9 +821,13 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
                     HOTSTUFF_LOG_PROTO("Adding Child Process: %lld", j);
                     children.insert(j);
                     childPeers.insert(peer);
+                    pn.conn_peer(peer);
                 } else if (id == j) {
                     HOTSTUFF_LOG_PROTO("Setting Parent Process: %lld", i);
                     parentPeer = parent_peer;
+                    if (pn.has_peer(parent_peer)) {
+                        pn.conn_peer(parent_peer);
+                    }
                 } else if (childPeers.find(parent_peer) != childPeers.end()) {
                     children.insert(j);
                 }
@@ -840,14 +844,9 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
     HOTSTUFF_LOG_PROTO("total children: %d", children.size());
     numberOfChildren = children.size();
 
-    vector<PeerId> newPeers;
-    copy(peers.begin(), peers.end(), back_inserter(newPeers));
-
-    std::shuffle(newPeers.begin(), newPeers.end(), std::mt19937(std::random_device()()));
-    for (const PeerId& peer : newPeers) {
-            pn.conn_peer(peer);
-        usleep(10);
-    }
+    //for (const PeerId& peer : peers) {
+    //        pn.conn_peer(peer);
+    //}
 
     std::cout << " total children: " << children.size() << std::endl;
     numberOfChildren = children.size();
