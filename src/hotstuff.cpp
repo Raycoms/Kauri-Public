@@ -281,13 +281,13 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
         auto &cert = blk->self_qc;
 
 
-        if (cert->has_n(numberOfChildren)) {
+        if (cert->has_n(numberOfChildren + 1)) {
             return;
         }
 
         cert->add_part(config, msg.vote.voter, *msg.vote.cert);
 
-        if (!cert->has_n(numberOfChildren)) {
+        if (!cert->has_n(numberOfChildren + 1)) {
             return;
         }
         std::cout <<  " got enough votes: " << msg.vote.blk_hash.to_hex().c_str() <<  std::endl;
@@ -454,7 +454,7 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
         std::cout << "got relay and verified" << std::endl;
 
         if (cert != nullptr && cert->get_obj_hash() == blk->get_hash() && !cert->has_n(config.nmajority)) {
-            if (id != pmaker->get_proposer() && cert->has_n(numberOfChildren - config.fanout))
+            if (id != pmaker->get_proposer() && cert->has_n(numberOfChildren + 1))
             {
                 return;
             }
@@ -463,7 +463,7 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
 
             std::cout << "merge quorum " << std::endl;
             if (id != pmaker->get_proposer()) {
-                if (!cert->has_n(numberOfChildren - config.fanout)) return;
+                if (!cert->has_n(numberOfChildren + 1)) return;
                 cert->compute();
                 if (!cert->verify(config)) {
                     throw std::runtime_error("Invalid Sigs in intermediate signature!");
