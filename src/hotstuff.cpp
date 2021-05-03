@@ -935,7 +935,7 @@ void HotStuffBase::beat() {
                 // Number of failures = 1
                 if ((past_time > 60 * 1000 && id == 0)) { // || (id > 0 && id < 3)
                     throw std::invalid_argument(
-                            "This server kills itself after 1000 blocks, done! " + std::to_string(past_time));
+                            "This server kills itself after 60s blocks, done! " + std::to_string(past_time));
                 }
             }
 
