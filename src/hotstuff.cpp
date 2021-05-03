@@ -885,6 +885,7 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
         {
             ReplicaID proposer = pmaker->get_proposer();
             if (proposer != get_id()) {
+                e.second(Finality(id, 0, 0, 0, e.first, uint256_t()));
                 continue;
             }
 
