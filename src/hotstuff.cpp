@@ -774,12 +774,14 @@ void HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t
 
     childPeers.clear();
 
+    auto offset = 0;
     auto size = global_replicas.size();
     if (!startup) {
         std::cout << global_replicas.size() << std::endl;
         global_replicas.erase(global_replicas.begin());
         size = global_replicas.size();
         std::cout << size << std::endl;
+        offset = get_pace_maker()->get_proposer();
         config.nreplicas--;
         config.nmajority = config.nreplicas - (config.nreplicas / 3);
 
@@ -836,11 +838,11 @@ void HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t
                 auto cert_hash = std::move(std::get<2>(global_replicas[j]));
                 salticidae::PeerId peer{cert_hash};
 
-                if (id == i) {
+                if (id == i + offset) {
                     HOTSTUFF_LOG_PROTO("Adding Child Process: %lld", j);
                     children.insert(j);
                     childPeers.insert(peer);
-                } else if (id == j) {
+                } else if (id == j + offset) {
                     HOTSTUFF_LOG_PROTO("Setting Parent Process: %lld", i);
                     parentPeer = parent_peer;
                 } else if (childPeers.find(parent_peer) != childPeers.end()) {
