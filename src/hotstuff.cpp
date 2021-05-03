@@ -857,11 +857,7 @@ void HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t
         }
         processesOnLevel = std::min(curr_fanout * processesOnLevel, remaining);
     }
-
-    if (!startup)
-    {
-        inc_time();
-    }
+    
     HOTSTUFF_LOG_PROTO("total children: %d", children.size());
     numberOfChildren = children.size();
 }
