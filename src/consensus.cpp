@@ -17,6 +17,8 @@
 
 #include <cassert>
 #include <stack>
+#include <include/hotstuff/liveness.h>
+#include <salticidae/type.h>
 
 #include "hotstuff/util.h"
 #include "hotstuff/consensus.h"
@@ -66,8 +68,6 @@ block_t HotStuffCore::get_delivered_blk(const uint256_t &blk_hash) {
 }
 
 bool HotStuffCore::on_deliver_blk(const block_t &blk) {
-    HOTSTUFF_LOG_PROTO("Core deliver");
-
     if (blk->delivered)
     {
         LOG_WARN("attempt to deliver a block twice");
@@ -232,7 +232,6 @@ Proposal HotStuffCore::process_block(const block_t& bnew, bool adjustHeight)
     }
 
     on_deliver_blk(bnew);
-    LOG_PROTO("before update");
     update(bnew);
     Proposal prop(id, bnew, nullptr);
     //std::cout << "prop" << std::endl;
@@ -247,14 +246,10 @@ Proposal HotStuffCore::process_block(const block_t& bnew, bool adjustHeight)
         LOG_PROTO("not in storage!");
     }
 
-    LOG_PROTO("before On receive vote");
-
     on_receive_vote(
             Vote(id, bnew_hash,
                  create_part_cert(*priv_key, bnew_hash), this));
-    LOG_PROTO("after On receive vote");
     on_propose_(prop);
-    LOG_PROTO("after on propose");
 
     return prop;
 }
@@ -265,6 +260,11 @@ void HotStuffCore::on_receive_proposal(const Proposal &prop) {
     sanity_check_delivered(bnew);
     update(bnew);
     bool opinion = false;
+
+    if (bnew->height > 50) {
+        inc_time();
+    }
+
     if (bnew->height > vheight)
     {
         if (bnew->qc_ref && bnew->qc_ref->height > b_lock->height)
@@ -305,8 +305,6 @@ void HotStuffCore::on_receive_vote(const Vote &vote) {
 
     block_t blk = get_delivered_blk(vote.blk_hash);
     assert(vote.cert);
-
-    LOG_WARN("after delivered check!");
 
     if (!blk->voted.insert(vote.voter).second)
     {
@@ -398,6 +396,11 @@ void HotStuffCore::on_qc_finish(const block_t &blk) {
     auto it = qc_waiting.find(blk);
     if (it != qc_waiting.end())
     {
+        if (first) {
+            gettimeofday(&start_time, NULL);
+            first = false;
+        }
+
         HOTSTUFF_LOG_PROTO("async_qc_finish %s", blk->get_hash().to_hex().c_str());
 
         it->second.resolve();

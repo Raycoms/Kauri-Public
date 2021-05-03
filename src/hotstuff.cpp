@@ -108,8 +108,6 @@ void HotStuffBase::on_fetch_blk(const block_t &blk) {
 }
 
 bool HotStuffBase::on_deliver_blk(const block_t &blk) {
-    HOTSTUFF_LOG_PROTO("Base deliver");
-
     const uint256_t &blk_hash = blk->get_hash();
     bool valid;
     /* sanity check: all parents must be delivered */
@@ -338,7 +336,7 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
         if (cert != nullptr && cert->get_obj_hash() == blk->get_hash()) {
             if (cert->has_n(config.nmajority)) {
                 cert->compute();
-                if (id != 0 && !cert->verify(config)) {
+                if (id != pmaker->get_proposer() && !cert->verify(config)) {
                     throw std::runtime_error("Invalid Sigs in intermediate signature!");
                 }
                 update_hqc(blk, cert);
@@ -451,7 +449,6 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
         if (!promise::any_cast<bool>(values[1]))
             LOG_WARN ("invalid vote-relay");
         auto &cert = blk->self_qc;
-        std::cout << "got relay and verified" << std::endl;
 
         if (cert != nullptr && cert->get_obj_hash() == blk->get_hash() && !cert->has_n(config.nmajority)) {
             if (id != pmaker->get_proposer() && cert->has_n(numberOfChildren + 1))
@@ -461,7 +458,6 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
 
             cert->merge_quorum(*v->cert);
 
-            std::cout << "merge quorum " << std::endl;
             if (id != pmaker->get_proposer()) {
                 if (!cert->has_n(numberOfChildren + 1)) return;
                 cert->compute();
@@ -662,8 +658,7 @@ void HotStuffBase::print_stat() const {
             size_t nsb = conn->get_nsentb();
             size_t nrb = conn->get_nrecvb();
             conn->clear_msgstat();
-            LOG_INFO("%s: %u(%u), %u(%u), %u",
-                     get_hex10(replica).c_str(), ns, nsb, nr, nrb, part_fetched_replica[replica]);
+            //LOG_INFO("%s: %u(%u), %u(%u), %u", get_hex10(replica).c_str(), ns, nsb, nr, nrb, part_fetched_replica[replica]);
             _nsent += ns;
             _nrecv += nr;
             part_fetched_replica[replica] = 0;
@@ -724,14 +719,17 @@ void HotStuffBase::do_broadcast_proposal(const Proposal &prop) {
     pn.multicast_msg(MsgPropose(prop), std::vector(childPeers.begin(), childPeers.end()));
 }
 
-void HotStuffBase::do_vote(Proposal prop, const Vote &vote) {
-    //HOTSTUFF_LOG_PROTO("do vote");
+void HotStuffBase::inc_time() {
+    pmaker->inc_time();
+}
 
+void HotStuffBase::do_vote(Proposal prop, const Vote &vote) {
     pmaker->beat_resp(prop.proposer).then([this, vote, prop](ReplicaID proposer) {
 
         if (proposer == get_id())
         {
-            throw HotStuffError("unreachable line");
+            //throw HotStuffError("unreachable line");
+            return;
         }
 
         if (childPeers.empty()) {
@@ -766,7 +764,7 @@ void HotStuffBase::do_decide(Finality &&fin) {
 
 HotStuffBase::~HotStuffBase() {}
 
-void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> &&replicas, bool ec_loop) {
+void HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> &&replicas, bool startup) {
 
     std::set<uint16_t> children;
     auto size = replicas.size();
@@ -899,7 +897,6 @@ void HotStuffBase::beat() {
             return;
         }
 
-        HOTSTUFF_LOG_PROTO("Proposing: %d", final_buffer.size());
         if (proposer == get_id()) {
             struct timeval timeStart, timeEnd;
             gettimeofday(&timeStart, NULL);
@@ -909,6 +906,15 @@ void HotStuffBase::beat() {
             struct timeval current_time;
             gettimeofday(&current_time, NULL);
             block_t current = pmaker->get_current_proposal();
+
+            if (current->height > 10) {
+                double past_time = ((current_time.tv_sec - start_time.tv_sec) * 1000000 + current_time.tv_usec -
+                                    start_time.tv_usec) / 1000;
+                if ((past_time > 60 * 1000 && id == 0) || (id > 0 && id < 3)) {
+                    throw std::invalid_argument(
+                            "This server kills itself after 1000 blocks, done! " + std::to_string(past_time));
+                }
+            }
 
             if (piped_queue.size() < get_config().async_blocks && current != get_genesis()) {
 
