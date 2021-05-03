@@ -767,21 +767,42 @@ HotStuffBase::~HotStuffBase() {}
 void HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> &&replicas, bool startup) {
 
     std::set<uint16_t> children;
-    auto size = replicas.size();
+
+    if (startup) {
+        global_replicas = std::move(replicas);
+    }
 
     childPeers.clear();
-    for (size_t i = 0; i < size; i++) {
 
-        auto cert_hash = std::move(std::get<2>(replicas[i]));
-        salticidae::PeerId peer{cert_hash};
-        valid_tls_certs.insert(cert_hash);
-        auto &addr = std::get<0>(replicas[i]);
+    auto size = global_replicas.size();
+    if (!startup) {
+        std::cout << global_replicas.size() << std::endl;
+        global_replicas.erase(global_replicas.begin());
+        size = global_replicas.size();
+        std::cout << size << std::endl;
+        config.nreplicas--;
+        config.nmajority = config.nreplicas - (config.nreplicas / 3);
 
-        HotStuffCore::add_replica(i, peer, std::move(std::get<1>(replicas[i])));
-        if (addr != listen_addr) {
-            peers.push_back(peer);
-            pn.add_peer(peer);
-            pn.set_peer_addr(peer, addr);
+        // number of faulty processes
+        if (id < 1) {
+            throw std::invalid_argument(
+                    "This server kills itself if < 10");
+        }
+    }
+    else {
+        for (size_t i = 0; i < size; i++) {
+
+            auto cert_hash = std::move(std::get<2>(global_replicas[i]));
+            salticidae::PeerId peer{cert_hash};
+            valid_tls_certs.insert(cert_hash);
+            auto &addr = std::get<0>(global_replicas[i]);
+
+            HotStuffCore::add_replica(i, peer, std::move(std::get<1>(global_replicas[i])));
+            if (addr != listen_addr) {
+                peers.push_back(peer);
+                pn.add_peer(peer);
+                pn.set_peer_addr(peer, addr);
+            }
         }
     }
 
@@ -790,29 +811,29 @@ void HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t
     bool done = false;
 
     size_t i = 0;
-    while (i < size) { // 0 // 11
+    while (i < size) {
         if (done) {
             break;
         }
-        const size_t remaining = size - i; // 100 // 89
+        const size_t remaining = size - i;
 
-        const size_t max_fanout = ceil(remaining / processesOnLevel); //100 // 9
-        auto curr_fanout = std::min(max_fanout, fanout); //10 // 9
+        const size_t max_fanout = ceil(remaining / processesOnLevel);
+        auto curr_fanout = std::min(max_fanout, fanout);
 
-        auto parent_cert_hash = std::move(std::get<2>(replicas[i]));
+        auto parent_cert_hash = std::move(std::get<2>(global_replicas[i]));
         salticidae::PeerId parent_peer{parent_cert_hash};
 
-        auto start = i + processesOnLevel; // 11
-        for (auto counter = 1; counter <= processesOnLevel; counter++) { // 1 run // 10 runs
+        auto start = i + processesOnLevel;
+        for (auto counter = 1; counter <= processesOnLevel; counter++) {
             if (done) {
                 break;
             }
-            for (size_t j = start; j < start + curr_fanout; j++) { // j = 1 -> 10 // j = 11 -> 21 // (i = 11) j = 22 - 32
+            for (size_t j = start; j < start + curr_fanout; j++) {
                 if (j >= size) {
                     done = true;
                     break;
                 }
-                auto cert_hash = std::move(std::get<2>(replicas[j]));
+                auto cert_hash = std::move(std::get<2>(global_replicas[j]));
                 salticidae::PeerId peer{cert_hash};
 
                 if (id == i) {
@@ -828,22 +849,23 @@ void HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t
             }
             start += curr_fanout;
             i++;
-            parent_cert_hash = std::move(std::get<2>(replicas[i]));
+            parent_cert_hash = std::move(std::get<2>(global_replicas[i]));
             salticidae::PeerId temp_parent_peer{parent_cert_hash};
             parent_peer = temp_parent_peer;
-        } // i = 1
-        processesOnLevel = std::min(curr_fanout * processesOnLevel, remaining); // 10
+        }
+        processesOnLevel = std::min(curr_fanout * processesOnLevel, remaining);
     }
 
     HOTSTUFF_LOG_PROTO("total children: %d", children.size());
     numberOfChildren = children.size();
+}
 
+void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> &&replicas, bool ec_loop) {
+
+    HotStuffBase::calcTree(std::move(replicas), true);
     for (const PeerId& peer : peers) {
             pn.conn_peer(peer);
     }
-
-    std::cout << " total children: " << children.size() << std::endl;
-    numberOfChildren = children.size();
 
     /* ((n - 1) + 1 - 1) / 3 */
     uint32_t nfaulty = peers.size() / 3;
@@ -910,7 +932,8 @@ void HotStuffBase::beat() {
             if (current->height > 10) {
                 double past_time = ((current_time.tv_sec - start_time.tv_sec) * 1000000 + current_time.tv_usec -
                                     start_time.tv_usec) / 1000;
-                if ((past_time > 60 * 1000 && id == 0) || (id > 0 && id < 3)) {
+                // Number of failures = 1
+                if ((past_time > 60 * 1000 && id == 0)) { // || (id > 0 && id < 3)
                     throw std::invalid_argument(
                             "This server kills itself after 1000 blocks, done! " + std::to_string(past_time));
                 }
