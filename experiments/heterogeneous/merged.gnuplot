@@ -62,24 +62,18 @@ set size 0.6,SY
 #set label 1001 "B = BFT-SMaRT" font "Arial, 16" at 11.7,780
 #set label 1002 "W = Wheat" font "Arial, 16"		at 13,730
 
-set label 1001 "Kauri"   font "Arial, 10.5" rotate by 45 right at   -6.8,-19 
-set label 1002 "Motor"   font "Arial, 10.5" rotate by 45 right at   -5.8,-19 
-set label 1003 "HotStuff-secp"   font "Arial, 10.5" rotate by 45 right at   -4.8,-19 
-set label 1004 "HotStuff-bls"   font "Arial, 10.5" rotate by 45 right at   -3.8,-19 
+set label 1001 "Kauri"   font ", 12" rotate by 25 right at   -6.8,-19 
+set label 1002 "Motor"   font ", 12" rotate by 25 right at   -5.8,-19 
+set label 1003 "HotStuff-secp"   font ", 12" rotate by 25 right at   -4.8,-19 
+set label 1004 "HotStuff-bls"   font ", 12" rotate by 25 right at   -3.8,-19 
 
 
 
 
-set label 2001 "Kauri"   font "Arial, 10.5" rotate by 45 right at   0,-19 
-set label 2002 "Motor"   font "Arial, 10.5" rotate by 45 right at   1,-19 
-set label 2003 "HotStuff-secp"   font "Arial, 10.5" rotate by 45 right at   2,-19 
-set label 2004 "HotStuff-bls"   font "Arial, 10.5" rotate by 45 right at   3,-19 
-#set label 2001 "Oregon"   font "Arial, 16" rotate by 45 right at   1,-19 
-#set label 2001 "Oregon"   font "Arial, 16" rotate by 45 right at   1,-19 
-#set label 2002 "Ireland"  font "Arial, 16" rotate by 45 right at   5,-19
-#set label 2003 "Sydney"   font "Arial, 16" rotate by 45 right at 7.5,-19
-#set label 2004 "SaoPaulo" font "Arial, 16" rotate by 45 right at  11,-19
-#set label 2005 "Virginia" font "Arial, 16" rotate by 45 right at  14,-19
+set label 2001 "Kauri"   font ", 12" rotate by 25 right at   0,-19 
+set label 2002 "Motor"   font ", 12" rotate by 25 right at   1,-19 
+set label 2003 "HotStuff-secp"   font ", 12" rotate by 25 right at   2,-19 
+set label 2004 "HotStuff-bls"   font ", 12" rotate by 25 right at   3,-19 
 #
 #set label "B" at 	 0.75,645  font "Arial, 16"
 #set label "W" at     1.5,360   font "Arial, 16"
