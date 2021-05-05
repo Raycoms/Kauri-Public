@@ -11,6 +11,7 @@ set grid y
 #set ytics 100
 #set mytics 5
 set xrange [90:410]
+#set yrange [1:330]
 set logscale y 2
 set key above horizontal width -1 font ",14" 
 

@@ -1,0 +1,6 @@
+#System Throughput  Latency
+Kauri 54248,66667     0,37
+Motor 3124		0,32
+HotStuff-secp 6292,666667   0,16
+HotStuff-bls 5546,666667    0,17
+

@@ -5,9 +5,11 @@ set style line 4 lt 2 dt 2 pt 6 ps 1 lc rgb "grey"  lw 4
 
 
 set style line 20 lt 1 dt 1 pt 6 ps 1.5 lc rgb "black" lw 4
+set style line 200 lt 1 dt 1 pt 6 ps 1.5 lc rgb "dark-grey" lw 4
 set style line 21 lt 1 dt 1 pt 2 ps 1.5 lc rgb "dark-grey"  lw 4
 set style line 22 lt 1 dt 3 pt 9 ps 1.5 lc rgb "dark-grey"  lw 4
 set style line 23 lt 1 dt 2 pt 1 ps 1.5 lc rgb "dark-grey"  lw 4
+
 
 #used in the update times plot. color scheme from http://colorbrewer2.org/#type=sequential&scheme=PuBuGn&n=7
 set style line 300 lt 1 lc rgb "#d0d1e6" #was "#f6eff7"
