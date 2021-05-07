@@ -41,7 +41,7 @@ set style histogram clustered gap 1 rowstacked
 #set format x
 set boxwidth 0.9
 #set style histogram clustered gap 1
-set style fill solid 0.5 noborder
+set style fill solid 1 noborder
 
 set size 1.0,0.6
 
@@ -57,41 +57,31 @@ set ytics nomirror
 set xtics nomirror
 set grid y
 
+
+
+
 set origin MX+LX+0*(IX+SX),MY+0*(IY+SY)+LY
 set size 0.6,SY
 #set label 1001 "B = BFT-SMaRT" font "Arial, 16" at 11.7,780
 #set label 1002 "W = Wheat" font "Arial, 16"		at 13,730
 
-set label 1001 "Kauri"   font ", 12" rotate by 25 right at   -6.8,-19 
-set label 1002 "Motor"   font ", 12" rotate by 25 right at   -5.8,-19 
-set label 1003 "HotStuff-secp"   font ", 12" rotate by 25 right at   -4.8,-19 
-set label 1004 "HotStuff-bls"   font ", 12" rotate by 25 right at   -3.8,-19 
+#set label 1001 "Kauri"   font ", 12" rotate by 25 right at   -6.8,-19 
+#set label 1002 "Motor"   font ", 12" rotate by 25 right at   -5.8,-19 
+#set label 1003 "HotStuff-secp"   font ", 12" rotate by 25 right at   -4.8,-19 
+#set label 1004 "HotStuff-bls"   font ", 12" rotate by 25 right at   -3.8,-19 
 
 
 
 
-set label 2001 "Kauri"   font ", 12" rotate by 25 right at   0,-19 
-set label 2002 "Motor"   font ", 12" rotate by 25 right at   1,-19 
-set label 2003 "HotStuff-secp"   font ", 12" rotate by 25 right at   2,-19 
-set label 2004 "HotStuff-bls"   font ", 12" rotate by 25 right at   3,-19 
-#
-#set label "B" at 	 0.75,645  font "Arial, 16"
-#set label "W" at     1.5,360   font "Arial, 16"
-#set label "B" at  	 3.75,645  font "Arial, 16"
-#set label "W" at     4.5,450   font "Arial, 16"
-#set label "B" at     6.75,645  font "Arial, 16"
-#set label "W" at     7.5,485   font "Arial, 16"
-#set label "B" at     9.75,645  font "Arial, 16"
-#set label "W" at   	 10.5,525  font "Arial, 16"
-#set label "W" at   	 13.5,445  font "Arial, 16"
 
-
-set xtics (0 "Kauri", 1 "M", 2 "H", 3 "H")
+set key maxrows 1 at 11,70 font ",17"
 
 set xrange [-1:4]
-#set key vertical maxrows 1 sample 0.5 width 0.1 at 12,750
 plot\
-	 "data/merged.dat" using ($3/1000):xtic("") fill noborder lc rgb "black" notitle, \
+	 "data/kauri.dat" using ($3/1000):xtic("") fill noborder lc rgb "black" title "Kauri", \
+	 "data/motor.dat" using ($3/1000):xtic("") fill noborder lc rgb "#808080" title "Motor*", \
+	 "data/hot-s.dat" using ($3/1000):xtic("") fill noborder lc rgb "dark-grey" title "HotStuff-secp", \
+	 "data/hot-b.dat" using ($3/1000):xtic("") fill noborder lc rgb "grey" title "HotStuff-bls"
 
 #	 "data/merged.dat" using (($4/1000)-($3/1000)):xtic("") fill solid 1.0 ls 1102 title "90th"
 
@@ -104,7 +94,7 @@ plot\
 
 set origin MX+LX+1*(IX+SX)-0.1,MY+0*(IY+SY)+LY
 set size 0.6,SY
-set ylabel "Latency (ms)" offset 1,0
+set ylabel "Latency (ms)" offset 1.8,0
 #set title "{/bold Kollaps}"
 #unset label 1001
 #unset label 1002
@@ -115,7 +105,14 @@ set ylabel "Latency (ms)" offset 1,0
 #set ytics ("" 0, "" 100, "" 200, "" 300, "" 400, "" 500, "" 600)
 #set key outside center vertical maxrows 1 sample 0.5 width 0.1 top
 plot\
-	 "data/merged.dat" using ($4):xtic("") fill noborder lc rgb "black" notitle 
+	 "data/kauri.dat" using ($4):xtic("") fill noborder lc rgb "black" notitle, \
+	 "data/motor.dat" using ($4):xtic("") fill noborder lc rgb "#808080" notitle, \
+	 "data/hot-s.dat" using ($4):xtic("") fill noborder lc rgb "dark-grey" notitle, \
+	 "data/hot-b.dat" using ($4):xtic("") fill noborder lc rgb "grey" notitle
+
+
+
+#	 "data/merged.dat" using ($4):xtic("") fill noborder lc rgb "black" notitle 
 
 	 #"data/merged.dat" using ($4):xtic("") fill solid 0.9 ls 1104  title "50th"
 #	 ,\
