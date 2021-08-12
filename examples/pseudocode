@@ -1,0 +1,153 @@
+
+######## no landmarks ########
+
+The average-distance-minimum-degree spanning tree problem is one of the well known problem surrounding spanning trees. However, it is well understood that this cluster of problems is NP-hard https://onlinelibrary.wiley.com/doi/abs/10.1002/(SICI)1097-0118(200001)33:1%3C1::AID-JGT1%3E3.0.CO;2-L?casa_token=UcggZJRJRTsAAAAA:uZhwxJQVVSclOZ1gIpmAOp7ILtk9Th5p2Emrrvua5a4RQrWSuyt2dZzWrqaf8jcabVP07ZMxHQdJe2IS.
+However, in the context of our work, we're looking for a deviation of this problem since we assume a static topology (a fixed m-ary tree with a specific number of internal nodes).
+These kind of problems are still understood to be NP-complete https://dl.acm.org/doi/pdf/10.1145/322307.322309?casa_token=t9hVU44LuAwAAAAA:s3Yxq6zKKsl7q2UWUkjNAiIU_qMfbpHm4ohkx4vj_aWzLUyw6aWRyL0AxcQeSHMPRzk5anob4q9ClQ.
+https://sci-hub.st/https://ieeexplore.ieee.org/document/1208987 Proposes an algorithm for multicast tree networks which are very similar to our use-case introducing a set of additional internal nodes to improve the connection in an existing network.
+https://ieeexplore.ieee.org/abstract/document/4220941?casa_token=oI4y9UUrajMAAAAA:i1ADk53yAnz-VmrYpH8K8Edsh_xk77z3XqhcFuJ_nGtqikssWmhMEn7Mhas14pVpp3w3Jgg-ETw also works with multicast trees and proposes a heuristic algorithm for variable depth, in a variable network.
+https://orbi.uliege.be/bitstream/2268/168016/1/tbcp-final.pdf and https://www.researchgate.net/publication/221133631_Scalable_Overlay_Multicast_Tree_Construction_for_Media_Streaming try to find the best position for a new process, while also changing the overall tree structure potentially.
+However, these works focus on finding the best possible tree, while altering the tree structure. Meanwhile, we require two different things:
+a) We want to maintain the overall tree structure the same (fanout and number of internal nodeS)
+b) We want to find the f+1 most efficient trees, rather than only the 1 optimal tree
+
+Nonetheless, we can learn from the above algorithms. The algorithms start by clustering nodes with low latency together in a cluster and then use this to construct an optimal tree.
+https://link.springer.com/content/pdf/10.1007/s00453-004-1121-2.pdf chooses a threshold value alpha such that processes that are within a certain alpha to each other fall into the same cluster.
+Following that, one representative of this cluster is chosen by finding the process with the least distance to the other processes in the same cluster. This representative is then used to calculate the distance to the remaining clusters.
+This is possible as long as we have the full latency matrix available at all processes.
+
+
+
+######## m+1 landmarks ########
+
+While random trees perform excellently already independent of the latency due to our pipelining scheme, in practise, we require large timeouts at each internal nodes which might, in the worst case, allow faulty nodes to slow down the system.
+This can be mitigated by building a tree where nodes that are geographically close to each other (low latency) are co-located in the tree, allowing us to assume lower individual timeouts between any two nodes.
+
+For simplification reasons, we assume m+1 geographic groups for a given fanout m, where one group (the one with the lowest latency to the remaining groups) will connect the other groups on a higher level on the tree.
+Thus, we assume that there are m groups of size s = m^(d-2) * N/I and one group with m^(d-2) * N/I plus the leftover processes x (g total groups).
+
+To distribute the processes equally between the groups, we use the binning approach proposed in [binning].
+In a nutshell [binning], assumes the existence of a certain number of landmark nodes and all nodes are aware of the round trip latency between any process and any given landmark node.
+Processes are then distributed into bins according to the latency towards given landmark nodes.
+
+In the context of this work, we assume m+1 landmark nodes to group processes together that are the closest to a given landmark node.
+To do so, we first identify the group that will serve as a connection between the other groups, by measuring which landmark node has overally the shortest latency to all processes on average. We denounce this group as group 1.
+Then, next, we distribute step by step the processes closest to the landmark nodes to each group until they are full.
+
+Finally, in the last step, we have to assign the resulting groups to nodes in the graph.
+Previously, to build a robust graph, we created N/I bins by random and picked one bin consisting of I processes to constitute the internal nodes.
+To offer the same fault tolerance guarantees we still build N/I bins, however, each bin now contains at least I/g processes of each group.
+Thus, to build each bin, we pick floor(I/g) processes from each group, and the remaining processes from group 1.
+Then, to build the tree, we first pick the processes of group 1 from the bin to constitute the first internal nodes and then equally distribute the remaining internal nodes, making sure that the parent of each process is either within the same group or within group 1.
+Next, we distribute the remaining processes to the leave positions by appending up to m processes of each group to an internal node of the same group.
+Finally, we then distribute the remaining processes of group 1 equally to the leftover positions.
+
+######## m landmarks ########
+
+While random trees perform excellently already independent of the latency due to our pipelining scheme, in practise, we require large timeouts at each internal nodes which might, in the worst case, allow faulty nodes to slow down the system.
+This can be mitigated by building a tree where nodes that are geographically close to each other (low latency) are co-located in the tree, allowing us to assume lower individual timeouts between any two nodes.
+
+For simplification reasons, we assume m geographic groups for a given fanout m, where one group (the one with the lowest latency to the remaining groups) will connect the other groups on a higher level on the tree.
+Thus, we assume that there are m-1 groups of size s = (m^(d-1)+m)/m * N/I and one group with (m^(d-1)+m)/m * N/I plus the leftover processes x (g total groups).
+
+To distribute the processes equally between the groups, we use the binning approach proposed in [binning].
+In a nutshell [binning], assumes the existence of a certain number of landmark nodes and all nodes are aware of the round trip latency between any process and any given landmark node.
+Processes are then distributed into bins according to the latency towards given landmark nodes.
+
+In the context of this work, we assume m landmark nodes to group processes together that are the closest to a given landmark node.
+To do so, we first identify the group that will serve as a connection between the other groups, by measuring which landmark node has overally the shortest latency to all processes on average. We denounce this group as group 1.
+Then, next, we distribute step by step the processes closest to the landmark nodes to each group until they are full.
+
+Finally, in the last step, we have to assign the resulting groups to nodes in the graph.
+Previously, to build a robust graph, we created N/I bins by random and picked one bin consisting of I processes to constitute the internal nodes.
+To offer the same fault tolerance guarantees we still build N/I bins, however, each bin now contains at least I/g processes of each group.
+Thus, to build each bin, we pick I/g processes from each group, and the remaining processes from group 1.
+Then, to build the tree, we first pick a process from group 1 from the bin as the leader (root process) and then append equally 1 process of each group from the bin to the leader.
+Following that, based on the fanout m, we append the remaining process to an internal node of the same group.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+This process is very simple. First, we take group 1 (that is the closest to the remaining groups) and distribute all the processes of this group among the internal nodes in the tree.
+Next, we calculate the number of nodes on the following level, and distribute the nodes of the remaining groups equally.
+Finally, we assign the nodes of each group to the parents within their group.
+
+
+%todo, now only thing missing is the binning system (how do the two systems interact).
+% the one small group thing doesn't work!!! we need the big group, else the binning doesn't work, rewrite accordingly!
+
+
+
+In order to balance the tree in a manner that nodes are grouped by latency we first apply the algorithm used in [binAlg].
+
+
+set<landmark, latency> positionalMap
+
+for each landmark_node
+    latency = ping landmark_node
+    positionalMap.put(landmark_node.id, latency)
+
+
+
+We have as many landmarks as we want bins
+We need  latency of each node to all landmark nodes
+bin = concatenation of the ids of the landmark nodes ordered by latency
+
+ABC
+ACB
+BAC
+BCA
+CAB
+CBA
+
+
+<-- We have the information above already from that algorithm, this is done on join of a process -->
+
+We have too many bins now (we have landmarks! bins)
+Now, put the nodes with the same "closest landmark" in the same bin.
+Then, we search the bin with the best score (the node that is the most often in 1st, 2nd, etc position basically (we calculate a score, 2nd position = 1 point, 3rd = 2 points, etc, and the one with the least points is the best scoring one)
+
+Now, the sizes of the bins, are obviously not perfectly distributed (some bins might have more or less nodes than what we want)
+Size of region depends on the setting:
+- one big region = equation based (m^(d-2) * N/I)
+- one small region, equation based ((m^(d-1)-1)/m * N/I)
+
+Reshuffle the nodes into the regions (based on 2nd, 3rd etc in the list)
+
+Adjust the existing algorithm for creating the tree, to pick the nodes from the bins.
+
+One small region:
+In a nutshell, first take the closest proximity bin and fill in the first internal nodes. (in the case of small)
+then, pick 1 node from each remaining region for the next internal nodes
+then pick fanout nodes from each region for the next nodes (connect the next m nodes to parent 1, then to parent 2, then to parent 3, etc)
+
+
+One extra big region:
+- Fill in x internal nodes
+- If this is not the lowest depth, it's m nodes of each region
+- If this is the lowest depth then pick m-1 nodes of each region + 1 node from the big region (for the last depth level)
+

@@ -66,16 +66,17 @@ std::vector<std::pair<struct timeval, double>> elapsed;
 Net mn(ec, Net::Config());
 
 void connect_all() {
-    for (size_t i = 0; i < replicas.size(); i++)
-        conns.insert(std::make_pair(i, mn.connect_sync(replicas[i])));
+    conns.insert(std::make_pair(0, mn.connect_sync(replicas[0])));
 }
 
 bool try_send(bool check = true) {
-    if ((!check || waiting.size() < max_async_num) && max_iter_num)
+    if ((!check || waiting.size() < max_async_num ) && max_iter_num)
     {
         auto cmd = new CommandDummy(cid, cnt++);
         MsgReqCmd msg(*cmd);
-        for (auto &p: conns) mn.send_msg(msg, p.second);
+        for (auto &p: conns)
+            mn.send_msg(msg, p.second);
+
 #ifndef HOTSTUFF_ENABLE_BENCHMARK
         HOTSTUFF_LOG_INFO("send new cmd %.10s",
                             get_hex(cmd->get_hash()).c_str());
@@ -84,7 +85,7 @@ bool try_send(bool check = true) {
             cmd->get_hash(), Request(cmd)));
         if (max_iter_num > 0)
             max_iter_num--;
-        return true;
+        return false;
     }
     return false;
 }
@@ -97,7 +98,6 @@ void client_resp_cmd_handler(MsgRespCmd &&msg, const Net::conn_t &) {
     auto &et = it->second.et;
     if (it == waiting.end()) return;
     et.stop();
-    if (++it->second.confirmed <= nfaulty) return; // wait for f + 1 ack
 #ifndef HOTSTUFF_ENABLE_BENCHMARK
     HOTSTUFF_LOG_INFO("got %s, wall: %.3f, cpu: %.3f",
                         std::string(fin).c_str(),
@@ -107,6 +107,7 @@ void client_resp_cmd_handler(MsgRespCmd &&msg, const Net::conn_t &) {
     gettimeofday(&tv, nullptr);
     elapsed.push_back(std::make_pair(tv, et.elapsed_sec));
 #endif
+    usleep(75);
     waiting.erase(it);
     while (try_send());
 }
@@ -117,7 +118,7 @@ std::pair<std::string, std::string> split_ip_port_cport(const std::string &s) {
 }
 
 int main(int argc, char **argv) {
-    Config config("hotstuff.conf");
+    Config config("hotstuff.gen.conf");
 
     auto opt_idx = Config::OptValInt::create(0);
     auto opt_replicas = Config::OptValStrVec::create();

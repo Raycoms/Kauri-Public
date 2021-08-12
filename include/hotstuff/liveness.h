@@ -53,6 +53,8 @@ class PaceMaker {
     virtual void impeach() {}
     virtual void on_consensus(const block_t &) {}
     virtual size_t get_pending_size() = 0;
+
+    virtual block_t get_current_proposal() { }
 };
 
 using pacemaker_bt = BoxObj<PaceMaker>;
@@ -135,21 +137,52 @@ class PMWaitQC: public virtual PaceMaker {
     std::queue<promise_t> pending_beats;
     block_t last_proposed;
     bool locked;
-    promise_t pm_qc_finish;
     promise_t pm_wait_propose;
 
     protected:
     void schedule_next() {
-        if (!pending_beats.empty() && !locked)
+        if (!pending_beats.empty())
         {
-            auto pm = pending_beats.front();
-            pending_beats.pop();
-            pm_qc_finish.reject();
-            (pm_qc_finish = hsc->async_qc_finish(last_proposed))
-                .then([this, pm]() {
+            if (locked) {
+                struct timeval current_time;
+                gettimeofday(&current_time, NULL);
+
+                if (hsc->piped_queue.size() < hsc->get_config().async_blocks
+                && !hsc->piped_submitted
+                && ((current_time.tv_sec - hsc->last_block_time.tv_sec) * 1000000 + current_time.tv_usec - hsc->last_block_time.tv_usec) / 1000 > hsc->get_config().piped_latency) {
+                    HOTSTUFF_LOG_PROTO("Extra block");
+                    auto pm = pending_beats.front();
+                    pending_beats.pop();
+                    hsc->piped_submitted = true;
                     pm.resolve(get_proposer());
-                });
-            locked = true;
+                    return;
+                }
+
+                if (!hsc->piped_queue.empty() && hsc->b_normal_height > 0) {
+                    block_t piped_block = hsc->storage->find_blk(hsc->piped_queue.back());
+                    if ( piped_block->get_height() > hsc->get_config().async_blocks + 10 && hsc->b_normal_height < piped_block->get_height() - (hsc->get_config().async_blocks + 10)
+                            && ((current_time.tv_sec - hsc->last_block_time.tv_sec) * 1000000 + current_time.tv_usec - hsc->last_block_time.tv_usec) / 1000 > hsc->get_config().piped_latency) {
+                        HOTSTUFF_LOG_PROTO("Extra recovery block %d %d", hsc->b_normal_height, piped_block->get_height());
+
+                        auto pm = pending_beats.front();
+                        pending_beats.pop();
+                        hsc->piped_submitted = true;
+                        pm.resolve(get_proposer());
+                    }
+                }
+            } else {
+                auto pm = pending_beats.front();
+                pending_beats.pop();
+                hsc->async_qc_finish(last_proposed)
+                        .then([this, pm]() {
+                            pm.resolve(get_proposer());
+                        });
+                locked = true;
+            }
+        }
+        else
+        {
+            std::cout << "not enough client tx" << std::endl;
         }
     }
 
@@ -176,6 +209,10 @@ class PMWaitQC: public virtual PaceMaker {
 
     ReplicaID get_proposer() override {
         return hsc->get_id();
+    }
+
+    block_t get_current_proposal() {
+        return last_proposed;
     }
 
     promise_t beat() override {
@@ -298,6 +335,7 @@ class PMRoundRobinProposer: virtual public PaceMaker {
 #ifdef HOTSTUFF_TWO_STEP
                 if (x >= 2) return;
 #else
+
                 if (x >= 3) return;
 #endif
                 do_new_consensus(x + 1, std::vector<uint256_t>{});
@@ -359,8 +397,9 @@ class PMRoundRobinProposer: virtual public PaceMaker {
     void on_consensus(const block_t &blk) override {
         timer.del();
         exp_timeout = base_timeout;
-        if (prop_blk[proposer] == blk)
+        if (prop_blk[proposer] == blk) {
             stop_rotate();
+        }
     }
 
     void impeach() override {

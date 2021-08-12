@@ -1,31 +1,38 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 3.1.0 FATAL_ERROR)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.14 FATAL_ERROR)
 set (CMAKE_CXX_STANDARD 11)
+
+# CMake 3.14+
+include(FetchContent)
+FetchContent_Declare(
+  relic
+  GIT_REPOSITORY https://github.com/relic-toolkit/relic.git
+  GIT_TAG        ed485dccb23f9f5615eac5c71b3e37bd1bc8fb3e
+)
+FetchContent_MakeAvailable(relic)
 
 file(GLOB HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/*.hpp)
 source_group("SrcHeaders" FILES ${HEADERS})
 
 include_directories(
   ${INCLUDE_DIRECTORIES}
-  ${CMAKE_CURRENT_SOURCE_DIR}/../contrib/relic/include
-  ${CMAKE_BINARY_DIR}/contrib/relic/include
+  ${relic_SOURCE_DIR}/include
+  ${relic_BINARY_DIR}/include
   ${CMAKE_CURRENT_SOURCE_DIR}/../contrib/catch
+  ${GMP_INCLUDES}
   )
 
 set(C_LIB ${CMAKE_BINARY_DIR}/libbls.a)
 
-add_library(bls ${CMAKE_CURRENT_SOURCE_DIR}/chaincode.cpp)
+add_library(bls ${CMAKE_CURRENT_SOURCE_DIR}/privatekey.cpp)
 
 add_library(blstmp ${HEADERS}
-  ${CMAKE_CURRENT_SOURCE_DIR}/extendedpublickey.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/extendedprivatekey.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/chaincode.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/signature.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/publickey.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/privatekey.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/bls.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/aggregationinfo.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/threshold.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/elements.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/schemes.cpp
 )
+
+target_compile_definitions(blstmp PRIVATE BLSALLOC_SODIUM=1 SODIUM_STATIC=1)
 
 set(OPREFIX object_)
 find_library(GMP_NAME NAMES libgmp.a gmp)
@@ -40,6 +47,7 @@ if (GMP_FOUND)
   list(APPEND LIBRARIES_TO_COMBINE COMMAND mkdir ${OPREFIX}gmp || true && cd ${OPREFIX}gmp &&  ${CMAKE_AR} -x ${GMP_NAME})
 endif()
 if (SODIUM_FOUND)
+  message("SODIUM_FOUND in src/CMakeLists.txt")
   list(APPEND LIBRARIES_TO_COMBINE COMMAND mkdir ${OPREFIX}sodium || true && cd ${OPREFIX}sodium &&  ${CMAKE_AR} -x ${SODIUM_NAME})
 endif()
 
@@ -52,7 +60,6 @@ add_custom_target(combined_custom
 
 add_library(combined STATIC IMPORTED GLOBAL)
 add_dependencies(combined combined_custom)
-
 target_link_libraries(bls combined)
 
 set_target_properties(combined

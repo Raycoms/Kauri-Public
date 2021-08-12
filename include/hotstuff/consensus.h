@@ -32,21 +32,21 @@ namespace hotstuff {
 struct Proposal;
 struct Vote;
 struct Finality;
+struct VoteRelay;
 
 /** Abstraction for HotStuff protocol state machine (without network implementation). */
 class HotStuffCore {
     block_t b0;                                  /** the genesis block */
     /* === state variables === */
-    /** block containing the QC for the highest block having one */
-    std::pair<block_t, quorum_cert_bt> hqc;   /**< highest QC */
+    /**< highest QC */
     block_t b_lock;                            /**< locked block */
     block_t b_exec;                            /**< last executed block */
-    uint32_t vheight;          /**< height of the block last voted for */
-    /* === auxilliary variables === */
-    privkey_bt priv_key;            /**< private key for signing votes */
+    /**< height of the block last voted for */
+    /**< private key for signing votes */
     std::set<block_t> tails;   /**< set of tail blocks */
-    ReplicaConfig config;                   /**< replica configuration */
+    /**< replica configuration */
     /* === async event queues === */
+
     std::unordered_map<block_t, promise_t> qc_waiting;
     promise_t propose_waiting;
     promise_t receive_proposal_waiting;
@@ -55,20 +55,41 @@ class HotStuffCore {
     /** always vote negatively, useful for some PaceMakers */
     bool vote_disabled;
 
-    block_t get_delivered_blk(const uint256_t &blk_hash);
     void sanity_check_delivered(const block_t &blk);
-    void update(const block_t &nblk);
-    void update_hqc(const block_t &_hqc, const quorum_cert_bt &qc);
+
     void on_hqc_update();
-    void on_qc_finish(const block_t &blk);
-    void on_propose_(const Proposal &prop);
+
     void on_receive_proposal_(const Proposal &prop);
 
     protected:
     ReplicaID id;                  /**< identity of the replica itself */
 
-    public:
+    block_t get_delivered_blk(const uint256_t &blk_hash);
+
+    block_t get_potentially_not_delivered_blk(const uint256_t &blk_hash);
+
+    ReplicaConfig config;
+
+    void update_hqc(const block_t &_hqc, const quorum_cert_bt &qc);
+
+    void on_qc_finish(const block_t &blk);
+
+/* === auxilliary variables === */
+privkey_bt priv_key;
+/** block containing the QC for the highest block having one */
+std::pair<block_t, quorum_cert_bt> hqc;
+/** Add an additional block commit.*/
+bool rdy = false;
+
+    void update(const block_t &nblk);
+
+    uint32_t vheight;
+
+    void on_propose_(const Proposal &prop);
+
+public:
     BoxObj<EntityStorage> storage;
+    uint16_t numberOfChildren;
 
     HotStuffCore(ReplicaID id, privkey_bt &&priv_key);
     virtual ~HotStuffCore() {
@@ -81,6 +102,13 @@ class HotStuffCore {
     /** Call to initialize the protocol, should be called once before all other
      * functions. */
     void on_init(uint32_t nfaulty);
+
+    /** Call to set the fanout. */
+    void set_fanout(int32_t fanout);
+
+    /** Call to set the piped latency */
+    void set_piped_latency(int32_t piped_latency, int32_t async_blocks);
+
 
     /* TODO: better name for "delivery" ? */
     /** Call to inform the state machine that a block is ready to be handled.
@@ -112,7 +140,25 @@ class HotStuffCore {
     /* Outputs of the state machine triggering external events.  The virtual
      * functions should be implemented by the user to specify the behavior upon
      * the events. */
-    protected:
+
+    // Pipelined block hash.
+    std::deque<uint256_t> piped_queue;
+
+    // Pipelined block hash.
+    std::deque<uint256_t> rdy_queue;
+
+    // Last regular block height.
+    int b_normal_height = 0;
+
+    /* Block hex to us time spent on block*/
+    std::map<uint256_t, long> stats;
+
+    // If already a piped block was submitted.
+    bool piped_submitted = false;
+
+    // Last sent out block time.
+    mutable struct timeval last_block_time;
+protected:
     /** Called by HotStuffCore upon the decision being made for cmd. */
     virtual void do_decide(Finality &&fin) = 0;
     virtual void do_consensus(const block_t &blk) = 0;
@@ -123,7 +169,7 @@ class HotStuffCore {
     /** Called upon sending out a new vote to the next proposer.  The user
      * should send the vote message to a *good* proposer to have good liveness,
      * while safety is always guaranteed by HotStuffCore. */
-    virtual void do_vote(ReplicaID last_proposer, const Vote &vote) = 0;
+    virtual void do_vote(Proposal last_proposer, const Vote &vote) = 0;
 
     /* The user plugs in the detailed instances for those
      * polymorphic data types. */
@@ -165,6 +211,8 @@ class HotStuffCore {
     const std::set<block_t> get_tails() const { return tails; }
     operator std::string () const;
     void set_vote_disabled(bool f) { vote_disabled = f; }
+
+    Proposal process_block(const block_t& bnew, bool adjustHeight);
 };
 
 /** Abstraction for proposal messages. */
@@ -223,7 +271,7 @@ struct Vote: public Serializable {
         HotStuffCore *hsc):
         voter(voter),
         blk_hash(blk_hash),
-        cert(std::move(cert)), hsc(hsc) {}
+        cert(std::move(cert)), hsc(hsc) { }
 
     Vote(const Vote &other):
         voter(other.voter),
@@ -310,6 +358,49 @@ struct Finality: public Serializable {
         return s;
     }
 };
+
+/** Abstraction for vote relay messages. */
+    struct VoteRelay: public Serializable {
+        /** block being voted */
+        uint256_t blk_hash;
+        /** proof of validity for the vote */
+        quorum_cert_bt cert;
+
+        /** handle of the core object to allow polymorphism */
+        HotStuffCore *hsc;
+
+        VoteRelay(): cert(nullptr), hsc(nullptr) {}
+        VoteRelay(const uint256_t &blk_hash,
+                  quorum_cert_bt &&cert,
+             HotStuffCore *hsc):
+                blk_hash(blk_hash),
+                cert(std::move(cert)), hsc(hsc) {}
+
+        VoteRelay(const VoteRelay &other):
+                blk_hash(other.blk_hash),
+                cert(other.cert ? other.cert->clone() : nullptr),
+                hsc(other.hsc) {}
+
+        VoteRelay(VoteRelay &&other) = default;
+
+        void serialize(DataStream &s) const override {
+            s << blk_hash << *cert;
+        }
+
+        void unserialize(DataStream &s) override {
+            assert(hsc != nullptr);
+            s >> blk_hash;
+            cert = hsc->parse_quorum_cert(s);
+        }
+
+        operator std::string () const {
+            DataStream s;
+            s << "<voterelay "
+              << " blk=" << get_hex10(blk_hash) << ">";
+            return s;
+        }
+    };
+
 
 }
 

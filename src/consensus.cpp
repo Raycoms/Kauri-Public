@@ -49,22 +49,40 @@ void HotStuffCore::sanity_check_delivered(const block_t &blk) {
         throw std::runtime_error("block not delivered");
 }
 
+block_t HotStuffCore::get_potentially_not_delivered_blk(const uint256_t &blk_hash) {
+    block_t blk = storage->find_blk(blk_hash);
+    if (blk == nullptr)
+        throw std::runtime_error("block not delivered " + std::to_string(blk == nullptr));
+    return blk;
+}
+
 block_t HotStuffCore::get_delivered_blk(const uint256_t &blk_hash) {
     block_t blk = storage->find_blk(blk_hash);
-    if (blk == nullptr || !blk->delivered)
-        throw std::runtime_error("block not delivered");
+    if (blk == nullptr || !blk->delivered) {
+        HOTSTUFF_LOG_PROTO("block %s not delivered", get_hex10(blk_hash).c_str());
+        throw std::runtime_error("block not delivered ");
+    }
     return blk;
 }
 
 bool HotStuffCore::on_deliver_blk(const block_t &blk) {
+    HOTSTUFF_LOG_PROTO("Core deliver");
+
     if (blk->delivered)
     {
         LOG_WARN("attempt to deliver a block twice");
         return false;
     }
     blk->parents.clear();
-    for (const auto &hash: blk->parent_hashes)
-        blk->parents.push_back(get_delivered_blk(hash));
+    for (const auto &hash: blk->parent_hashes) {
+        if (!piped_queue.empty() && std::find(piped_queue.begin(), piped_queue.end(), hash) != piped_queue.end()) {
+            block_t piped_block = storage->find_blk(hash);
+            blk->parents.push_back(piped_block);
+        }
+        else {
+            blk->parents.push_back(get_delivered_blk(hash));
+        }
+    }
     blk->height = blk->parents[0]->height + 1;
 
     if (blk->qc)
@@ -79,7 +97,7 @@ bool HotStuffCore::on_deliver_blk(const block_t &blk) {
     tails.insert(blk);
 
     blk->delivered = true;
-    LOG_DEBUG("deliver %s", std::string(*blk).c_str());
+    HOTSTUFF_LOG_PROTO("deliver %s", std::string(*blk).c_str());
     return true;
 }
 
@@ -131,7 +149,7 @@ void HotStuffCore::update(const block_t &nblk) {
     std::vector<block_t> commit_queue;
     block_t b;
     for (b = blk; b->height > b_exec->height; b = b->parents[0])
-    { /* TODO: also commit the uncles/aunts */
+    {
         commit_queue.push_back(b);
     }
     if (b != b_exec)
@@ -154,34 +172,91 @@ void HotStuffCore::update(const block_t &nblk) {
 block_t HotStuffCore::on_propose(const std::vector<uint256_t> &cmds,
                             const std::vector<block_t> &parents,
                             bytearray_t &&extra) {
+    struct timeval timeStart, timeEnd;
+    gettimeofday(&timeStart, NULL);
+
     if (parents.empty())
         throw std::runtime_error("empty parents");
     for (const auto &_: parents) tails.erase(_);
     /* create the new block */
-    block_t bnew = storage->add_blk(
-        new Block(parents, cmds,
-            hqc.second->clone(), std::move(extra),
-            parents[0]->height + 1,
-            hqc.first,
-            nullptr
-        ));
+
+    block_t bnew;
+    if (piped_queue.empty()) {
+        LOG_PROTO("b_piped is null");
+        bnew = storage->add_blk(
+                new Block(parents, cmds,
+                          hqc.second->clone(), std::move(extra),
+                          parents[0]->height + 1,
+                          hqc.first,
+                          nullptr
+                ));
+    } else {
+        auto newParents = std::vector<block_t>(parents);
+        block_t piped_block = storage->find_blk(piped_queue.back());
+
+        if (newParents[0]->height <= piped_block->height) {
+            LOG_PROTO("b_piped is not null");
+            newParents.insert(newParents.begin(), piped_block);
+        }
+
+        bnew = storage->add_blk(
+                new Block(newParents, cmds,
+                          hqc.second->clone(), std::move(extra),
+                          newParents[0]->height + 1,
+                          hqc.first,
+                          nullptr
+                ));
+    }
+
+    b_normal_height = bnew->get_height();
+
+    LOG_PROTO("propose %s", std::string(*bnew).c_str());
+    Proposal prop = process_block(bnew, true);
+    /* broadcast to other replicas */
+    do_broadcast_proposal(prop);
+
+    if (id == 0) {
+        gettimeofday(&timeEnd, NULL);
+        long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
+        stats.insert(std::make_pair(bnew->hash, usec));
+    }
+
+    return bnew;
+}
+
+Proposal HotStuffCore::process_block(const block_t& bnew, bool adjustHeight)
+{
     const uint256_t bnew_hash = bnew->get_hash();
-    bnew->self_qc = create_quorum_cert(bnew_hash);
+    if (bnew->self_qc == nullptr) {
+        bnew->self_qc = create_quorum_cert(bnew_hash);
+    }
+
     on_deliver_blk(bnew);
+    LOG_PROTO("before update");
     update(bnew);
     Proposal prop(id, bnew, nullptr);
-    LOG_PROTO("propose %s", std::string(*bnew).c_str());
+    //std::cout << "prop" << std::endl;
     /* self-vote */
-    if (bnew->height <= vheight)
-        throw std::runtime_error("new block should be higher than vheight");
-    vheight = bnew->height;
+    if (adjustHeight) {
+        if (bnew->height <= vheight)
+            throw std::runtime_error("new block should be higher than vheight");
+        vheight = bnew->height;
+    }
+
+    if (storage->find_blk(bnew_hash) == nullptr) {
+        LOG_PROTO("not in storage!");
+    }
+
+    LOG_PROTO("before On receive vote");
+
     on_receive_vote(
-        Vote(id, bnew_hash,
-            create_part_cert(*priv_key, bnew_hash), this));
+            Vote(id, bnew_hash,
+                 create_part_cert(*priv_key, bnew_hash), this));
+    LOG_PROTO("after On receive vote");
     on_propose_(prop);
-    /* boradcast to other replicas */
-    do_broadcast_proposal(prop);
-    return bnew;
+    LOG_PROTO("after on propose");
+
+    return prop;
 }
 
 void HotStuffCore::on_receive_proposal(const Proposal &prop) {
@@ -210,42 +285,55 @@ void HotStuffCore::on_receive_proposal(const Proposal &prop) {
             }
         }
     }
-    LOG_PROTO("now state: %s", std::string(*this).c_str());
-    if (bnew->qc_ref)
+
+    LOG_PROTO("x now state: %s", std::string(*this).c_str());
+    if (bnew->qc_ref) {
         on_qc_finish(bnew->qc_ref);
+    }
+
     on_receive_proposal_(prop);
-    if (opinion && !vote_disabled)
-        do_vote(prop.proposer,
-            Vote(id, bnew->get_hash(),
-                create_part_cert(*priv_key, bnew->get_hash()), this));
+    if (opinion && !vote_disabled) {
+        do_vote(prop,
+                Vote(id, bnew->get_hash(),
+                     create_part_cert(*priv_key, bnew->get_hash()), this));
+    }
 }
 
 void HotStuffCore::on_receive_vote(const Vote &vote) {
     LOG_PROTO("got %s", std::string(vote).c_str());
-    LOG_PROTO("now state: %s", std::string(*this).c_str());
+    LOG_PROTO("y now state: %s", std::string(*this).c_str());
+
     block_t blk = get_delivered_blk(vote.blk_hash);
     assert(vote.cert);
-    size_t qsize = blk->voted.size();
-    if (qsize >= config.nmajority) return;
+
+    LOG_WARN("after delivered check!");
+
     if (!blk->voted.insert(vote.voter).second)
     {
         LOG_WARN("duplicate vote for %s from %d", get_hex10(vote.blk_hash).c_str(), vote.voter);
         return;
     }
+
+    if (vote.voter != get_id()) return;
+    if (blk->qc != nullptr && blk->qc->has_n(config.nmajority)) return;
+
+    //std::cout << "self vote" << std::endl;
     auto &qc = blk->self_qc;
     if (qc == nullptr)
     {
         LOG_WARN("vote for block not proposed by itself");
         qc = create_quorum_cert(blk->get_hash());
     }
-    qc->add_part(vote.voter, *vote.cert);
-    if (qsize + 1 == config.nmajority)
+
+    qc->add_part(config, vote.voter, *vote.cert);
+    if (qc->has_n(config.nmajority))
     {
         qc->compute();
         update_hqc(blk, qc);
         on_qc_finish(blk);
     }
 }
+
 /*** end HotStuff protocol logic ***/
 void HotStuffCore::on_init(uint32_t nfaulty) {
 
@@ -288,13 +376,21 @@ void HotStuffCore::add_replica(ReplicaID rid, const PeerId &peer_id,
 }
 
 promise_t HotStuffCore::async_qc_finish(const block_t &blk) {
-    if (blk->voted.size() >= config.nmajority)
+    //std::cout << "test " << blk->voted.size() << " " << blk->self_qc->has_n(config.nmajority) << std::endl;
+
+    if ((blk->self_qc != nullptr && blk->self_qc->has_n(config.nmajority) && !blk->voted.empty()) || blk->voted.size() >= config.nmajority) {
+        HOTSTUFF_LOG_PROTO("async_qc_finish %s", blk->get_hash().to_hex().c_str());
+
         return promise_t([](promise_t &pm) {
             pm.resolve();
         });
+    }
+
     auto it = qc_waiting.find(blk);
-    if (it == qc_waiting.end())
+    if (it == qc_waiting.end()) {
         it = qc_waiting.insert(std::make_pair(blk, promise_t())).first;
+    }
+
     return it->second;
 }
 
@@ -302,6 +398,8 @@ void HotStuffCore::on_qc_finish(const block_t &blk) {
     auto it = qc_waiting.find(blk);
     if (it != qc_waiting.end())
     {
+        HOTSTUFF_LOG_PROTO("async_qc_finish %s", blk->get_hash().to_hex().c_str());
+
         it->second.resolve();
         qc_waiting.erase(it);
     }
@@ -353,6 +451,15 @@ HotStuffCore::operator std::string () const {
       << "vheight=" << std::to_string(vheight) << " "
       << "tails=" << std::to_string(tails.size()) << ">";
     return s;
+}
+
+void HotStuffCore::set_fanout(int32_t fanout) {
+    config.fanout = fanout;
+}
+
+void HotStuffCore::set_piped_latency(int32_t piped_latency, int32_t async_blocks) {
+    config.piped_latency = piped_latency;
+    config.async_blocks = async_blocks;
 }
 
 }

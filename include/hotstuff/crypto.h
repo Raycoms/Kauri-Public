@@ -23,7 +23,8 @@
 #include "salticidae/crypto.h"
 #include "hotstuff/type.h"
 #include "hotstuff/task.h"
-#include <bls.hpp>
+#include "bls/src/bls.hpp"
+#include <libnet.h>
 
 namespace hotstuff {
 
@@ -60,7 +61,9 @@ class ReplicaConfig;
 class QuorumCert: public Serializable, public Cloneable {
     public:
     virtual ~QuorumCert() = default;
-    virtual void add_part(ReplicaID replica, const PartCert &pc) = 0;
+    virtual void add_part(const ReplicaConfig &config, ReplicaID replica, const PartCert &pc) = 0;
+    virtual void merge_quorum(const QuorumCert &qc) = 0;
+    virtual bool has_n(uint32_t n) = 0;
     virtual void compute() = 0;
     virtual promise_t verify(const ReplicaConfig &config, VeriPool &vpool) = 0;
     virtual bool verify(const ReplicaConfig &config) = 0;
@@ -71,68 +74,138 @@ class QuorumCert: public Serializable, public Cloneable {
 using part_cert_bt = BoxObj<PartCert>;
 using quorum_cert_bt = BoxObj<QuorumCert>;
 
-class PubKeyDummy: public PubKey {
-    PubKeyDummy *clone() override { return new PubKeyDummy(*this); }
-    void serialize(DataStream &) const override {}
-    void unserialize(DataStream &) override {}
-};
+    vector<uint8_t> arrToVec(const bytearray_t &arr);
 
-class PrivKeyDummy: public PrivKey {
-    pubkey_bt get_pubkey() const override { return new PubKeyDummy(); }
-    void serialize(DataStream &) const override {}
-    void unserialize(DataStream &) override {}
-    void from_rand() override {}
-};
+    class PrivKeyDummy;
+    class PubKeyDummy: public PubKey {
+        static const auto _olen = 33;
+        secp256k1_pubkey data;
 
-class PartCertDummy: public PartCert {
-    uint256_t obj_hash;
     public:
-    PartCertDummy() {}
-    PartCertDummy(const uint256_t &obj_hash):
-        obj_hash(obj_hash) {}
+        PubKeyDummy():
+                PubKey() {}
 
-    void serialize(DataStream &s) const override {
-        s << (uint32_t)0 << obj_hash;
+        PubKeyDummy(const bytearray_t &raw_bytes) { from_bytes(raw_bytes); }
+
+        inline PubKeyDummy(const PrivKeyDummy &priv_key);
+
+        void serialize(DataStream &s) const override {}
+        void unserialize(DataStream &s) override {}
+
+        PubKeyDummy *clone() override {
+            return new PubKeyDummy(*this);
+        }
+    };
+
+    class PrivKeyDummy: public PrivKey {
+    public:
+
+        PrivKeyDummy():
+                PrivKey() {}
+
+        PrivKeyDummy(const bytearray_t &raw_bytes):
+                PrivKeyDummy() { from_bytes(raw_bytes); }
+
+        void serialize(DataStream &s) const override {}
+        void unserialize(DataStream &s) override {}
+        void from_rand() override {}
+        inline pubkey_bt get_pubkey() const override;
+    };
+
+    pubkey_bt PrivKeyDummy::get_pubkey() const {
+        return new PubKeyDummy(*this);
     }
 
-    void unserialize(DataStream &s) override {
-        uint32_t tmp;
-        s >> tmp >> obj_hash;
-    }
+    class SigSecDummy: public Serializable {
+    public:
+        SigSecDummy ():
+                Serializable(){}
+        SigSecDummy(const uint256_t &digest,
+                    const PrivKeyDummy &priv_key):
+                Serializable() {
+            sign(digest, priv_key);
+        }
 
-    PartCert *clone() override {
-        return new PartCertDummy(obj_hash);
-    }
+        SigSecDummy (const SigSecDummy &obj){}
+        SigSecDummy (bls::G2Element sig):Serializable() { }
+        void serialize(DataStream &s) const override {}
+        void unserialize(DataStream &s) override {}
+        void sign(const bytearray_t &msg, const PrivKeyDummy &priv_key) {}
+        bool verify(const bytearray_t &msg, const PubKeyDummy &pub_key) const {return true;}
+    };
 
-    bool verify(const PubKey &) override { return true; }
-    promise_t verify(const PubKey &, VeriPool &) override {
-        return promise_t([](promise_t &pm){ pm.resolve(true); });
-    }
+    PubKeyDummy::PubKeyDummy(const PrivKeyDummy &priv_key): PubKey() {}
 
-    const uint256_t &get_obj_hash() const override { return obj_hash; }
-};
+    class PartCertDummy: public SigSecDummy, public PartCert {
+        uint256_t obj_hash;
+
+    public:
+        PartCertDummy() = default;
+        PartCertDummy(const PrivKeyDummy &priv_key, const uint256_t &obj_hash):
+                SigSecDummy(obj_hash, priv_key),
+                PartCert(),
+                obj_hash(obj_hash) { }
+
+        bool verify(const PubKey &pub_key) override {
+            return SigSecDummy::verify(obj_hash,
+                                     static_cast<const PubKeyDummy &>(pub_key));
+        }
+
+        promise_t verify(const PubKey &pub_key, VeriPool &vpool) override {
+            return promise_t([](promise_t &pm) { pm.resolve(true); });
+        }
+
+        const uint256_t &get_obj_hash() const override { return obj_hash; }
+
+        PartCertDummy *clone() override {
+            return new PartCertDummy(*this);
+        }
+
+        void serialize(DataStream &s) const override {
+            s << obj_hash;
+            this->SigSecDummy::serialize(s);
+        }
+
+        void unserialize(DataStream &s) override {
+            s >> obj_hash;
+            this->SigSecDummy::unserialize(s);
+        }
+    };
 
 class QuorumCertDummy: public QuorumCert {
     uint256_t obj_hash;
+    size_t qty = 0;
     public:
-    QuorumCertDummy() {}
+    QuorumCertDummy() { qty++; }
+    QuorumCertDummy (const QuorumCertDummy &other): obj_hash(other.obj_hash), qty(other.qty) { }
     QuorumCertDummy(const ReplicaConfig &, const uint256_t &obj_hash):
-        obj_hash(obj_hash) {}
+        obj_hash(obj_hash) { qty++; }
 
     void serialize(DataStream &s) const override {
-        s << (uint32_t)1 << obj_hash;
+        s << (uint32_t)1 << obj_hash << qty;
     }
 
     void unserialize(DataStream &s) override {
         uint32_t tmp;
-        s >> tmp >> obj_hash;
+        s >> tmp >> obj_hash >> qty;
     }
 
     QuorumCert *clone() override {
         return new QuorumCertDummy(*this);
     }
 
-    void add_part(ReplicaID, const PartCert &) override {}
+    void add_part(const ReplicaConfig &config, ReplicaID, const PartCert &) override
+    {
+        qty++;
+    }
+    void merge_quorum(const QuorumCert & qc) override
+    {
+        qty += ((QuorumCertDummy&) qc).qty;
+    }
+    bool has_n(const uint32_t n) override
+    {
+        return qty >= n;
+    }
     void compute() override {}
     bool verify(const ReplicaConfig &) override { return true; }
     promise_t verify(const ReplicaConfig &, VeriPool &) override {
@@ -246,7 +319,7 @@ class PrivKeySecp256k1: public PrivKey {
     }
 
     void from_rand() override {
-        if (!RAND_bytes(data, nbytes))
+        if (!RAND_pseudo_bytes(data, nbytes))
             throw std::runtime_error("cannot get rand bytes from openssl");
     }
 
@@ -305,25 +378,44 @@ class SigSecp256k1: public Serializable {
     }
 
     void sign(const bytearray_t &msg, const PrivKeySecp256k1 &priv_key) {
+        //struct timeval timeStart, timeEnd;
+        //gettimeofday(&timeStart, nullptr);
+
         check_msg_length(msg);
         if (!secp256k1_ecdsa_sign(
                 ctx->ctx, &data,
                 (unsigned char *)&*msg.begin(),
                 (unsigned char *)priv_key.data,
-                NULL, // default nonce function
-                NULL))
+                nullptr, // default nonce function
+                nullptr))
             throw std::invalid_argument("failed to create secp256k1 signature");
+
+        //gettimeofday(&timeEnd, nullptr);
+
+        //std::cout << "This signing slow piece of code took "
+        //          << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
+        //          << " us to execute."
+        //          << std::endl;
     }
 
     bool verify(const bytearray_t &msg, const PubKeySecp256k1 &pub_key,
                 const secp256k1_context_t &_ctx) const {
+        //struct timeval timeStart, timeEnd;
+        //gettimeofday(&timeStart, nullptr);
+
         check_msg_length(msg);
-        std::cout << "blah1" << std::endl;
-        std::cout << (unsigned char *)&*msg.begin() << std::endl;
-        return secp256k1_ecdsa_verify(
+        bool td = secp256k1_ecdsa_verify(
                 _ctx->ctx, &data,
                 (unsigned char *)&*msg.begin(),
                 &pub_key.data) == 1;
+
+        //gettimeofday(&timeEnd, nullptr);
+
+        //std::cout << "This verifying slow piece of code took "
+        //          << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
+        //          << " us to execute."
+        //          << std::endl;
+        return td;
     }
 
     bool verify(const bytearray_t &msg, const PubKeySecp256k1 &pub_key) {
@@ -395,12 +487,27 @@ class QuorumCertSecp256k1: public QuorumCert {
     QuorumCertSecp256k1() = default;
     QuorumCertSecp256k1(const ReplicaConfig &config, const uint256_t &obj_hash);
 
-    void add_part(ReplicaID rid, const PartCert &pc) override {
+    void add_part(const ReplicaConfig &config, ReplicaID rid, const PartCert &pc) override {
         if (pc.get_obj_hash() != obj_hash)
             throw std::invalid_argument("PartCert does match the block hash");
         sigs.insert(std::make_pair(
-            rid, static_cast<const PartCertSecp256k1 &>(pc)));
+            rid, dynamic_cast<const PartCertSecp256k1 &>(pc)));
         rids.set(rid);
+    }
+
+    void merge_quorum(const QuorumCert &qc) override {
+        if (qc.get_obj_hash() != obj_hash)
+            throw std::invalid_argument("QuorumCert does match the block hash");
+        for (const std::pair<const unsigned short, SigSecp256k1>& sig : dynamic_cast<const QuorumCertSecp256k1 &>(qc).sigs) {
+            sigs.insert(std::make_pair(
+                    sig.first, sig.second));
+            rids.set(sig.first);
+        }
+    }
+
+    bool has_n(const uint32_t n) override {
+        //std::cout << std::to_string(sigs.size()) << " " << std::to_string(n) << std::endl;
+        return sigs.size() >= n;
     }
 
     void compute() override {}
@@ -429,22 +536,25 @@ class QuorumCertSecp256k1: public QuorumCert {
 
     class PrivKeyBLS;
     class PubKeyBLS: public PubKey {
-        static const auto _olen = bls::PublicKey::PUBLIC_KEY_SIZE;
+        static const auto _olen = bls::G1Element::SIZE;
         friend class SigSecBLS;
+        friend class SigSecBLSAgg;
+        friend class QuorumCertAggBLS;
 
-        bls::PublicKey* data = nullptr;
+        bls::G1Element* data = nullptr;
 
     public:
+
         PubKeyBLS() :
                 PubKey() {}
 
         PubKeyBLS(const bytearray_t &raw_bytes) :
                 PubKeyBLS() {
-            data = new bls::PublicKey(bls::PublicKey::FromBytes(&raw_bytes[0]));
+            data = new bls::G1Element(bls::G1Element::FromBytes(&raw_bytes[0]));
         }
 
         PubKeyBLS(const PubKeyBLS &obj) {
-            data = new bls::PublicKey(*(obj.data));
+            data = new bls::G1Element(*(obj.data));
         }
 
         ~PubKeyBLS() override {
@@ -455,16 +565,21 @@ class QuorumCertSecp256k1: public QuorumCert {
         inline PubKeyBLS(const PrivKeyBLS &priv_key);
 
         void serialize(DataStream &s) const override {
-            static uint8_t output[_olen];
-            data->Serialize(output);
-            s.put_data(output, output + _olen);
+            static uint8_t output[bls::G1Element::SIZE];
+
+            int i = 0;
+            for (auto in : data->Serialize())
+            {
+                output[i++] = in;
+            }
+            s.put_data(output, output + bls::G1Element::SIZE);
         }
 
         void unserialize(DataStream &s) override {
             static const auto _exc = std::invalid_argument("ill-formed public key");
 
             try {
-                data = new bls::PublicKey(bls::PublicKey::FromBytes(s.get_data_inplace(_olen)));
+                data = new bls::G1Element(bls::G1Element::FromBytes(s.get_data_inplace(_olen)));
             } catch (std::ios_base::failure &) {
                 throw _exc;
             }
@@ -476,7 +591,7 @@ class QuorumCertSecp256k1: public QuorumCert {
     };
 
     class PrivKeyBLS: public PrivKey {
-        static const auto nbytes = bls::PrivateKey::PRIVATE_KEY_SIZE;;
+        static const auto nbytes = bls::PrivateKey::PRIVATE_KEY_SIZE;
         friend class SigSecBLS;
 
     public:
@@ -519,9 +634,11 @@ class QuorumCertSecp256k1: public QuorumCert {
         }
 
         void from_rand() override {
-            bn_t b;
-            bn_new(b);
-            data = new bls::PrivateKey(bls::PrivateKey::FromBN(b));
+            vector<uint8_t> seed = {0,  50, 6,  static_cast<unsigned char>(rand() % 250), 24,  199, 1,  25,  52,  88,  192,
+                                    19, 18, 12, 89,  6,   static_cast<unsigned char>(rand() % 250), 18, 102, 58,  209, 82,
+                                    12, 62, 89, 110, 182, static_cast<unsigned char>(rand() % 250),   44, 20,  254, 22};
+
+            data = new bls::PrivateKey(bls::PopSchemeMPL::KeyGen(seed));
         }
 
         inline pubkey_bt get_pubkey() const override;
@@ -532,7 +649,7 @@ class QuorumCertSecp256k1: public QuorumCert {
     }
 
     PubKeyBLS::PubKeyBLS(const PrivKeyBLS &priv_key): PubKey() {
-        data = new bls::PublicKey(priv_key.data->GetPublicKey());
+        data = new bls::G1Element(priv_key.data->GetG1Element());
     }
 
     class SigSecBLS: public Serializable {
@@ -543,7 +660,7 @@ class QuorumCertSecp256k1: public QuorumCert {
         }
 
     public:
-        bls::InsecureSignature* data = nullptr;
+        bls::G2Element* data = nullptr;
 
         SigSecBLS ():
                 Serializable(){}
@@ -555,13 +672,13 @@ class QuorumCertSecp256k1: public QuorumCert {
 
         SigSecBLS (const SigSecBLS &obj)
         {
-            data = new bls::InsecureSignature(*(obj.data));
+            data = new bls::G2Element(*(obj.data));
         }
 
-        SigSecBLS (bls::InsecureSignature sig):
+        SigSecBLS (bls::G2Element sig):
                 Serializable()
                 {
-                    data = new bls::InsecureSignature(sig);
+                    data = new bls::G2Element(sig);
                 }
 
         ~SigSecBLS() override
@@ -571,38 +688,56 @@ class QuorumCertSecp256k1: public QuorumCert {
         }
 
         void serialize(DataStream &s) const override {
-            static uint8_t output[bls::InsecureSignature::SIGNATURE_SIZE];
+            static uint8_t output[bls::G2Element::SIZE];
 
             int i = 0;
             for (auto in : data->Serialize())
             {
                 output[i++] = in;
             }
-            s.put_data(output, output + bls::InsecureSignature::SIGNATURE_SIZE);
+            s.put_data(output, output + bls::G2Element::SIZE);
         }
 
         void unserialize(DataStream &s) override {
             static const auto _exc = std::invalid_argument("ill-formed signature");
             try {
-                data = new bls::InsecureSignature(bls::InsecureSignature::FromBytes(s.get_data_inplace(bls::InsecureSignature::SIGNATURE_SIZE)));
+                data = new bls::G2Element(bls::G2Element::FromBytes(s.get_data_inplace(bls::G2Element::SIZE)));
             } catch (std::ios_base::failure &) {
                 throw _exc;
             }
         }
 
         void sign(const bytearray_t &msg, const PrivKeyBLS &priv_key) {
+            //struct timeval timeStart, timeEnd;
+            //gettimeofday(&timeStart, nullptr);
+
             check_msg_length(msg);
-            std::cout << "sign: " << msg.data() << std::endl;
-            data = new bls::InsecureSignature(priv_key.data->SignInsecure(msg.data(), sizeof(&msg)));
+            data = new bls::G2Element(bls::PopSchemeMPL::Sign(*priv_key.data, arrToVec(msg)));
+
+            //gettimeofday(&timeEnd, nullptr);
+
+            //std::cout << "This signing slow piece of code took "
+            //           << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
+            //<< " us to execute."
+            //        << std::endl;
         }
 
         bool verify(const bytearray_t &msg, const PubKeyBLS &pub_key) const {
+
             check_msg_length(msg);
-            std::cout << "blah1" << std::endl;
-            std::cout << (unsigned char *)&*msg.begin() << std::endl;
-            bool res1 = data->Verify({(unsigned char *)&*msg.begin()}, {*(pub_key.data)});
-            std::cout << "blah2 " << res1 << std::endl;
-            return res1;
+
+            //struct timeval timeStart, timeEnd;
+            //gettimeofday(&timeStart, nullptr);
+            bool td = bls::PopSchemeMPL::Verify(*(pub_key.data), arrToVec(msg), *data);
+
+            /*gettimeofday(&timeEnd, nullptr);
+
+            std::cout << "This verifying slow piece of code took "
+                      << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
+                      << " us to execute."
+                      << std::endl;*/
+
+            return td;
         }
     };
 
@@ -630,9 +765,7 @@ class QuorumCertSecp256k1: public QuorumCert {
         PartCertBLS(const PrivKeyBLS &priv_key, const uint256_t &obj_hash):
                 SigSecBLS(obj_hash, priv_key),
                 PartCert(),
-                obj_hash(obj_hash) {}
-
-        PartCertBLS(const PartCertBLS &obj)  : SigSecBLS(obj) { }
+                obj_hash(obj_hash) { }
 
         bool verify(const PubKey &pub_key) override {
             return SigSecBLS::verify(obj_hash,
@@ -662,46 +795,293 @@ class QuorumCertSecp256k1: public QuorumCert {
         }
     };
 
-    class QuorumCertBLS: public QuorumCert {
-        uint256_t obj_hash;
-        salticidae::Bits rids;
-        std::unordered_map<ReplicaID, SigSecBLS> signatures;
-        SigSecBLS* theSig = nullptr;
+    class SigSecBLSAgg: public Serializable {
+
+        static void check_msg_length(const bytearray_t &msg) {
+            if (msg.size() != 32)
+                throw std::invalid_argument("the message should be 32-bytes");
+        }
 
     public:
-        QuorumCertBLS() = default;
-        QuorumCertBLS(const ReplicaConfig &config, const uint256_t &obj_hash);
+        bls::G2Element* data = nullptr;
 
-        ~QuorumCertBLS()
+        SigSecBLSAgg ():
+                Serializable(){}
+        SigSecBLSAgg(const uint256_t &digest,
+                  const PrivKeyBLS &priv_key):
+                Serializable() {
+            sign(digest, priv_key);
+        }
+
+        SigSecBLSAgg (const SigSecBLSAgg &obj)
+        {
+            data = new bls::G2Element(*(obj.data));
+        }
+
+        SigSecBLSAgg (bls::G2Element sig):
+                Serializable()
+        {
+            data = new bls::G2Element(sig);
+        }
+
+        ~SigSecBLSAgg() override
+        {
+            delete data;
+            data = nullptr;
+        }
+
+        void serialize(DataStream &s) const override {
+            static uint8_t output[bls::G2Element::SIZE];
+
+            int i = 0;
+            for (auto in : data->Serialize())
+            {
+                output[i++] = in;
+            }
+            s.put_data(output, output + bls::G2Element::SIZE);
+        }
+
+        void unserialize(DataStream &s) override {
+            static const auto _exc = std::invalid_argument("ill-formed signature");
+            try {
+                data = new bls::G2Element(bls::G2Element::FromBytes(s.get_data_inplace(bls::G2Element::SIZE)));
+            } catch (std::ios_base::failure &) {
+                throw _exc;
+            }
+        }
+
+        void sign(const bytearray_t &msg, const PrivKeyBLS &priv_key) {
+            //struct timeval timeStart, timeEnd;
+            //gettimeofday(&timeStart, nullptr);
+
+            check_msg_length(msg);
+            data = new bls::G2Element(bls::PopSchemeMPL::Sign(*priv_key.data, arrToVec(msg)));
+
+            //gettimeofday(&timeEnd, nullptr);
+
+            //std::cout << "The signing took: "
+            //          << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
+            //          << " us to execute."
+            //          << std::endl;
+        }
+
+        bool verify(const bytearray_t &msg, const PubKeyBLS &pub_key) const {
+
+            check_msg_length(msg);
+
+            struct timeval timeStart, timeEnd;
+            gettimeofday(&timeStart, nullptr);
+
+            bool td = bls::PopSchemeMPL::Verify(*(pub_key.data), arrToVec(msg), *data);
+
+            gettimeofday(&timeEnd, nullptr);
+
+            std::cout << "The verifying took: "
+                     << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
+                     << " us to execute."
+                     << std::endl;
+
+            return td;
+        }
+    };
+
+    class SigVeriTaskBLSAgg: public VeriTask {
+        uint256_t msg;
+        vector<bls::G1Element> pubs;
+        SigSecBLSAgg sig;
+    public:
+        SigVeriTaskBLSAgg(uint256_t msg,
+                          vector<bls::G1Element> pubs,
+                          const SigSecBLSAgg &sig):
+                msg(std::move(msg)), pubs(std::move(pubs)), sig(sig) {}
+        virtual ~SigVeriTaskBLSAgg() = default;
+
+        bool verify() override {
+
+            //struct timeval timeStart, timeEnd;
+            //gettimeofday(&timeStart, nullptr);
+
+            bool valid = bls::PopSchemeMPL::FastAggregateVerify(pubs, arrToVec(msg.to_bytes()), *sig.data);
+
+            //gettimeofday(&timeEnd, nullptr);
+
+            //std::cout << "Fast Aggregate Verify:  "
+            //          << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
+            //          << " us to execute."
+            //          << std::endl;
+            return valid;
+        }
+    };
+
+    class PartCertBLSAgg: public SigSecBLSAgg, public PartCert {
+        uint256_t obj_hash;
+
+    public:
+        PartCertBLSAgg() = default;
+        PartCertBLSAgg(const PrivKeyBLS &priv_key, const uint256_t &obj_hash):
+                SigSecBLSAgg(obj_hash, priv_key),
+                PartCert(),
+                obj_hash(obj_hash) { }
+
+        bool verify(const PubKey &pub_key) override {
+            return SigSecBLSAgg::verify(obj_hash,
+                                        dynamic_cast<const PubKeyBLS &>(pub_key));
+        }
+
+        promise_t verify(const PubKey &pub_key, VeriPool &vpool) override {
+            return vpool.verify(new SigVeriTaskBLS(obj_hash,
+                                                   dynamic_cast<const PubKeyBLS &>(pub_key),
+                                                   SigSecBLS(*this->data)));
+        }
+
+        const uint256_t &get_obj_hash() const override { return obj_hash; }
+
+        PartCertBLSAgg *clone() override {
+            return new PartCertBLSAgg(*this);
+        }
+
+        void serialize(DataStream &s) const override {
+            s << obj_hash;
+            this->SigSecBLSAgg::serialize(s);
+        }
+
+        void unserialize(DataStream &s) override {
+            s >> obj_hash;
+            this->SigSecBLSAgg::unserialize(s);
+        }
+    };
+
+
+    class QuorumCertAggBLS: public QuorumCert {
+        uint256_t obj_hash;
+        salticidae::Bits rids;
+        SigSecBLSAgg* theSig = nullptr;
+        vector<bls::G2Element> sigs;
+        uint32_t n = 0;
+
+    public:
+        QuorumCertAggBLS() = default;
+        QuorumCertAggBLS(const ReplicaConfig &config, const uint256_t &obj_hash);
+        QuorumCertAggBLS (const QuorumCertAggBLS &other): obj_hash(other.obj_hash), rids(other.rids)
+        {
+            if (other.theSig != nullptr) {
+                theSig = new SigSecBLSAgg(*other.theSig);
+            }
+        }
+
+        ~QuorumCertAggBLS() override
         {
             delete theSig;
             theSig = nullptr;
         }
 
-        void add_part(ReplicaID rid, const PartCert &pc) override {
-            if (pc.get_obj_hash() != obj_hash)
-                throw std::invalid_argument("PartCert does match the block hash");
-            signatures.insert(std::make_pair(
-                    rid, static_cast<const PartCertBLS &>(pc)));
-            rids.set(rid);
+        void calculateN() {
+            n = 0;
+            for (unsigned int i = 0; i < rids.size(); i++) {
+                if (rids[i] == 1) {
+                    n++;
+                }
+            }
         }
 
-        void compute() override
-        {
-            std::vector<bls::InsecureSignature> sigShareOut;
-            std::vector<size_t> players;
+        void add_part(const ReplicaConfig &config, ReplicaID rid, const PartCert &pc) override {
+            if (pc.get_obj_hash() != obj_hash)
+                throw std::invalid_argument("PartCert does match the block hash");
+            rids.set(rid);
+            calculateN();
 
-            for(auto elem : signatures) {
-                players.push_back(elem.first);
-                sigShareOut.push_back(*elem.second.data);
+            //if (theSig == nullptr) {
+            //    theSig = new SigSecBLSAgg(*dynamic_cast<const PartCertBLSAgg &>(pc).data);
+            //    sigs.push_back(*theSig->data);
+            //    return;
+            //}
+            if (sigs.empty() && theSig != nullptr) {
+                sigs.push_back(*theSig->data);
+                delete theSig;
+                theSig = nullptr;
             }
-            std::cout << "Try combine?" << std::endl;
-            std::cout << players.size() << std::endl;
-            std::cout << sigShareOut.size() << std::endl;
-            uint8_t* d = obj_hash.to_bytes().data();
+            sigs.push_back(*dynamic_cast<const SigSecBLSAgg &>(pc).data);
+            //bls::G2Element sig1 = *theSig->data;
+            //bls::G2Element sig2 = *dynamic_cast<const SigSecBLSAgg &>(pc).data;
 
-            theSig = new SigSecBLS(bls::Threshold::AggregateUnitSigs(sigShareOut, d, sizeof(d), &players[0], 10));
-            std::cout << "those5?" << std::endl;
+            //struct timeval timeStart, timeEnd;
+            //gettimeofday(&timeStart, nullptr);
+
+            //bls::G2Element sig = bls::PopSchemeMPL::Aggregate({sig1, sig2});
+
+            //gettimeofday(&timeEnd, nullptr);
+
+            //std::cout << "Aggregating Sigs: "
+            //          << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
+            //          << " us to execute."
+            //          << std::endl;
+
+            //*theSig->data = sig;
+        }
+
+        void merge_quorum(const QuorumCert &qc) override {
+            if (qc.get_obj_hash()!= obj_hash) throw std::invalid_argument("QuorumCert does match the block hash");
+
+            salticidae::Bits newRids = dynamic_cast<const QuorumCertAggBLS &>(qc).rids;
+            for (unsigned int i = 0;i < newRids.size();i++) {
+                if (newRids[i] == 1) {
+                    rids.set(i);
+                }
+            }
+            calculateN();
+
+            if (sigs.empty() && theSig != nullptr) {
+                sigs.push_back(*theSig->data);
+                delete theSig;
+                theSig = nullptr;
+            }
+
+            for (bls::G2Element el : dynamic_cast<const QuorumCertAggBLS &>(qc).sigs) {
+                sigs.push_back(el);
+            }
+
+            if (dynamic_cast<const QuorumCertAggBLS &>(qc).theSig != nullptr) {
+                sigs.push_back(*dynamic_cast<const QuorumCertAggBLS &>(qc).theSig->data);
+            }
+
+            //bls::G2Element sig1 = *theSig->data;
+            //bls::G2Element sig2 = *dynamic_cast<const QuorumCertAggBLS &>(qc).theSig->data;
+
+            //struct timeval timeStart,timeEnd;
+            //gettimeofday(&timeStart, nullptr);
+
+            //bls::G2Element sig = bls::PopSchemeMPL::Aggregate({sig1, sig2});
+
+            //gettimeofday(&timeEnd, nullptr);
+
+            //std::cout << "Aggregating Sigs: "
+            //          << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
+            //          << " us to execute."
+            //          << std::endl;
+
+            //*theSig->data = sig;
+        }
+
+        bool has_n(const uint32_t t) override {
+            //HOTSTUFF_LOG_PROTO("check %d of %d", n, t);
+            return n >= t;
+        }
+
+        void compute() override {
+            if (theSig == nullptr) {
+                struct timeval timeStart,timeEnd;
+                gettimeofday(&timeStart, nullptr);
+
+                theSig = new SigSecBLSAgg(bls::PopSchemeMPL::Aggregate(sigs));
+                sigs.clear();
+
+                gettimeofday(&timeEnd, nullptr);
+
+                std::cout << "Aggregating Sigs: "
+                          << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
+                          << " us to execute."
+                          << std::endl;
+            }
         }
 
         bool verify(const ReplicaConfig &config) override;
@@ -709,35 +1089,31 @@ class QuorumCertSecp256k1: public QuorumCert {
 
         const uint256_t &get_obj_hash() const override { return obj_hash; }
 
-        QuorumCertBLS *clone() override {
-            return new QuorumCertBLS(*this);
+        QuorumCertAggBLS *clone() override {
+            return new QuorumCertAggBLS(*this);
         }
 
         void serialize(DataStream &s) const override {
             bool combined = (theSig != nullptr);
             s << obj_hash << rids << combined;
             if (combined) {
-                s << *theSig;
-            }
-            else {
-                for (size_t i = 0; i < rids.size(); i++)
-                    if (rids.get(i)) s << signatures.at(i);
+                if (theSig == nullptr || !sigs.empty()) {
+                    throw std::runtime_error("sigs not aggregated before sending!");
+                }
+                theSig->serialize(s);
             }
         }
 
         void unserialize(DataStream &s) override {
             bool combined;
             s >> obj_hash >> rids >> combined;
+            calculateN();
             if (combined) {
-                s >> *theSig;
-            }
-            else {
-                for (size_t i = 0; i < rids.size(); i++)
-                    if (rids.get(i)) s >> signatures[i];
+                theSig = new SigSecBLSAgg();
+                theSig->unserialize(s);
             }
         }
     };
-
 }
 
 #endif

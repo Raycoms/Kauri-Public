@@ -63,7 +63,7 @@ using hotstuff::MsgRespCmd;
 using hotstuff::get_hash;
 using hotstuff::promise_t;
 
-using HotStuff = hotstuff::HotStuffTH;
+using HotStuff = hotstuff::HotStuffAgg;
 
 class HotStuffApp: public HotStuff {
     double stat_period;
@@ -107,9 +107,6 @@ class HotStuffApp: public HotStuff {
 
     void state_machine_execute(const Finality &fin) override {
         reset_imp_timer();
-#ifndef HOTSTUFF_ENABLE_BENCHMARK
-        HOTSTUFF_LOG_INFO("replicated %s", std::string(fin).c_str());
-#endif
     }
 
 #ifdef HOTSTUFF_MSG_STAT
@@ -132,6 +129,8 @@ class HotStuffApp: public HotStuff {
                 const ClientNetwork<opcode_t>::Config &clinet_config);
 
     void start(const std::vector<std::tuple<NetAddr, bytearray_t, bytearray_t>> &reps);
+    void set_fanout(int32_t fanout);
+    void set_piped_latency(int32_t piped_latency, int32_t async_blocks);
     void stop();
 };
 
@@ -145,14 +144,14 @@ std::pair<std::string, std::string> split_ip_port_cport(const std::string &s) {
 salticidae::BoxObj<HotStuffApp> papp = nullptr;
 
 int main(int argc, char **argv) {
-    Config config("hotstuff.conf");
+    Config config("hotstuff.gen.conf");
 
     ElapsedTime elapsed;
     elapsed.start();
 
     auto opt_blk_size = Config::OptValInt::create(1);
     auto opt_parent_limit = Config::OptValInt::create(-1);
-    auto opt_stat_period = Config::OptValDouble::create(10);
+    auto opt_stat_period = Config::OptValDouble::create(120);
     auto opt_replicas = Config::OptValStrVec::create();
     auto opt_idx = Config::OptValInt::create(0);
     auto opt_client_port = Config::OptValInt::create(-1);
@@ -166,13 +165,17 @@ int main(int argc, char **argv) {
     auto opt_prop_delay = Config::OptValDouble::create(1);
     auto opt_imp_timeout = Config::OptValDouble::create(11);
     auto opt_nworker = Config::OptValInt::create(1);
-    auto opt_repnworker = Config::OptValInt::create(1);
-    auto opt_repburst = Config::OptValInt::create(100);
-    auto opt_clinworker = Config::OptValInt::create(8);
-    auto opt_cliburst = Config::OptValInt::create(1000);
+    auto opt_repnworker = Config::OptValInt::create(2);
+    auto opt_repburst = Config::OptValInt::create(10000);
+    auto opt_clinworker = Config::OptValInt::create(2);
+    auto opt_cliburst = Config::OptValInt::create(10000);
     auto opt_notls = Config::OptValFlag::create(false);
-    auto opt_max_rep_msg = Config::OptValInt::create(4 << 20); // 4M by default
-    auto opt_max_cli_msg = Config::OptValInt::create(65536); // 64K by default
+
+    auto opt_max_rep_msg = Config::OptValInt::create(4 << 20); // 4m by default
+    auto opt_max_cli_msg = Config::OptValInt::create(65536); // 64k by default
+    auto opt_fanout = Config::OptValInt::create(2); // 2 by default
+    auto opt_piped_latency = Config::OptValInt::create(10); // 10ms by default
+    auto opt_async_blocks = Config::OptValInt::create(0); // 0 by default
 
     config.add_opt("block-size", opt_blk_size, Config::SET_VAL);
     config.add_opt("parent-limit", opt_parent_limit, Config::SET_VAL);
@@ -197,6 +200,9 @@ int main(int argc, char **argv) {
     config.add_opt("max-rep-msg", opt_max_rep_msg, Config::SET_VAL, 'S', "the maximum replica message size");
     config.add_opt("max-cli-msg", opt_max_cli_msg, Config::SET_VAL, 'S', "the maximum client message size");
     config.add_opt("help", opt_help, Config::SWITCH_ON, 'h', "show this help info");
+    config.add_opt("fan-out", opt_fanout, Config::SET_VAL, 'F', "fanout");
+    config.add_opt("piped_latency", opt_piped_latency, Config::SET_VAL, 'P', "Latency between the block pipelining");
+    config.add_opt("async_blocks", opt_async_blocks, Config::SET_VAL, 'A', "Async blocks to pipeline");
 
     EventContext ec;
     config.parse(argc, argv);
@@ -242,6 +248,7 @@ int main(int argc, char **argv) {
     HotStuffApp::Net::Config repnet_config;
     ClientNetwork<opcode_t>::Config clinet_config;
     repnet_config.max_msg_size(opt_max_rep_msg->get());
+    repnet_config.nworker(opt_repnworker->get());
     clinet_config.max_msg_size(opt_max_cli_msg->get());
     if (!opt_tls_privkey->get().empty() && !opt_notls->get())
     {
@@ -256,9 +263,6 @@ int main(int argc, char **argv) {
             .tls_key(tls_priv_key)
             .tls_cert(tls_cert);
     }
-    repnet_config
-        .burst_size(opt_repburst->get())
-        .nworker(opt_repnworker->get());
     clinet_config
         .burst_size(opt_cliburst->get())
         .nworker(opt_clinworker->get());
@@ -283,6 +287,10 @@ int main(int argc, char **argv) {
             hotstuff::from_hex(std::get<1>(r)),
             hotstuff::from_hex(std::get<2>(r))));
     }
+
+    papp->set_fanout(opt_fanout->get());
+    papp->set_piped_latency(opt_piped_latency->get(), opt_async_blocks->get());
+
     auto shutdown = [&](int) { papp->stop(); };
     salticidae::SigEvent ev_sigint(ec, shutdown);
     salticidae::SigEvent ev_sigterm(ec, shutdown);
@@ -290,6 +298,7 @@ int main(int argc, char **argv) {
     ev_sigterm.add(SIGTERM);
 
     papp->start(reps);
+
     elapsed.stop(true);
     return 0;
 }
@@ -411,4 +420,12 @@ void HotStuffApp::print_stat() const {
     }
     HOTSTUFF_LOG_INFO("--- end client msg. ---");
 #endif
+}
+
+void HotStuffApp::set_fanout(int32_t fanout) {
+    HotStuff::set_fanout(fanout);
+}
+
+void HotStuffApp::set_piped_latency(int32_t piped_latency, int32_t async_blocks) {
+    HotStuff::set_piped_latency(piped_latency, async_blocks);
 }

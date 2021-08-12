@@ -46,6 +46,8 @@ struct MsgPropose {
     MsgPropose(const Proposal &);
     /** Only move the data to serialized, do not parse immediately. */
     MsgPropose(DataStream &&s): serialized(std::move(s)) {}
+    MsgPropose(DataStream stream, bool wut): serialized(std::move(stream)) {}
+
     /** Parse the serialized data to blks now, with `hsc->storage`. */
     void postponed_parse(HotStuffCore *hsc);
 };
@@ -68,13 +70,21 @@ struct MsgReqBlock {
     MsgReqBlock(DataStream &&s);
 };
 
-
 struct MsgRespBlock {
     static const opcode_t opcode = 0x3;
     DataStream serialized;
     std::vector<block_t> blks;
     MsgRespBlock(const std::vector<block_t> &blks);
     MsgRespBlock(DataStream &&s): serialized(std::move(s)) {}
+    void postponed_parse(HotStuffCore *hsc);
+};
+
+struct MsgRelay {
+    static const opcode_t opcode = 0x4;
+    DataStream serialized;
+    VoteRelay vote;
+    MsgRelay(const VoteRelay &);
+    MsgRelay(DataStream &&s): serialized(std::move(s)) {}
     void postponed_parse(HotStuffCore *hsc);
 };
 
@@ -160,7 +170,8 @@ class HotStuffBase: public HotStuffCore {
     std::unordered_map<const uint256_t, commit_cb_t> decision_waiting;
     using cmd_queue_t = salticidae::MPSCQueueEventDriven<std::pair<uint256_t, commit_cb_t>>;
     cmd_queue_t cmd_pending;
-    std::queue<uint256_t> cmd_pending_buffer;
+    std::vector<uint256_t> cmd_pending_buffer;
+    std::vector<uint256_t> final_buffer;
 
     /* statistics */
     uint64_t fetched;
@@ -178,6 +189,9 @@ class HotStuffBase: public HotStuffCore {
     mutable double part_delivery_time_max;
     mutable std::unordered_map<const PeerId, uint32_t> part_fetched_replica;
 
+    mutable PeerId parentPeer;
+    mutable std::set<PeerId> childPeers;
+
     void on_fetch_cmd(const command_t &cmd);
     void on_fetch_blk(const block_t &blk);
     bool on_deliver_blk(const block_t &blk);
@@ -186,6 +200,8 @@ class HotStuffBase: public HotStuffCore {
     inline void propose_handler(MsgPropose &&, const Net::conn_t &);
     /** deliver consensus message: <vote> */
     inline void vote_handler(MsgVote &&, const Net::conn_t &);
+    /** deliver consensus relay message: <vote_relay> */
+    inline void vote_relay_handler(MsgRelay &&, const Net::conn_t &);
     /** fetches full block data */
     inline void req_blk_handler(MsgReqBlock &&, const Net::conn_t &);
     /** receives a block */
@@ -194,7 +210,7 @@ class HotStuffBase: public HotStuffCore {
     inline bool conn_handler(const salticidae::ConnPool::conn_t &, bool);
 
     void do_broadcast_proposal(const Proposal &) override;
-    void do_vote(ReplicaID, const Vote &) override;
+    void do_vote(Proposal, const Vote &) override;
     void do_decide(Finality &&) override;
     void do_consensus(const block_t &blk) override;
 
@@ -222,6 +238,7 @@ class HotStuffBase: public HotStuffCore {
     void exec_command(uint256_t cmd_hash, commit_cb_t callback);
     void start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> &&replicas,
                 bool ec_loop = false);
+    void beat();
 
     size_t size() const { return peers.size(); }
     const auto &get_decision_waiting() const { return decision_waiting; }
@@ -240,7 +257,8 @@ class HotStuffBase: public HotStuffCore {
     promise_t async_fetch_blk(const uint256_t &blk_hash, const PeerId *replica, bool fetch_now = true);
     /** Returns a promise resolved (with block_t blk) when Block is delivered (i.e. prefix is fetched). */
     promise_t async_deliver_blk(const uint256_t &blk_hash,  const PeerId &replica);
-};
+
+    };
 
 /** HotStuff protocol (templated by cryptographic implementation). */
 template<typename PrivKeyType = PrivKeyDummy,
@@ -304,13 +322,21 @@ class HotStuff: public HotStuffBase {
                 ));
         HotStuffBase::start(std::move(reps), ec_loop);
     }
+
+    void set_fanout(int32_t fanout) {
+        HotStuffBase::set_fanout(fanout);
+    }
+
+    void set_piped_latency(int32_t piped_latency, int32_t async_blocks) {
+        HotStuffBase::set_piped_latency(piped_latency, async_blocks);
+    }
 };
 
 using HotStuffNoSig = HotStuff<>;
 using HotStuffSecp256k1 = HotStuff<PrivKeySecp256k1, PubKeySecp256k1,
                                     PartCertSecp256k1, QuorumCertSecp256k1>;
-using HotStuffTH = HotStuff<PrivKeyBLS, PubKeyBLS,
-            PartCertBLS, QuorumCertBLS>;
+using HotStuffAgg = HotStuff<PrivKeyBLS, PubKeyBLS,
+            PartCertBLSAgg, QuorumCertAggBLS>;
 
 template<EntityType ent_type>
 FetchContext<ent_type>::FetchContext(FetchContext && other):

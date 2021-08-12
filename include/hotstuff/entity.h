@@ -63,9 +63,11 @@ class ReplicaConfig {
     size_t nreplicas;
     size_t nmajority;
 
-    PubKey* globalPub;
+    int32_t fanout;
+    int32_t piped_latency;
+    int32_t async_blocks;
 
-    ReplicaConfig(): nreplicas(0), nmajority(0), globalPub(new PubKeyBLS(hotstuff::from_hex("8cb772444852e35624d70af1140d63c84fbf5be339bc0da0feb35fcd36ba81c35ebe3150c0b3f71233b6919385d7d561"))) {}
+    ReplicaConfig(): nreplicas(0), nmajority(0) {}
 
     void add_replica(ReplicaID rid, const ReplicaInfo &info) {
         replica_map.insert(std::make_pair(rid, info));
@@ -91,6 +93,7 @@ class ReplicaConfig {
 
 class Block;
 class HotStuffCore;
+class HotStuffBase;
 
 using block_t = salticidae::ArcObj<Block>;
 
@@ -120,6 +123,8 @@ get_hashes(const std::vector<Hashable> &plist) {
 
 class Block {
     friend HotStuffCore;
+    friend HotStuffBase;
+
     std::vector<uint256_t> parent_hashes;
     std::vector<uint256_t> cmds;
     quorum_cert_bt qc;

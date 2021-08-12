@@ -18,15 +18,28 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-INCLUDE_DIRECTORIES(bls/src)
-LINK_DIRECTORIES(bls/build/src)
-
-LINK_DIRECTORIES(bls/build/contrib/relic/lib)
-INCLUDE_DIRECTORIES(bls/build/contrib/relic/include)
-INCLUDE_DIRECTORIES(bls/contrib/relic/include)
-
 add_executable(hotstuff-app hotstuff_app.cpp)
-target_link_libraries(hotstuff-app hotstuff_static blstmp relic_s)
-
 add_executable(hotstuff-client hotstuff_client.cpp)
-target_link_libraries(hotstuff-client hotstuff_static blstmp relic_s)
+
+target_compile_options(hotstuff-app PUBLIC -Wl,-no_pie)
+target_compile_options(hotstuff-client PUBLIC -Wl,-no_pie)
+
+target_include_directories(hotstuff-app  PUBLIC  ${relic_BINARY_DIR}/include)
+target_include_directories(hotstuff-app  PUBLIC  ${relic_SOURCE_DIR}/include)
+target_include_directories(hotstuff-app  PUBLIC  ${GMP_INCLUDES})
+target_include_directories(hotstuff-app  PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR}/../bls/contrib/catch)
+target_include_directories(hotstuff-app  PUBLIC  ${INCLUDE_DIRECTORIES})
+
+target_include_directories(hotstuff-app  PUBLIC ../bls/src)
+
+TARGET_LINK_LIBRARIES(hotstuff-app PRIVATE ${GMP_LIBRARIES} ${GMPXX_LIBRARIES} hotstuff_static blstmp relic_s pthread sodium)
+
+target_include_directories(hotstuff-client  PUBLIC  ${relic_BINARY_DIR}/include)
+target_include_directories(hotstuff-client  PUBLIC  ${relic_SOURCE_DIR}/include)
+target_include_directories(hotstuff-client  PUBLIC  ${GMP_INCLUDES})
+target_include_directories(hotstuff-client  PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR}/../bls/contrib/catch)
+target_include_directories(hotstuff-client  PUBLIC  ${INCLUDE_DIRECTORIES})
+
+target_include_directories(hotstuff-client  PUBLIC ../bls/src)
+
+TARGET_LINK_LIBRARIES(hotstuff-client PRIVATE ${GMP_LIBRARIES} ${GMPXX_LIBRARIES} hotstuff_static blstmp relic_s pthread sodium)

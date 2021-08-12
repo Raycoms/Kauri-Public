@@ -10,6 +10,7 @@ libsecp256k1-prefix/
 libhotstuff.a
 src/*.swo
 src/*.swp
+_deps/
 include/hotstuff/config.h
 *.a
 *.o
@@ -24,3 +25,19 @@ include/hotstuff/config.h
 core
 
 .idea/
+
+hotstuff-keygen_bls
+
+hotstuff.cbp
+
+log*
+
+scripts/argparse
+
+scripts/itertools
+
+scripts/nodes.txt
+
+scripts/re
+
+scripts/subprocess
