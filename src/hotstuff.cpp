@@ -816,6 +816,7 @@ void HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t
         config.fanout = size;
         fanout = size;
         config.async_blocks = 0;
+        HOTSTUFF_LOG_PROTO("Falling Back to Star");
     }
 
     size_t i = 0;
