@@ -954,7 +954,7 @@ class QuorumCertSecp256k1: public QuorumCert {
 
     class QuorumCertAggBLS: public QuorumCert {
         uint256_t obj_hash;
-        salticidae::Bits rids = salticidae::Bits(1024);
+        salticidae::Bits rids;
         SigSecBLSAgg* theSig = nullptr;
         vector<bls::G2Element> sigs;
         uint32_t n = 0;

@@ -783,7 +783,6 @@ void HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t
         size = global_replicas.size();
         std::cout << size << std::endl;
         offset = get_pace_maker()->get_proposer();
-        config.nreplicas--;
         failures++;
 
         // number of faulty processes
