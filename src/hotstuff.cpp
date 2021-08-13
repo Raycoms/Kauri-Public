@@ -731,7 +731,6 @@ void HotStuffBase::do_vote(Proposal prop, const Vote &vote) {
 
         if (proposer == get_id())
         {
-            //throw HotStuffError("unreachable line");
             return;
         }
 
@@ -742,7 +741,6 @@ void HotStuffBase::do_vote(Proposal prop, const Vote &vote) {
             block_t blk = get_delivered_blk(vote.blk_hash);
             if (blk->self_qc == nullptr)
             {
-                //HOTSTUFF_LOG_PROTO("create cert");
                 blk->self_qc = create_quorum_cert(prop.blk->get_hash());
                 blk->self_qc->add_part(config, vote.voter, *vote.cert);
             }
