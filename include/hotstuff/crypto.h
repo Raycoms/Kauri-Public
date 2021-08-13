@@ -954,7 +954,7 @@ class QuorumCertSecp256k1: public QuorumCert {
 
     class QuorumCertAggBLS: public QuorumCert {
         uint256_t obj_hash;
-        salticidae::Bits rids = salticidae::Bits(512);
+        salticidae::Bits rids = salticidae::Bits(1024);
         SigSecBLSAgg* theSig = nullptr;
         vector<bls::G2Element> sigs;
         uint32_t n = 0;
@@ -1066,7 +1066,7 @@ class QuorumCertSecp256k1: public QuorumCert {
 
         bool has_n(const uint32_t t) override {
             //HOTSTUFF_LOG_PROTO("check %d of %d, sigs: %d", n, t, sigs.size());
-            return sigs.size() >= t || n > t;
+            return n > t;
         }
 
         void compute() override {
