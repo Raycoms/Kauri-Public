@@ -480,7 +480,7 @@ class PartCertSecp256k1: public SigSecp256k1, public PartCert {
 
 class QuorumCertSecp256k1: public QuorumCert {
     uint256_t obj_hash;
-    salticidae::Bits rids;
+    salticidae::Bits rids = salticidae::Bits(512);
     std::unordered_map<ReplicaID, SigSecp256k1> sigs;
 
     public:
@@ -954,7 +954,7 @@ class QuorumCertSecp256k1: public QuorumCert {
 
     class QuorumCertAggBLS: public QuorumCert {
         uint256_t obj_hash;
-        salticidae::Bits rids;
+        salticidae::Bits rids = salticidae::Bits(512);
         SigSecBLSAgg* theSig = nullptr;
         vector<bls::G2Element> sigs;
         uint32_t n = 0;
