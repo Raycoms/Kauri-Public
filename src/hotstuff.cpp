@@ -276,16 +276,19 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
     }
 
     if (id != pmaker->get_proposer() ) {
+        HOTSTUFF_LOG_PROTO("Is not proposer");
         auto &cert = blk->self_qc;
 
 
         if (cert->has_n(numberOfChildren + 1)) {
+            HOTSTUFF_LOG_PROTO("Has enough votes - cancel");
             return;
         }
 
         cert->add_part(config, msg.vote.voter, *msg.vote.cert);
 
         if (!cert->has_n(numberOfChildren + 1)) {
+            HOTSTUFF_LOG_PROTO("Not enough votes - continue");
             return;
         }
         std::cout <<  " got enough votes: " << msg.vote.blk_hash.to_hex().c_str() <<  std::endl;
@@ -332,6 +335,7 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
         auto &cert = blk->self_qc;
         //struct timeval timeEnd;
 
+        HOTSTUFF_LOG_PROTO("Add Part");
         cert->add_part(config, v->voter, *v->cert);
         if (cert != nullptr && cert->get_obj_hash() == blk->get_hash()) {
             if (cert->has_n(config.nmajority)) {
@@ -339,8 +343,11 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
                 if (id != pmaker->get_proposer() && !cert->verify(config)) {
                     throw std::runtime_error("Invalid Sigs in intermediate signature!");
                 }
+                HOTSTUFF_LOG_PROTO("Majority reached, go");
                 update_hqc(blk, cert);
                 on_qc_finish(blk);
+            } else {
+                HOTSTUFF_LOG_PROTO("No majority: %d", config.nmajority);
             }
         }
 
