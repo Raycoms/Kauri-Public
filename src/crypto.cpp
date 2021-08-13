@@ -83,7 +83,7 @@ namespace hotstuff {
 
         vector<bls::G1Element> pubs;
         for (unsigned int i = 0; i < rids.size(); i++) {
-            if (rids[i] == 1) {
+            if (rids.get(i) == 1) {
                 pubs.push_back(*static_cast<const PubKeyBLS &>(config.get_pubkey(i)).data);
             }
         }
@@ -119,7 +119,7 @@ namespace hotstuff {
 
         vector<bls::G1Element> pubs;
         for (unsigned int i = 0; i < rids.size(); i++) {
-            if (rids[i] == 1) {
+            if (rids.get(i) == 1) {
                 pubs.push_back(*static_cast<const PubKeyBLS &>(config.get_pubkey(i)).data);
             }
         }

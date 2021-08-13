@@ -978,7 +978,7 @@ class QuorumCertSecp256k1: public QuorumCert {
         void calculateN() {
             n = 0;
             for (unsigned int i = 0; i < rids.size(); i++) {
-                if (rids[i] == 1) {
+                if (rids.get(i) == 1) {
                     n++;
                 }
             }
@@ -1026,7 +1026,7 @@ class QuorumCertSecp256k1: public QuorumCert {
 
             salticidae::Bits newRids = dynamic_cast<const QuorumCertAggBLS &>(qc).rids;
             for (unsigned int i = 0;i < newRids.size();i++) {
-                if (newRids[i] == 1) {
+                if (newRids.get(i) == 1) {
                     rids.set(i);
                 }
             }
