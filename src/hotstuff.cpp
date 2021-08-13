@@ -339,7 +339,7 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
                 if (id != pmaker->get_proposer() && !cert->verify(config)) {
                     throw std::runtime_error("Invalid Sigs in intermediate signature!");
                 }
-                HOTSTUFF_LOG_PROTO("Majority reached, go");
+                //HOTSTUFF_LOG_PROTO("Majority reached, go");
                 update_hqc(blk, cert);
                 on_qc_finish(blk);
             } else {
