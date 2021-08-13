@@ -1066,7 +1066,7 @@ class QuorumCertSecp256k1: public QuorumCert {
 
         bool has_n(const uint32_t t) override {
             //HOTSTUFF_LOG_PROTO("check %d of %d, sigs: %d", n, t, sigs.size());
-            return n > t;
+            return n >= t;
         }
 
         void compute() override {
