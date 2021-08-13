@@ -783,12 +783,12 @@ void HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t
         std::cout << size << std::endl;
         offset = get_pace_maker()->get_proposer();
         config.nreplicas--;
-        config.nmajority = config.nreplicas - (config.nreplicas / 3);
+        failures++;
 
         // number of faulty processes
-        if (id < 3) {
+        if (id < 33) {
             throw std::invalid_argument(
-                    "This server kills itself if < 10");
+                    "This server kills itself if < 33");
         }
     }
     else {
@@ -811,6 +811,12 @@ void HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t
     size_t fanout = config.fanout;
     auto processesOnLevel = 1;
     bool done = false;
+
+    if (failures > fanout) {
+        config.fanout = size;
+        fanout = size;
+        config.async_blocks = 0;
+    }
 
     size_t i = 0;
     while (i < size) {
@@ -936,7 +942,7 @@ void HotStuffBase::beat() {
                 double past_time = ((current_time.tv_sec - start_time.tv_sec) * 1000000 + current_time.tv_usec -
                                     start_time.tv_usec) / 1000;
                 // Number of failures = 1
-                if ((past_time > 60 * 1000 && id == 0) || (id > 0 && id < 3)) {
+                if ((past_time > 60 * 1000 && id == 0) || (id > 0 && id < 33)) {
                     throw std::invalid_argument(
                             "This server kills itself after 60s blocks, done! " + std::to_string(past_time));
                 }

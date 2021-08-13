@@ -176,6 +176,7 @@ class HotStuffBase: public HotStuffCore {
     /* statistics */
     uint64_t fetched;
     uint64_t delivered;
+    uint64_t failures;
     mutable uint64_t nsent;
     mutable uint64_t nrecv;
 
