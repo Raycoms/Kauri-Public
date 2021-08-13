@@ -977,8 +977,8 @@ class QuorumCertSecp256k1: public QuorumCert {
 
         void calculateN() {
             n = 0;
-            for (unsigned int i = 0; i < rids.size(); i++) {
-                if (rids.get(i) == 1) {
+            for (size_t i = 0; i < rids.size(); i++) {
+                if (rids.get(i)) {
                     n++;
                 }
             }
@@ -1025,8 +1025,8 @@ class QuorumCertSecp256k1: public QuorumCert {
             if (qc.get_obj_hash()!= obj_hash) throw std::invalid_argument("QuorumCert does match the block hash");
 
             salticidae::Bits newRids = dynamic_cast<const QuorumCertAggBLS &>(qc).rids;
-            for (unsigned int i = 0;i < newRids.size();i++) {
-                if (newRids.get(i) == 1) {
+            for (size_t i = 0; i < rids.size(); i++) {
+                if (newRids.get(i)) {
                     rids.set(i);
                 }
             }
