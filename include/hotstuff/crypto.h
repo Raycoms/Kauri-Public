@@ -987,6 +987,8 @@ class QuorumCertSecp256k1: public QuorumCert {
         void add_part(const ReplicaConfig &config, ReplicaID rid, const PartCert &pc) override {
             if (pc.get_obj_hash() != obj_hash)
                 throw std::invalid_argument("PartCert does match the block hash");
+
+            HOTSTUFF_LOG_PROTO("rid: %d", rid);
             rids.set(rid);
             calculateN();
 
@@ -1063,7 +1065,7 @@ class QuorumCertSecp256k1: public QuorumCert {
         }
 
         bool has_n(const uint32_t t) override {
-            HOTSTUFF_LOG_PROTO("check %d of %d", n, t);
+            HOTSTUFF_LOG_PROTO("check %d of %d, sigs: %d", n, t, sigs.size());
             return n >= t;
         }
 
