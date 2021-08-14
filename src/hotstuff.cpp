@@ -342,8 +342,6 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
                 //HOTSTUFF_LOG_PROTO("Majority reached, go");
                 update_hqc(blk, cert);
                 on_qc_finish(blk);
-            } else {
-                HOTSTUFF_LOG_PROTO("No majority: %d", config.nmajority);
             }
         }
 
