@@ -313,7 +313,7 @@ void HotStuffCore::on_receive_vote(const Vote &vote) {
     }
 
     if (vote.voter != get_id()) return;
-    if (blk->qc != nullptr && blk->qc->has_n(config.nmajority)) return;
+    if (blk->self_qc != nullptr && blk->self_qc->has_n(config.nmajority)) return;
 
     //std::cout << "self vote" << std::endl;
     auto &qc = blk->self_qc;
@@ -323,7 +323,6 @@ void HotStuffCore::on_receive_vote(const Vote &vote) {
         qc = create_quorum_cert(blk->get_hash());
     }
 
-    LOG_PROTO("Add own vote to qc");
     qc->add_part(config, vote.voter, *vote.cert);
     if (qc->has_n(config.nmajority))
     {
