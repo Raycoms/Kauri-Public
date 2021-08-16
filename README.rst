@@ -1,99 +1,32 @@
-libhotstuff
+Kauri
 -----------
 
-libhotstuff is a general-purpose BFT state machine replication library with
-modularity and simplicity, suitable for building hybrid consensus
-cryptocurrencies.
+Kauri is a BFT communication abstraction that leverages dissemination/aggregation trees for load balancing and scalability while avoiding the main limitations of previous tree-based solutions, namely, poor throughput due to additional round latency and the collaps eof the tree to a star even in runs with few faults
+while at the same time avoiding the bottleneck of star based solutions.
 
 Paper
 =====
 
-This repo includes the prototype implementation evaluated in our *HotStuff: BFT
-Consensus in the Lens of Blockchain* paper. The consensus protocol is also used
-by Facebook in Libra_ project.
+This repo includes the prototype implementation evaluated in our 
+*Kauri: Scalable BFT Consensus with PipelinedTree-Based Dissemination and Aggregation* paper.
 
-Feel free to contact us if you'd like to reproduce the results in the paper, or
-tweak the code for your own project/product.
-
-- Full paper: https://arxiv.org/abs/1803.05069
-- PODC 2019 paper: https://dl.acm.org/citation.cfm?id=3331591
-
-.. _Libra: https://github.com/libra
+Which will be published and presented at SOSP (https://sosp2021.mpi-sws.org/cfp.html)
 
 Features
 ========
 
-- Simplicity. The protocol core logic implementation is as simple as the one
-  specified in our paper. See ``consensus.h`` and ``consensus.cpp``.
+Kauri extends the publicly available implementation of HotStuff (https://github.com/hot-stuff/libhotstuff) with the following additions:
 
-- Modular design. You can use abstraction from the lowest level (the core
-  protocol logic) to the highest level (the state machine replication service
-  with network implementation) in your application, or override/redefine the
-  detailed behavior to customize your own consensus.
+- Tree Based Dissemination and Aggregation equally balancing the message propagation and processing load among the internal nodes in the tree.
 
-- Liveness decoupled from safety. The liveness logic is entirely decoupled from
-  safety. By defining your own liveness gadget ("PaceMaker"), you can implement
-  your own liveness heuristics/algorithm.  The actual performance varies
-  depending on your liveness implementation, but the safety is always intact.
+- BLS Signatures: Through BLS signatures the bandwidth load of the system is reduced significantly and signatures may be aggregated at each internal node.
 
-- Friendly to blockchain systems. A PaceMaker could potentially be PoW-based and
-  it makes it easier to build a hybrid consensus system, or use it at the core of
-  some cryptocurrencies.
+- Extra Pipelining: Additional pipelining allows to offset the inherent latency cost of trees, allowing the system to perform significantly better even in high latency settings.
 
-- Minimal. The project strives to keep code base small and implement just the
-  basic functionality of state machine replication: to deliver a consistent
-  command sequence to the library user. Application-specific parts are not
-  included, but demonstrated in the demo program.
+Run Kauri
+=========
 
-Try the Current Version
-=======================
+Disclaimer: The project is a prototype that was developped for the submission to SOSP. As such, it not production ready and still a work in progress considering certain system conditions.
 
-NOTICE: the project is still in-progress. Try at your own risk, and this
-section may be incomplete and subject to changes.
+https://github.com/Raycoms/Kauri-Consensus shows a step per step guide on how to run Kauri and reproduce several of the results in the paper.
 
-::
-
-    # install from the repo
-    git clone https://github.com/hot-stuff/libhotstuff.git
-    cd libhotstuff/
-    git submodule update --init --recursive
-
-    # ensure openssl and libevent are installed on your machine, more
-    # specifically, you need:
-    #
-    # CMake >= 3.9 (cmake)
-    # C++14 (g++)
-    # libuv >= 1.10.0 (libuv1-dev)
-    # openssl >= 1.1.0 (libssl-dev)
-    #
-    # on Ubuntu: sudo apt-get install libssl-dev libuv1-dev cmake make
-
-    cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED=ON -DHOTSTUFF_PROTO_LOG=ON
-    make
-
-    # start 4 demo replicas with scripts/run_demo.sh
-    # then, start the demo client with scripts/run_demo_client.sh
-
-
-    # Fault tolerance:
-    # Try to run the replicas as in run_demo.sh first and then run_demo_client.sh.
-    # Use Ctrl-C to terminate the proposing replica (e.g. replica 0). Leader
-    # rotation will be scheduled. Try to kill and run run_demo_client.sh again, new
-    # commands should still get through (be replicated) once the new leader becomes
-    # stable. Or try the following script:
-    # scripts/faulty_leader_demo.sh
-
-Try to Reproduce Our Basic Results
-==================================
-
-See here_.
-
-TODO
-====
-
-- Add a PoW-based Pacemaker
-- Branch pruning & swapping (the current implementation stores the entire chain in memory)
-- Limit the async events (improve robustness)
-- Persistent protocol state (recovery?)
-
-.. _here: https://github.com/hot-stuff/libhotstuff/tree/master/scripts/deploy
