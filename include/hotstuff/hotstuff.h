@@ -176,6 +176,7 @@ class HotStuffBase: public HotStuffCore {
     /* statistics */
     uint64_t fetched;
     uint64_t delivered;
+    uint64_t failures;
     mutable uint64_t nsent;
     mutable uint64_t nrecv;
 
@@ -191,6 +192,8 @@ class HotStuffBase: public HotStuffCore {
 
     mutable PeerId parentPeer;
     mutable std::set<PeerId> childPeers;
+
+    vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> global_replicas;
 
     void on_fetch_cmd(const command_t &cmd);
     void on_fetch_blk(const block_t &blk);
@@ -211,6 +214,7 @@ class HotStuffBase: public HotStuffCore {
 
     void do_broadcast_proposal(const Proposal &) override;
     void do_vote(Proposal, const Vote &) override;
+    void inc_time() override;
     void do_decide(Finality &&) override;
     void do_consensus(const block_t &blk) override;
 
@@ -238,6 +242,7 @@ class HotStuffBase: public HotStuffCore {
     void exec_command(uint256_t cmd_hash, commit_cb_t callback);
     void start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> &&replicas,
                 bool ec_loop = false);
+    void calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> &&replicas, bool startup);
     void beat();
 
     size_t size() const { return peers.size(); }

@@ -103,15 +103,20 @@ public:
      * functions. */
     void on_init(uint32_t nfaulty);
 
+    /**
+     * Tree calculation.
+     * @param replicas necessary set of processes.
+     * @param startup if being called during startup.
+     */
+    virtual void calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> &&replicas, bool startup) { }
+
     /** Call to set the fanout. */
     void set_fanout(int32_t fanout);
 
     /** Call to set the piped latency */
     void set_piped_latency(int32_t piped_latency, int32_t async_blocks);
 
-
-    /* TODO: better name for "delivery" ? */
-    /** Call to inform the state machine that a block is ready to be handled.
+    /**
      * A block is only delivered if itself is fetched, the block for the
      * contained qc is fetched and all parents are delivered. The user should
      * always ensure this invariant. The invalid blocks will be dropped by this
@@ -158,6 +163,9 @@ public:
 
     // Last sent out block time.
     mutable struct timeval last_block_time;
+
+    // Start time.
+    mutable struct timeval start_time;
 protected:
     /** Called by HotStuffCore upon the decision being made for cmd. */
     virtual void do_decide(Finality &&fin) = 0;
@@ -170,6 +178,11 @@ protected:
      * should send the vote message to a *good* proposer to have good liveness,
      * while safety is always guaranteed by HotStuffCore. */
     virtual void do_vote(Proposal last_proposer, const Vote &vote) = 0;
+
+    /**
+     * Increment timer to mark receival.
+     */
+    virtual void inc_time() { };
 
     /* The user plugs in the detailed instances for those
      * polymorphic data types. */
@@ -213,6 +226,10 @@ protected:
     void set_vote_disabled(bool f) { vote_disabled = f; }
 
     Proposal process_block(const block_t& bnew, bool adjustHeight);
+
+    void calcTree(bool b);
+
+    bool first = true;
 };
 
 /** Abstraction for proposal messages. */

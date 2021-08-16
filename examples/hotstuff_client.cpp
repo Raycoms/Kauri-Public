@@ -66,7 +66,7 @@ std::vector<std::pair<struct timeval, double>> elapsed;
 Net mn(ec, Net::Config());
 
 void connect_all() {
-    conns.insert(std::make_pair(0, mn.connect_sync(replicas[0])));
+    conns.insert(std::make_pair(0, mn.connect_sync(replicas[cid])));
 }
 
 bool try_send(bool check = true) {
@@ -107,7 +107,7 @@ void client_resp_cmd_handler(MsgRespCmd &&msg, const Net::conn_t &) {
     gettimeofday(&tv, nullptr);
     elapsed.push_back(std::make_pair(tv, et.elapsed_sec));
 #endif
-    usleep(75);
+    usleep(10);
     waiting.erase(it);
     while (try_send());
 }

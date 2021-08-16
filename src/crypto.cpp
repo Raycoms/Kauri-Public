@@ -82,8 +82,8 @@ namespace hotstuff {
         gettimeofday(&timeStart, nullptr);
 
         vector<bls::G1Element> pubs;
-        for (unsigned int i = 0; i < rids.size(); i++) {
-            if (rids[i] == 1) {
+        for (size_t i = 0; i < rids.size(); i++) {
+            if (rids.get(i)) {
                 pubs.push_back(*static_cast<const PubKeyBLS &>(config.get_pubkey(i)).data);
             }
         }
@@ -118,8 +118,8 @@ namespace hotstuff {
         gettimeofday(&timeStart, nullptr);
 
         vector<bls::G1Element> pubs;
-        for (unsigned int i = 0; i < rids.size(); i++) {
-            if (rids[i] == 1) {
+        for (size_t i = 0; i < rids.size(); i++) {
+            if (rids.get(i)) {
                 pubs.push_back(*static_cast<const PubKeyBLS &>(config.get_pubkey(i)).data);
             }
         }

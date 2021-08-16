@@ -53,6 +53,7 @@ class PaceMaker {
     virtual void impeach() {}
     virtual void on_consensus(const block_t &) {}
     virtual size_t get_pending_size() = 0;
+    virtual void inc_time() { };
 
     virtual block_t get_current_proposal() { }
 };
@@ -140,7 +141,7 @@ class PMWaitQC: public virtual PaceMaker {
     promise_t pm_wait_propose;
 
     protected:
-    void schedule_next() {
+    virtual void schedule_next() {
         if (!pending_beats.empty())
         {
             if (locked) {
@@ -258,6 +259,85 @@ class PaceMakerDummyFixed: public PaceMakerDummy {
         return promise_t([this](promise_t &pm) {
             pm.resolve(proposer);
         });
+    }
+};
+
+/** PaceMakerDummy with a fixed proposer. */
+class PaceMakerDummyFixedTwo: public PaceMakerDummy {
+    /** timer event.*/
+    TimerEvent timer;
+    double base_timeout;
+    double prop_delay;
+    double timeout;
+
+    bool delaying_proposal = false;
+
+    EventContext ec;
+
+    ReplicaID proposer;
+
+public:
+    PaceMakerDummyFixedTwo(EventContext ec, int32_t parent_limit,
+                         double base_timeout, double prop_delay):
+            PaceMakerDummy(parent_limit),
+            base_timeout(base_timeout),
+            timeout(base_timeout),
+            prop_delay(prop_delay),
+            ec(std::move(ec)), proposer(0) {}
+
+    ReplicaID get_proposer() override {
+        return proposer;
+    }
+
+    promise_t beat_resp(ReplicaID) override {
+        return promise_t([this](promise_t &pm) {
+            pm.resolve(proposer);
+        });
+    }
+
+    void set_proposer(TimerEvent &) {
+        proposer++;
+        timeout *= 2;
+        if (timeout > 10.0) {
+            timeout = 10.0;
+        }
+        HOTSTUFF_LOG_PROTO("-------------------------------");
+        HOTSTUFF_LOG_PROTO("Timeout reached!!!");
+
+        vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> reps;
+        hsc->calcTree(std::move(reps), false);
+
+        if (get_proposer() == hsc->get_id()) {
+            HOTSTUFF_LOG_PROTO("Elected itself as a new Leader!");
+            delaying_proposal = true;
+            timer = TimerEvent(ec, salticidae::generic_bind(&PaceMakerDummyFixedTwo::unlock, this, _1));
+            timer.add(prop_delay);
+        } else {
+            timer = TimerEvent(ec, salticidae::generic_bind(&PaceMakerDummyFixedTwo::set_proposer, this, _1));
+            timer.add(timeout);
+        }
+
+        HOTSTUFF_LOG_PROTO("Finished recalculating tree!");
+        HOTSTUFF_LOG_PROTO("-------------------------------");
+    }
+
+    void unlock(TimerEvent &) {
+        timer.del();
+        delaying_proposal = false;
+        HOTSTUFF_LOG_PROTO("Unlocking Proposer!!!");
+    }
+
+    void inc_time() override {
+        HOTSTUFF_LOG_PROTO("Inc time %f", timeout);
+        timer.del();
+        timer = TimerEvent(ec, salticidae::generic_bind(&PaceMakerDummyFixedTwo::set_proposer, this, _1));
+        timer.add(timeout);
+    }
+
+    void schedule_next() override {
+        if (!delaying_proposal) {
+            PMWaitQC::schedule_next();
+        }
     }
 };
 

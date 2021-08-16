@@ -480,7 +480,7 @@ class PartCertSecp256k1: public SigSecp256k1, public PartCert {
 
 class QuorumCertSecp256k1: public QuorumCert {
     uint256_t obj_hash;
-    salticidae::Bits rids;
+    salticidae::Bits rids = salticidae::Bits(512);
     std::unordered_map<ReplicaID, SigSecp256k1> sigs;
 
     public:
@@ -977,8 +977,8 @@ class QuorumCertSecp256k1: public QuorumCert {
 
         void calculateN() {
             n = 0;
-            for (unsigned int i = 0; i < rids.size(); i++) {
-                if (rids[i] == 1) {
+            for (size_t i = 0; i < rids.size(); i++) {
+                if (rids.get(i)) {
                     n++;
                 }
             }
@@ -1023,8 +1023,8 @@ class QuorumCertSecp256k1: public QuorumCert {
             if (qc.get_obj_hash()!= obj_hash) throw std::invalid_argument("QuorumCert does match the block hash");
 
             salticidae::Bits newRids = dynamic_cast<const QuorumCertAggBLS &>(qc).rids;
-            for (unsigned int i = 0;i < newRids.size();i++) {
-                if (newRids[i] == 1) {
+            for (size_t i = 0; i < rids.size(); i++) {
+                if (newRids.get(i)) {
                     rids.set(i);
                 }
             }
@@ -1063,7 +1063,7 @@ class QuorumCertSecp256k1: public QuorumCert {
         }
 
         bool has_n(const uint32_t t) override {
-            //HOTSTUFF_LOG_PROTO("check %d of %d", n, t);
+            //HOTSTUFF_LOG_PROTO("check %d of %d, sigs: %d", n, t, sigs.size());
             return n >= t;
         }
 
