@@ -131,7 +131,7 @@ cat log* | grep "proto" | grep "height" | pastebinit -b paste.ubuntu.com
 In order to parse the time between the receival of a block and it's finalization.
 
 
-To run the experiments including failures, exchange the branch in the Dockerfile to "reconfiguration" and re-run the docker build. Following that, adjust the server.sh script to launch one client per potential leader. After this is done, one of the processes may be killed manually during execution time after 1 minute warmup.
+To run the experiments including failures, exchange the branch in the Dockerfile to "reconfiguration" and re-run the docker build. Following that, adjust the server.sh script to launch one client per potential leader (By default only once client is launched that connects to process 0 to reduce the resource requirements). After this is done, one of the processes may be killed manually during execution time after 1 minute warmup.
 
 Detailed throughput data may be extracted as explained above.
 
