@@ -28,10 +28,21 @@ At the moment only bls signatures are supported. To run HotStuff with libsec sig
 
 #### Preliminary Setup
 
-Building Kauri is very simple and only a couple of simple steps are necessary.
-While Kauri can be run completely local on a single machine, we suggest running at most 20 processes per physical machine as depending on the configuration processes will start interfering with eachother (i.e 5 machines for 100 processes).
+### Preliminary Setup
 
-Make sure that Docker Version "20.10.5" or above is installed. Older Docker Versions won't work as they does not support adjusting network privilidges.
+Building Kauri is very simple and only a couple of simple steps are necessary.
+
+The Experiments in the paper have been run in the following setup:
+
+```
+1 Physical Machine per 20 processes
+64GB per physical machine
+16 cores per physical machine
+```
+The default setup in this repository runs 100 nodes, as such, we suggest having at least 5 physical machines.
+
+We suggest the above as a minimum setup, as starting up several containers and synchronizing them might take too long and time-out the system.
+Also make sure that Docker Version "20.10.5" or above is installed. Older Docker Versions won't work as they does not support adjusting network privilidges.
 
 #### Docker Setup
 
@@ -106,8 +117,9 @@ Finally, to run the experiments, simply run:
 ./runexperiment.sh
 ```
 
-This will run 5 instances of each of the setups defined in the "experiments" file.
-
+This will run 5 instances of each of the setups defined in the "experiments" file and reproduce the results of Figure 6c for Kauri and HotStuff-bls.
+By adjusting the bandwidth and latency in the experiments file, the results for Figure 6a,6b and 7 may be obtained similarly.
+To obtain the results of Figure 5, the pipelining may be adjusted.
 
 #### Interpretation of Results
 
