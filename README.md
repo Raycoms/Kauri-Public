@@ -120,3 +120,18 @@ The above script will result in a regular output similar to:
 Where 'hqc.height=2700' presents the last finalized block. Considering the 5 minute interval, that results in 2700/300 blocks per second.
 Considering the default of 1000 transactions pr block, that results in `2700/300*1000 = 9000` ops per second.
 
+#### Additional Experiments
+
+To obtain block latency times or more detailed throughput data over the given execution time, the runexperiment.sh script has to be adjusted to export the entire log to pastebin similarly to:
+
+```
+cat log* | grep "proto" | grep "height" | pastebinit -b paste.ubuntu.com
+```
+
+In order to parse the time between the receival of a block and it's finalization.
+
+
+To run the experiments including failures, exchange the branch in the Dockerfile to "reconfiguration" and re-run the docker build. Following that, adjust the server.sh script to launch one client per potential leader. After this is done, one of the processes may be killed manually during execution time.
+
+Detailed throughput data may be extracted as explained above.
+
