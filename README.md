@@ -38,8 +38,8 @@ Make sure that Docker Version "20.10.5" or above is installed. Older Docker Vers
 First, checkout all the necessary code on all the host machines through
 
 ```
-git clone https://github.com/Raycoms/Kauri-Consensus.git
-cd Kauri-Consensus
+git clone https://github.com/Raycoms/Kauri-Public.git
+cd Kauri-Consensus/runkauri
 ```
 
 Build the Docker Images with:
