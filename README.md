@@ -108,3 +108,15 @@ Finally, to run the experiments, simply run:
 
 This will run 5 instances of each of the setups defined in the "experiments" file.
 
+
+#### Interpretation of Results
+
+The above script will result in a regular output similar to:
+
+```
+2021-08-17 14:14:43.546142 [hotstuff proto] x now state: <hotstuff hqc=affd30ca8f hqc.height=2700 b_lock=22365a13f8 b_exec=63c209503b vheight=27xx tails=1>
+```
+
+Where 'hqc.height=2700' presents the last finalized block. Considering the 5 minute interval, that results in 2700/300 blocks per second.
+Considering the default of 1000 transactions pr block, that results in `2700/300*1000 = 9000` ops per second.
+
