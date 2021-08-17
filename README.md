@@ -39,7 +39,7 @@ First, checkout all the necessary code on all the host machines through
 
 ```
 git clone https://github.com/Raycoms/Kauri-Public.git
-cd Kauri-Consensus/runkauri
+cd Kauri-Public/runkauri
 ```
 
 Build the Docker Images with:
