@@ -338,9 +338,10 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
         if (cert != nullptr && cert->get_obj_hash() == blk->get_hash()) {
             if (cert->has_n(config.nmajority)) {
                 cert->compute();
-                if (id != 0 && !cert->verify(config)) {
+                if (id != pmaker->get_proposer() && !cert->verify(config)) {
                     throw std::runtime_error("Invalid Sigs in intermediate signature!");
                 }
+                //HOTSTUFF_LOG_PROTO("Majority reached, go");
                 update_hqc(blk, cert);
                 on_qc_finish(blk);
             }
@@ -451,7 +452,6 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
         if (!promise::any_cast<bool>(values[1]))
             LOG_WARN ("invalid vote-relay");
         auto &cert = blk->self_qc;
-        std::cout << "got relay and verified" << std::endl;
 
         if (cert != nullptr && cert->get_obj_hash() == blk->get_hash() && !cert->has_n(config.nmajority)) {
             if (id != pmaker->get_proposer() && cert->has_n(numberOfChildren + 1))
@@ -461,7 +461,6 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
 
             cert->merge_quorum(*v->cert);
 
-            std::cout << "merge quorum " << std::endl;
             if (id != pmaker->get_proposer()) {
                 if (!cert->has_n(numberOfChildren + 1)) return;
                 cert->compute();
@@ -662,8 +661,7 @@ void HotStuffBase::print_stat() const {
             size_t nsb = conn->get_nsentb();
             size_t nrb = conn->get_nrecvb();
             conn->clear_msgstat();
-            LOG_INFO("%s: %u(%u), %u(%u), %u",
-                     get_hex10(replica).c_str(), ns, nsb, nr, nrb, part_fetched_replica[replica]);
+            //LOG_INFO("%s: %u(%u), %u(%u), %u", get_hex10(replica).c_str(), ns, nsb, nr, nrb, part_fetched_replica[replica]);
             _nsent += ns;
             _nrecv += nr;
             part_fetched_replica[replica] = 0;
@@ -724,14 +722,16 @@ void HotStuffBase::do_broadcast_proposal(const Proposal &prop) {
     pn.multicast_msg(MsgPropose(prop), std::vector(childPeers.begin(), childPeers.end()));
 }
 
-void HotStuffBase::do_vote(Proposal prop, const Vote &vote) {
-    //HOTSTUFF_LOG_PROTO("do vote");
+void HotStuffBase::inc_time() {
+    pmaker->inc_time();
+}
 
+void HotStuffBase::do_vote(Proposal prop, const Vote &vote) {
     pmaker->beat_resp(prop.proposer).then([this, vote, prop](ReplicaID proposer) {
 
         if (proposer == get_id())
         {
-            throw HotStuffError("unreachable line");
+            return;
         }
 
         if (childPeers.empty()) {
@@ -741,7 +741,6 @@ void HotStuffBase::do_vote(Proposal prop, const Vote &vote) {
             block_t blk = get_delivered_blk(vote.blk_hash);
             if (blk->self_qc == nullptr)
             {
-                //HOTSTUFF_LOG_PROTO("create cert");
                 blk->self_qc = create_quorum_cert(prop.blk->get_hash());
                 blk->self_qc->add_part(config, vote.voter, *vote.cert);
             }
@@ -766,24 +765,40 @@ void HotStuffBase::do_decide(Finality &&fin) {
 
 HotStuffBase::~HotStuffBase() {}
 
-void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> &&replicas, bool ec_loop) {
+void HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> &&replicas, bool startup) {
 
     std::set<uint16_t> children;
-    auto size = replicas.size();
+
+    if (startup) {
+        global_replicas = std::move(replicas);
+    }
 
     childPeers.clear();
-    for (size_t i = 0; i < size; i++) {
 
-        auto cert_hash = std::move(std::get<2>(replicas[i]));
-        salticidae::PeerId peer{cert_hash};
-        valid_tls_certs.insert(cert_hash);
-        auto &addr = std::get<0>(replicas[i]);
+    auto offset = 0;
+    auto size = global_replicas.size();
+    if (!startup) {
+        std::cout << global_replicas.size() << std::endl;
+        global_replicas.erase(global_replicas.begin());
+        size = global_replicas.size();
+        std::cout << size << std::endl;
+        offset = get_pace_maker()->get_proposer();
+        failures++;
+    }
+    else {
+        for (size_t i = 0; i < size; i++) {
 
-        HotStuffCore::add_replica(i, peer, std::move(std::get<1>(replicas[i])));
-        if (addr != listen_addr) {
-            peers.push_back(peer);
-            pn.add_peer(peer);
-            pn.set_peer_addr(peer, addr);
+            auto cert_hash = std::move(std::get<2>(global_replicas[i]));
+            salticidae::PeerId peer{cert_hash};
+            valid_tls_certs.insert(cert_hash);
+            auto &addr = std::get<0>(global_replicas[i]);
+
+            HotStuffCore::add_replica(i, peer, std::move(std::get<1>(global_replicas[i])));
+            if (addr != listen_addr) {
+                peers.push_back(peer);
+                pn.add_peer(peer);
+                pn.set_peer_addr(peer, addr);
+            }
         }
     }
 
@@ -791,37 +806,44 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
     auto processesOnLevel = 1;
     bool done = false;
 
+    if (failures > fanout) {
+        config.fanout = size;
+        fanout = size;
+        config.async_blocks = 0;
+        HOTSTUFF_LOG_PROTO("Falling Back to Star");
+    }
+
     size_t i = 0;
-    while (i < size) { // 0 // 11
+    while (i < size) {
         if (done) {
             break;
         }
-        const size_t remaining = size - i; // 100 // 89
+        const size_t remaining = size - i;
 
-        const size_t max_fanout = ceil(remaining / processesOnLevel); //100 // 9
-        auto curr_fanout = std::min(max_fanout, fanout); //10 // 9
+        const size_t max_fanout = ceil(remaining / processesOnLevel);
+        auto curr_fanout = std::min(max_fanout, fanout);
 
-        auto parent_cert_hash = std::move(std::get<2>(replicas[i]));
+        auto parent_cert_hash = std::move(std::get<2>(global_replicas[i]));
         salticidae::PeerId parent_peer{parent_cert_hash};
 
-        auto start = i + processesOnLevel; // 11
-        for (auto counter = 1; counter <= processesOnLevel; counter++) { // 1 run // 10 runs
+        auto start = i + processesOnLevel;
+        for (auto counter = 1; counter <= processesOnLevel; counter++) {
             if (done) {
                 break;
             }
-            for (size_t j = start; j < start + curr_fanout; j++) { // j = 1 -> 10 // j = 11 -> 21 // (i = 11) j = 22 - 32
+            for (size_t j = start; j < start + curr_fanout; j++) {
                 if (j >= size) {
                     done = true;
                     break;
                 }
-                auto cert_hash = std::move(std::get<2>(replicas[j]));
+                auto cert_hash = std::move(std::get<2>(global_replicas[j]));
                 salticidae::PeerId peer{cert_hash};
 
-                if (id == i) {
+                if (id == i + offset) {
                     HOTSTUFF_LOG_PROTO("Adding Child Process: %lld", j);
                     children.insert(j);
                     childPeers.insert(peer);
-                } else if (id == j) {
+                } else if (id == j + offset) {
                     HOTSTUFF_LOG_PROTO("Setting Parent Process: %lld", i);
                     parentPeer = parent_peer;
                 } else if (childPeers.find(parent_peer) != childPeers.end()) {
@@ -830,27 +852,23 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
             }
             start += curr_fanout;
             i++;
-            parent_cert_hash = std::move(std::get<2>(replicas[i]));
+            parent_cert_hash = std::move(std::get<2>(global_replicas[i]));
             salticidae::PeerId temp_parent_peer{parent_cert_hash};
             parent_peer = temp_parent_peer;
-        } // i = 1
-        processesOnLevel = std::min(curr_fanout * processesOnLevel, remaining); // 10
+        }
+        processesOnLevel = std::min(curr_fanout * processesOnLevel, remaining);
     }
-
+    
     HOTSTUFF_LOG_PROTO("total children: %d", children.size());
     numberOfChildren = children.size();
+}
 
-    vector<PeerId> newPeers;
-    copy(peers.begin(), peers.end(), back_inserter(newPeers));
+void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> &&replicas, bool ec_loop) {
 
-    std::shuffle(newPeers.begin(), newPeers.end(), std::mt19937(std::random_device()()));
-    for (const PeerId& peer : newPeers) {
-        pn.conn_peer(peer);
-        usleep(10);
+    HotStuffBase::calcTree(std::move(replicas), true);
+    for (const PeerId& peer : peers) {
+            pn.conn_peer(peer);
     }
-
-    std::cout << " total children: " << children.size() << std::endl;
-    numberOfChildren = children.size();
 
     /* ((n - 1) + 1 - 1) / 3 */
     uint32_t nfaulty = peers.size() / 3;
@@ -868,6 +886,7 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
         {
             ReplicaID proposer = pmaker->get_proposer();
             if (proposer != get_id()) {
+                e.second(Finality(id, 0, 0, 0, e.first, uint256_t()));
                 continue;
             }
 
@@ -904,7 +923,6 @@ void HotStuffBase::beat() {
             return;
         }
 
-        HOTSTUFF_LOG_PROTO("Proposing: %d", final_buffer.size());
         if (proposer == get_id()) {
             struct timeval timeStart, timeEnd;
             gettimeofday(&timeStart, NULL);
