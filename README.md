@@ -1,19 +1,17 @@
-Kauri
------------
+## Kauri
+
 
 Kauri is a BFT communication abstraction that leverages dissemination/aggregation trees for load balancing and scalability while avoiding the main limitations of previous tree-based solutions, namely, poor throughput due to additional round latency and the collaps eof the tree to a star even in runs with few faults
 while at the same time avoiding the bottleneck of star based solutions.
 
-Paper
-=====
+### Paper
 
 This repo includes the prototype implementation evaluated in our 
 *Kauri: Scalable BFT Consensus with PipelinedTree-Based Dissemination and Aggregation* paper.
 
 Which will be published and presented at SOSP (https://sosp2021.mpi-sws.org/cfp.html)
 
-Features
-========
+### Features
 
 Kauri extends the publicly available implementation of HotStuff (https://github.com/hot-stuff/libhotstuff) with the following additions:
 
@@ -23,20 +21,19 @@ Kauri extends the publicly available implementation of HotStuff (https://github.
 
 - Extra Pipelining: Additional pipelining allows to offset the inherent latency cost of trees, allowing the system to perform significantly better even in high latency settings.
 
-Run Kauri
-=========
+### Run Kauri
 
 Disclaimer: The project is a prototype that was developed for the submission to SOSP. As such, it not production ready and still a work in progress considering certain system conditions.
 At the moment only bls signatures are supported. To run HotStuff with libsec signatures, this can be done by running vanilla Hotstuff at https://github.com/hot-stuff/libhotstuff.
 
-### Preliminary Setup
+#### Preliminary Setup
 
 Building Kauri is very simple and only a couple of simple steps are necessary.
 While Kauri can be run completely local on a single machine, we suggest running at most 20 processes per physical machine as depending on the configuration processes will start interfering with eachother (i.e 5 machines for 100 processes).
 
 Make sure that Docker Version "20.10.5" or above is installed. Older Docker Versions won't work as they does not support adjusting network privilidges.
 
-### Docker Setup
+#### Docker Setup
 
 First, checkout all the necessary code on all the host machines through
 
@@ -83,7 +80,7 @@ On the same machine, setup a docker network with:
 docker network create --driver=overlay --subnet=10.1.0.0/16 kauri_network
 ```
 
-### Run Experiments
+#### Run Experiments
 
 To run and configure experiments we first take a look at the "experiments" file.
 
