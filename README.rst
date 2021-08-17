@@ -26,7 +26,88 @@ Kauri extends the publicly available implementation of HotStuff (https://github.
 Run Kauri
 =========
 
-Disclaimer: The project is a prototype that was developped for the submission to SOSP. As such, it not production ready and still a work in progress considering certain system conditions.
+Disclaimer: The project is a prototype that was developed for the submission to SOSP. As such, it not production ready and still a work in progress considering certain system conditions.
+At the moment only bls signatures are supported. To run HotStuff with libsec signatures, this can be done by running vanilla Hotstuff at https://github.com/hot-stuff/libhotstuff.
 
-https://github.com/Raycoms/Kauri-Consensus shows a step per step guide on how to run Kauri and reproduce several of the results in the paper.
+### Preliminary Setup
+
+Building Kauri is very simple and only a couple of simple steps are necessary.
+While Kauri can be run completely local on a single machine, we suggest running at most 20 processes per physical machine as depending on the configuration processes will start interfering with eachother (i.e 5 machines for 100 processes).
+
+Make sure that Docker Version "20.10.5" or above is installed. Older Docker Versions won't work as they does not support adjusting network privilidges.
+
+### Docker Setup
+
+First, checkout all the necessary code on all the host machines through
+
+```
+git clone https://github.com/Raycoms/Kauri-Consensus.git
+cd Kauri-Consensus
+```
+
+Build the Docker Images with:
+
+```
+docker build -t kauri .
+```
+
+On each of the physical machines.
+
+Next, setup docker swarm with:
+
+```
+docker swarm init
+```
+
+On one of the servers.
+
+Next, let the other machines join with:
+
+```
+docker swarm join --token <token> <ip>
+```
+
+Based on the token and IP the server where the init command was executed printed on start.
+
+Next, promote all servers to manager through:
+
+```
+docker node promote <ip>
+```
+
+On the machine where "docker swarm init" was executed on.
+
+On the same machine, setup a docker network with:
+
+```
+docker network create --driver=overlay --subnet=10.1.0.0/16 kauri_network
+```
+
+### Run Experiments
+
+To run and configure experiments we first take a look at the "experiments" file.
+
+```
+# type, fanout pipeline-depth pipeline-lat latency bandwidth
+['bls','10','6','10','100','25']
+# HotStuff has fanout = N
+['bls','100','0','10','100','25']
+```
+Each of the lines represents an experiment, given a specific fanout, pipelining depth, latency and bandwidth.
+By default, the number of nodes is 100.
+
+To increase the number of nodes, enter the kauri.yaml file and adjust the number of replicas.
+At the given moment, we seperated the replicas into two groups: Potential Internal Nodes and Leaf Nodes.
+As such, for 100 nodes, considering a fanout of 10, there are 11 internal nodes (server1) and 89 remaining nodes (server).
+This helps to balance internal nodes more equally over the different physical machines to reduce potential interference.
+
+Note: At the given moment, only the 'bls' mode is supported.
+
+Finally, to run the experiments, simply run:
+
+```
+./runexperiment.sh
+```
+
+This will run 5 instances of each of the setups defined in the "experiments" file.
 

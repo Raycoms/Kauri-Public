@@ -1,0 +1,4 @@
+# type, fanout pipeline-depth pipeline-lat latency bandwidth count
+['bls','10','6','10','100','25']
+# HotStuff has fanout = N
+['bls','100','0','10','100','25']
