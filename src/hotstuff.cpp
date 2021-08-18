@@ -896,6 +896,7 @@ void HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t
             parent_cert_hash = std::move(std::get<2>(global_replicas[i]));
             salticidae::PeerId temp_parent_peer{parent_cert_hash};
             parent_peer = temp_parent_peer;
+            parent_addr = std::get<0>(global_replicas[i]);
         }
         processesOnLevel = std::min(curr_fanout * processesOnLevel, remaining);
     }
