@@ -788,7 +788,7 @@ void HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t
             }
         }
         else if (failures == fanout && !faulty.empty()) {
-            std::iter_swap(global_replicas.begin(), std::find(global_replicas.begin(), global_replicas.end(), faulty[0]));
+            std::iter_swap(global_replicas.begin(), std::find(global_replicas.begin(), global_replicas.end(), faulty.begin()));
         }
         else if (failures > fanout) {
             std::cout << global_replicas.size() << std::endl;
@@ -799,7 +799,7 @@ void HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t
             size = global_replicas.size();
 
             if (!faulty.empty()) {
-                std::iter_swap(global_replicas.begin(), std::find(global_replicas.begin(), global_replicas.end(), faulty[0]));
+                std::iter_swap(global_replicas.begin(), std::find(global_replicas.begin(), global_replicas.end(), faulty.begin()));
             }
         }
         std::cout << size << std::endl;
