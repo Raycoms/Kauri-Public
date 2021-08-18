@@ -769,7 +769,7 @@ void HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t
 
     if (startup) {
         global_replicas = std::move(replicas);
-        global_replicas = std::move(replicas2);
+        original_replicas = std::move(replicas2);
     }
 
     childPeers.clear();
