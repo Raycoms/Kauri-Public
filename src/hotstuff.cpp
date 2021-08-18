@@ -775,10 +775,18 @@ void HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t
 
     auto offset = 0;
     auto size = global_replicas.size();
+    size_t fanout = config.fanout;
+
     if (!startup) {
-        std::cout << global_replicas.size() << std::endl;
-        global_replicas.erase(global_replicas.begin());
-        size = global_replicas.size();
+
+        if (failures < fanout) {
+            std::rotate(global_replicas.begin(), global_replicas.begin() + 1, global_replicas.end());
+        }
+        else {
+            std::cout << global_replicas.size() << std::endl;
+            global_replicas.erase(global_replicas.begin());
+            size = global_replicas.size();
+        }
         std::cout << size << std::endl;
         offset = get_pace_maker()->get_proposer();
         failures++;
@@ -806,7 +814,6 @@ void HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t
         }
     }
 
-    size_t fanout = config.fanout;
     auto processesOnLevel = 1;
     bool done = false;
 
