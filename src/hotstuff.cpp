@@ -788,7 +788,14 @@ void HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t
             }
         }
         else if (failures == fanout && !faulty.empty()) {
-            std::iter_swap(global_replicas.begin(), std::find(global_replicas.begin(), global_replicas.end(), original_replicas.at(faulty.at(0))));
+            auto cert_hash = std::move(std::get<2>(original_replicas.at(faulty.at(0))));
+            for (size_t i = 0; i < global_replicas.size(); i++) {
+                auto cert_hash2 = std::move(std::get<2>(global_replicas[i]));
+                if (cert_hash == cert_hash2) {
+                    std::iter_swap(global_replicas.begin(), global_replicas.begin() + i);
+                    break;
+                }
+            }
         }
         else if (failures > fanout) {
             std::cout << global_replicas.size() << std::endl;
@@ -800,7 +807,14 @@ void HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t
             size = global_replicas.size();
 
             if (!faulty.empty()) {
-                std::iter_swap(global_replicas.begin(), std::find(global_replicas.begin(), global_replicas.end(), original_replicas.at(faulty.at(0))));
+                auto cert_hash = std::move(std::get<2>(original_replicas.at(faulty.at(0))));
+                for (size_t i = 0; i < global_replicas.size(); i++) {
+                    auto cert_hash2 = std::move(std::get<2>(global_replicas[i]));
+                    if (cert_hash == cert_hash2) {
+                        std::iter_swap(global_replicas.begin(), global_replicas.begin() + i);
+                        break;
+                    }
+                }
             }
         }
         std::cout << size << std::endl;
