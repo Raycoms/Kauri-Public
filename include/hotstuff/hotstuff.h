@@ -241,9 +241,9 @@ class HotStuffBase: public HotStuffCore {
 
     /* Submit the command to be decided. */
     void exec_command(uint256_t cmd_hash, commit_cb_t callback);
-    void start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> &&replicas,
+    void start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> &&replicas, std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> &&replicas2,
                 bool ec_loop = false);
-    void calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> &&replicas, bool startup);
+    void calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> &&replicas, std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> &&replicas2, bool startup);
     void beat();
 
     size_t size() const { return peers.size(); }
@@ -318,14 +318,20 @@ class HotStuff: public HotStuffBase {
 
     void start(const std::vector<std::tuple<NetAddr, bytearray_t, bytearray_t>> &replicas, bool ec_loop = false) {
         std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> reps;
-        for (auto &r: replicas)
-            reps.push_back(
-                std::make_tuple(
-                    std::get<0>(r),
-                    new PubKeyType(std::get<1>(r)),
-                    uint256_t(std::get<2>(r))
-                ));
-        HotStuffBase::start(std::move(reps), ec_loop);
+        std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> reps2;
+
+        for (auto &r: replicas) {
+            auto tuple =
+                    std::make_tuple(
+                            std::get<0>(r),
+                            new PubKeyType(std::get<1>(r)),
+                            uint256_t(std::get<2>(r)));
+
+            reps.push_back(tuple);
+            reps2.push_back(tuple);
+        }
+
+        HotStuffBase::start(std::move(reps), std::move(reps2), ec_loop);
     }
 
     void set_fanout(int32_t fanout) {

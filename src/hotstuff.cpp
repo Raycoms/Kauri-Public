@@ -763,13 +763,13 @@ void HotStuffBase::do_decide(Finality &&fin) {
 
 HotStuffBase::~HotStuffBase() {}
 
-void HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> &&replicas, bool startup) {
+void HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> &&replicas, std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> &&replicas2, bool startup) {
 
     std::set<uint16_t> children;
 
     if (startup) {
         global_replicas = std::move(replicas);
-        original_replicas.assign(global_replicas.begin(), global_replicas.end());
+        global_replicas = std::move(replicas2);
     }
 
     childPeers.clear();
@@ -890,9 +890,9 @@ void HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t
     numberOfChildren = children.size();
 }
 
-void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> &&replicas, bool ec_loop) {
+void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> &&replicas, std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> &&replicas2, bool ec_loop) {
 
-    HotStuffBase::calcTree(std::move(replicas), true);
+    HotStuffBase::calcTree(std::move(replicas), std::move(replicas2), true);
     for (const PeerId& peer : peers) {
             pn.conn_peer(peer);
     }

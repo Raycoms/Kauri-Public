@@ -305,7 +305,9 @@ public:
         HOTSTUFF_LOG_PROTO("Timeout reached!!!");
 
         vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> reps;
-        hsc->calcTree(std::move(reps), false);
+        vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> reps2;
+
+        hsc->calcTree(std::move(reps), std::move(reps2), false);
 
         if (get_proposer() == hsc->get_id()) {
             HOTSTUFF_LOG_PROTO("Elected itself as a new Leader!");
