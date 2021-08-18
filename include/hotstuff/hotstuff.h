@@ -194,6 +194,7 @@ class HotStuffBase: public HotStuffCore {
     mutable std::set<PeerId> childPeers;
 
     vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> global_replicas;
+    vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> original_replicas;
 
     void on_fetch_cmd(const command_t &cmd);
     void on_fetch_blk(const block_t &blk);

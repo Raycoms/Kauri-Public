@@ -769,11 +769,11 @@ void HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t
 
     if (startup) {
         global_replicas = std::move(replicas);
+        original_replicas.assign(global_replicas.begin(), global_replicas.end());
     }
 
     childPeers.clear();
 
-    auto offset = 0;
     auto size = global_replicas.size();
     size_t fanout = config.fanout;
 
@@ -788,22 +788,22 @@ void HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t
             }
         }
         else if (failures == fanout && !faulty.empty()) {
-            std::iter_swap(global_replicas.begin(), std::find(global_replicas.begin(), global_replicas.end(), faulty.begin()));
+            std::iter_swap(global_replicas.begin(), std::find(global_replicas.begin(), global_replicas.end(), original_replicas[faulty[0]]));
         }
         else if (failures > fanout) {
             std::cout << global_replicas.size() << std::endl;
+
             // Delete the first faulty.
-            global_replicas.erase(std::find(global_replicas.begin(), global_replicas.end(), faulty.begin()));
+            global_replicas.erase(global_replicas.begin());
             faulty.erase(faulty.begin());
 
             size = global_replicas.size();
 
             if (!faulty.empty()) {
-                std::iter_swap(global_replicas.begin(), std::find(global_replicas.begin(), global_replicas.end(), faulty.begin()));
+                std::iter_swap(global_replicas.begin(), std::find(global_replicas.begin(), global_replicas.end(), original_replicas[faulty[0]]));
             }
         }
         std::cout << size << std::endl;
-        offset = get_pace_maker()->get_proposer();
 
         // number of faulty processes
         if (std::find(faulty.begin(), faulty.end(), id) != faulty.end()) {
@@ -850,6 +850,7 @@ void HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t
 
         auto parent_cert_hash = std::move(std::get<2>(global_replicas[i]));
         salticidae::PeerId parent_peer{parent_cert_hash};
+        auto &parent_addr = std::get<0>(global_replicas[i]);
 
         auto start = i + processesOnLevel;
         for (auto counter = 1; counter <= processesOnLevel; counter++) {
@@ -863,12 +864,13 @@ void HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t
                 }
                 auto cert_hash = std::move(std::get<2>(global_replicas[j]));
                 salticidae::PeerId peer{cert_hash};
+                auto &child_addr = std::get<0>(global_replicas[i]);
 
-                if (id == i + offset) {
+                if (listen_addr == parent_addr) {
                     HOTSTUFF_LOG_PROTO("Adding Child Process: %lld", j);
                     children.insert(j);
                     childPeers.insert(peer);
-                } else if (id == j + offset) {
+                } else if (listen_addr == child_addr) {
                     HOTSTUFF_LOG_PROTO("Setting Parent Process: %lld", i);
                     parentPeer = parent_peer;
                 } else if (childPeers.find(parent_peer) != childPeers.end()) {
