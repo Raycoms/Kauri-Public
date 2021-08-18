@@ -878,7 +878,7 @@ void HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t
                 }
                 auto cert_hash = std::move(std::get<2>(global_replicas[j]));
                 salticidae::PeerId peer{cert_hash};
-                auto &child_addr = std::get<0>(global_replicas[i]);
+                auto &child_addr = std::get<0>(global_replicas[j]);
 
                 if (listen_addr == parent_addr) {
                     HOTSTUFF_LOG_PROTO("Adding Child Process: %lld", j);
