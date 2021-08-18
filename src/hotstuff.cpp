@@ -778,23 +778,37 @@ void HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t
     size_t fanout = config.fanout;
 
     if (!startup) {
+        failures++;
 
+        // 9 times
         if (failures < fanout) {
-            std::rotate(global_replicas.begin(), global_replicas.begin() + 1, global_replicas.end());
+            //we actually do this m+1 times (depending on the depth right))
+            for (auto i = 0; i < fanout + 1; i++) {
+                std::rotate(global_replicas.begin(), global_replicas.begin() + 1, global_replicas.end());
+            }
         }
-        else {
+        else if (failures == fanout && !faulty.empty()) {
+            std::iter_swap(global_replicas.begin(), std::find(global_replicas.begin(), global_replicas.end(), faulty[0]));
+        }
+        else if (failures > fanout) {
             std::cout << global_replicas.size() << std::endl;
-            global_replicas.erase(global_replicas.begin());
+            // Delete the first faulty.
+            global_replicas.erase(std::find(global_replicas.begin(), global_replicas.end(), faulty.begin()));
+            faulty.erase(faulty.begin());
+
             size = global_replicas.size();
+
+            if (!faulty.empty()) {
+                std::iter_swap(global_replicas.begin(), std::find(global_replicas.begin(), global_replicas.end(), faulty[0]));
+            }
         }
         std::cout << size << std::endl;
         offset = get_pace_maker()->get_proposer();
-        failures++;
 
         // number of faulty processes
-        if (id < 33) {
+        if (std::find(faulty.begin(), faulty.end(), id) != faulty.end()) {
             throw std::invalid_argument(
-                    "This server kills itself if < 33");
+                    "This server kills itself if in faulty set");
         }
     }
     else {
@@ -817,7 +831,7 @@ void HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t
     auto processesOnLevel = 1;
     bool done = false;
 
-    if (failures > fanout) {
+    if (failures >= fanout) {
         config.fanout = size;
         fanout = size;
         config.async_blocks = 0;
@@ -948,7 +962,7 @@ void HotStuffBase::beat() {
                 double past_time = ((current_time.tv_sec - start_time.tv_sec) * 1000000 + current_time.tv_usec -
                                     start_time.tv_usec) / 1000;
                 // Number of failures = 1
-                if ((past_time > 60 * 1000 && id == 0) || (id > 0 && id < 33)) {
+                if ((past_time > 60 * 1000 && std::find(faulty.begin(), faulty.end(), id) < faulty.begin() + 3) || (std::find(faulty.begin(), faulty.end(), id) != faulty.end())) {
                     throw std::invalid_argument(
                             "This server kills itself after 60s blocks, done! " + std::to_string(past_time));
                 }
