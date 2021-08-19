@@ -38,7 +38,9 @@ The Experiments in the paper have been run in the following setup:
 1 Physical Machine per 20 processes
 64GB per physical machine
 16 cores per physical machine
+Ubuntu 20 min with Git + docker installed
 ```
+
 The default setup in this repository runs 100 nodes, as such, we suggest having at least 5 physical machines.
 
 We suggest the above as a minimum setup, as starting up several containers and synchronizing them might take too long and time-out the system.
