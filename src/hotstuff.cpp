@@ -229,10 +229,12 @@ void HotStuffBase::propose_handler(MsgPropose &&msg, const Net::conn_t &conn) {
         struct timeval current_time;
         gettimeofday(&current_time, NULL);
 
+        HOTSTUFF_LOG_PROTO("Server: %d Kill? %d, Kill-Now? %d", id, std::find(faulty.begin(), faulty.end(), id) != faulty.end(), (id == faulty[0] || id == faulty[1] || id == faulty[2]));
+
         double past_time = ((current_time.tv_sec - start_time.tv_sec) * 1000000 + current_time.tv_usec -
                             start_time.tv_usec) / 1000;
         // Number of failures = 1
-        if ((past_time > 60 * 1000 && std::find(faulty.begin(), faulty.end(), id) < faulty.begin() + 3) || (std::find(faulty.begin(), faulty.end(), id) != faulty.end())) {
+        if ((past_time > 60 * 1000 && (id == faulty[0] || id == faulty[1] || id == faulty[2]))) {
             throw std::invalid_argument(
                     "This server kills itself after 60s blocks, done! " + std::to_string(past_time));
         }
