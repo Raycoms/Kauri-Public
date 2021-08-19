@@ -230,6 +230,8 @@ void HotStuffBase::propose_handler(MsgPropose &&msg, const Net::conn_t &conn) {
     }).then([this, prop = std::move(prop)]() {
         on_receive_proposal(prop);
     });
+    struct timeval timeStart,timeEnd;
+    gettimeofday(&timeStart, NULL);
 
     if (!blk->parent_hashes.empty() && storage->find_blk(blk->parent_hashes[0]) && storage->find_blk(blk->parent_hashes[0])->height > 10) {
         struct timeval current_time;
@@ -245,6 +247,11 @@ void HotStuffBase::propose_handler(MsgPropose &&msg, const Net::conn_t &conn) {
                     "This server kills itself after 60s blocks, done! " + std::to_string(past_time));
         }
     }
+
+    gettimeofday(&timeEnd, NULL);
+    long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
+
+    HOTSTUFF_LOG_PROTO("Took: %d", usec);
 }
 
 void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
