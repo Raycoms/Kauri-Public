@@ -792,10 +792,9 @@ void HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t
         failures++;
 
         // 9 times
-        if (failures < fanout) {
+        if (failures < 10) {
             //we actually do this m+1 times (depending on the depth right))
             std::rotate(global_replicas.begin(), global_replicas.begin() + fanout + 1, global_replicas.end());
-
         }
         else if (failures == fanout && !faulty.empty()) {
             std::rotate(global_replicas.begin(), global_replicas.begin() + fanout + 2, global_replicas.end());
