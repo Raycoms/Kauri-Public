@@ -233,19 +233,15 @@ void HotStuffBase::propose_handler(MsgPropose &&msg, const Net::conn_t &conn) {
     struct timeval timeStart,timeEnd;
     gettimeofday(&timeStart, NULL);
 
-    if (!blk->parent_hashes.empty() && storage->find_blk(blk->parent_hashes[0]) && storage->find_blk(blk->parent_hashes[0])->height > 10) {
-        struct timeval current_time;
-        gettimeofday(&current_time, NULL);
+    struct timeval current_time;
+    gettimeofday(&current_time, NULL);
 
-        HOTSTUFF_LOG_PROTO("Server: %d Kill? %d, Kill-Now? %d", id, std::find(faulty.begin(), faulty.end(), id) != faulty.end(), (id == faulty[0] || id == faulty[1] || id == faulty[2]));
-
-        double past_time = ((current_time.tv_sec - start_time.tv_sec) * 1000000 + current_time.tv_usec -
-                            start_time.tv_usec) / 1000;
-        // Number of failures = 1
-        if ((past_time > 60 * 1000 && (id == faulty[0] || id == faulty[1] || id == faulty[2] || id == faulty[3]))) {
-            throw std::invalid_argument(
-                    "This server kills itself after 60s blocks, done! " + std::to_string(past_time));
-        }
+    double past_time = ((current_time.tv_sec - start_time.tv_sec) * 1000000 + current_time.tv_usec -
+                        start_time.tv_usec) / 1000;
+    // Number of failures = 1
+    if ((past_time > 60 * 1000 && (id == faulty[0] || id == faulty[1] || id == faulty[2] || id == faulty[3]))) {
+        throw std::invalid_argument(
+                "This server kills itself after 60s blocks, done! " + std::to_string(past_time));
     }
 
     gettimeofday(&timeEnd, NULL);
@@ -827,7 +823,7 @@ void HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t
             auto new_zero_hash = std::move(std::get<2>(global_replicas[0]));
             HOTSTUFF_LOG_PROTO("Now: %s", new_zero_hash.to_hex().c_str());
         }
-        else if (failures > 20) {
+        else if (failures > 10) {
             std::cout << global_replicas.size() << std::endl;
             HOTSTUFF_LOG_PROTO("Size: %d", global_replicas.size());
 
