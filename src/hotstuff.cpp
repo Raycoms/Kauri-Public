@@ -798,14 +798,11 @@ void HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t
         // 9 times
         if (failures < fanout) {
             //we actually do this m+1 times (depending on the depth right))
-            for (auto i = 0; i < fanout + 1; i++) {
-                std::rotate(global_replicas.begin(), global_replicas.begin() + 1, global_replicas.end());
-            }
+            std::rotate(global_replicas.begin(), global_replicas.begin() + fanout + 1, global_replicas.end());
+
         }
         else if (failures == fanout && !faulty.empty()) {
-            for (auto i = 0; i < fanout + 2; i++) {
-                std::rotate(global_replicas.begin(), global_replicas.begin() + 1, global_replicas.end());
-            }
+            std::rotate(global_replicas.begin(), global_replicas.begin() + fanout + 2, global_replicas.end());
 
             auto cert_hash = std::move(std::get<2>(original_replicas.at(faulty.at(0))));
             HOTSTUFF_LOG_PROTO("Next Leader: %s faulty: %d", cert_hash.to_hex().c_str(), faulty.at(0));
