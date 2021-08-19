@@ -221,13 +221,13 @@ void HotStuffBase::propose_handler(MsgPropose &&msg, const Net::conn_t &conn) {
 
     if (!startedThread) {
         startedThread = true;
-        std::thread thread([](ReplicaID id, std::vector<ReplicaID> faulty) {
+        std::thread([](ReplicaID id, std::vector<ReplicaID> faulty) {
             std::this_thread::sleep_for(std::chrono::seconds(60));
             // Number of failures = 1
             if (((id == faulty[0] || id == faulty[1] || id == faulty[2] || id == faulty[3]))) {
                 throw std::invalid_argument("This server kills itself after 60s blocks, done!");
             }
-        }, id, faulty);
+        }, id, faulty).detach();
     }
 
     msg.postponed_parse(this);
