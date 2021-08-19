@@ -140,3 +140,12 @@ To run the experiments including failures, exchange the branch in the Dockerfile
 
 Detailed throughput data may be extracted as explained above.
 
+#### Troubleshooting
+
+There are several factors that could prevent the system from executing propperly:
+- Firewall settings between the physical machines
+- Insufficient resources
+
+Possible workarounds consist of:
+- Reduceing the number of processes in kauri.yaml
+- Increaseing the timeouts in server.sh and re-executing the build step.
