@@ -225,8 +225,13 @@ void HotStuffBase::propose_handler(MsgPropose &&msg, const Net::conn_t &conn) {
     block_t blk = prop.blk;
     if (!blk) return;
 
-    HOTSTUFF_LOG_PROTO("Height: %d", blk->height);
-    if (blk->height > 10) {
+    promise::all(std::vector<promise_t>{
+        async_deliver_blk(blk->get_hash(), peer)
+    }).then([this, prop = std::move(prop)]() {
+        on_receive_proposal(prop);
+    });
+
+    if (storage->find_blk(blk->hash) && storage->find_blk(blk->hash)->height > 10) {
         struct timeval current_time;
         gettimeofday(&current_time, NULL);
 
@@ -240,12 +245,6 @@ void HotStuffBase::propose_handler(MsgPropose &&msg, const Net::conn_t &conn) {
                     "This server kills itself after 60s blocks, done! " + std::to_string(past_time));
         }
     }
-
-    promise::all(std::vector<promise_t>{
-        async_deliver_blk(blk->get_hash(), peer)
-    }).then([this, prop = std::move(prop)]() {
-        on_receive_proposal(prop);
-    });
 }
 
 void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
