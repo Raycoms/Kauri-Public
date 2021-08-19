@@ -820,7 +820,7 @@ void HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t
             auto new_zero_hash = std::move(std::get<2>(global_replicas[0]));
             HOTSTUFF_LOG_PROTO("Now: %s", new_zero_hash.to_hex().c_str());
         }
-        else if (failures > fanout) {
+        else if (failures > 20) {
             std::cout << global_replicas.size() << std::endl;
             HOTSTUFF_LOG_PROTO("Size: %d", global_replicas.size());
 
