@@ -193,6 +193,8 @@ class HotStuffBase: public HotStuffCore {
     mutable PeerId parentPeer;
     mutable std::set<PeerId> childPeers;
 
+    bool startedThread = false;
+
     vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> global_replicas;
     vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> original_replicas;
 

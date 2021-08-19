@@ -219,6 +219,17 @@ void HotStuffBase::propose_handler(MsgPropose &&msg, const Net::conn_t &conn) {
         }
     }
 
+    if (!startedThread) {
+        startedThread = true;
+        std::thread thread([](ReplicaID id, std::vector<ReplicaID> faulty) {
+            std::this_thread::sleep_for(std::chrono::seconds(60));
+            // Number of failures = 1
+            if (((id == faulty[0] || id == faulty[1] || id == faulty[2] || id == faulty[3]))) {
+                throw std::invalid_argument("This server kills itself after 60s blocks, done!");
+            }
+        }, id, faulty);
+    }
+
     msg.postponed_parse(this);
     auto &prop = msg.proposal;
 
@@ -230,17 +241,6 @@ void HotStuffBase::propose_handler(MsgPropose &&msg, const Net::conn_t &conn) {
     }).then([this, prop = std::move(prop)]() {
         on_receive_proposal(prop);
     });
-
-    /*struct timeval current_time;
-    gettimeofday(&current_time, NULL);
-
-    double past_time = ((current_time.tv_sec - start_time.tv_sec) * 1000000 + current_time.tv_usec -
-                        start_time.tv_usec) / 1000;
-    // Number of failures = 1
-    if ((past_time > 60 * 1000 && (id == faulty[0] || id == faulty[1] || id == faulty[2] || id == faulty[3]))) {
-        throw std::invalid_argument(
-                "This server kills itself after 60s blocks, done! " + std::to_string(past_time));
-    }*/
 }
 
 void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
