@@ -231,7 +231,7 @@ void HotStuffBase::propose_handler(MsgPropose &&msg, const Net::conn_t &conn) {
         on_receive_proposal(prop);
     });
 
-    if (storage->find_blk(blk->hash) && storage->find_blk(blk->hash)->height > 10) {
+    if (!blk->parent_hashes.empty() && storage->find_blk(blk->parent_hashes[0]) && storage->find_blk(blk->parent_hashes[0])->height > 10) {
         struct timeval current_time;
         gettimeofday(&current_time, NULL);
 
