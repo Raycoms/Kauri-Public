@@ -803,7 +803,15 @@ void HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t
             }
         }
         else if (failures == fanout && !faulty.empty()) {
+            for (auto i = 0; i < fanout + 2; i++) {
+                std::rotate(global_replicas.begin(), global_replicas.begin() + 1, global_replicas.end());
+            }
+
             auto cert_hash = std::move(std::get<2>(original_replicas.at(faulty.at(0))));
+            HOTSTUFF_LOG_PROTO("Next Leader: %s faulty: %d", cert_hash.to_hex().c_str(), faulty.at(0));
+            auto zero_hash = std::move(std::get<2>(global_replicas[0]));
+            HOTSTUFF_LOG_PROTO("Current 0: %s", zero_hash.to_hex().c_str());
+
             for (size_t i = 0; i < global_replicas.size(); i++) {
                 auto cert_hash2 = std::move(std::get<2>(global_replicas[i]));
                 if (cert_hash == cert_hash2) {
@@ -811,9 +819,13 @@ void HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t
                     break;
                 }
             }
+
+            auto new_zero_hash = std::move(std::get<2>(global_replicas[0]));
+            HOTSTUFF_LOG_PROTO("Now: %s", new_zero_hash.to_hex().c_str());
         }
         else if (failures > fanout) {
             std::cout << global_replicas.size() << std::endl;
+            HOTSTUFF_LOG_PROTO("Size: %d", global_replicas.size());
 
             // Delete the first faulty.
             global_replicas.erase(global_replicas.begin());
@@ -823,6 +835,11 @@ void HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t
 
             if (!faulty.empty()) {
                 auto cert_hash = std::move(std::get<2>(original_replicas.at(faulty.at(0))));
+
+                HOTSTUFF_LOG_PROTO("Next Leader: %s faulty: %d", cert_hash.to_hex().c_str(), faulty.at(0));
+                auto zero_hash = std::move(std::get<2>(global_replicas[0]));
+                HOTSTUFF_LOG_PROTO("Current 0: %s", zero_hash.to_hex().c_str());
+
                 for (size_t i = 0; i < global_replicas.size(); i++) {
                     auto cert_hash2 = std::move(std::get<2>(global_replicas[i]));
                     if (cert_hash == cert_hash2) {
@@ -830,6 +847,27 @@ void HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t
                         break;
                     }
                 }
+                auto new_zero_hash = std::move(std::get<2>(global_replicas[0]));
+                HOTSTUFF_LOG_PROTO("Now: %s", new_zero_hash.to_hex().c_str());
+            } else {
+                HOTSTUFF_LOG_PROTO("Out of faulty processes!");
+
+                auto zero_hash = std::move(std::get<2>(global_replicas[0]));
+                HOTSTUFF_LOG_PROTO("Current 0: %s", zero_hash.to_hex().c_str());
+
+                auto new_zero = std::move(std::get<2>(original_replicas[0]));
+                HOTSTUFF_LOG_PROTO("New 0: %s", zero_hash.to_hex().c_str());
+
+                for (size_t i = 0; i < global_replicas.size(); i++) {
+                    auto cert_hash2 = std::move(std::get<2>(global_replicas[i]));
+                    if (new_zero == cert_hash2) {
+                        std::iter_swap(global_replicas.begin(), global_replicas.begin() + i);
+                        break;
+                    }
+                }
+
+                zero_hash = std::move(std::get<2>(global_replicas[0]));
+                HOTSTUFF_LOG_PROTO("Now 0: %s", zero_hash.to_hex().c_str());
             }
         }
         std::cout << size << std::endl;
