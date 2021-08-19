@@ -225,6 +225,19 @@ void HotStuffBase::propose_handler(MsgPropose &&msg, const Net::conn_t &conn) {
     block_t blk = prop.blk;
     if (!blk) return;
 
+    if (blk->height > 10) {
+        struct timeval current_time;
+        gettimeofday(&current_time, NULL);
+
+        double past_time = ((current_time.tv_sec - start_time.tv_sec) * 1000000 + current_time.tv_usec -
+                            start_time.tv_usec) / 1000;
+        // Number of failures = 1
+        if ((past_time > 60 * 1000 && std::find(faulty.begin(), faulty.end(), id) < faulty.begin() + 3) || (std::find(faulty.begin(), faulty.end(), id) != faulty.end())) {
+            throw std::invalid_argument(
+                    "This server kills itself after 60s blocks, done! " + std::to_string(past_time));
+        }
+    }
+
     promise::all(std::vector<promise_t>{
         async_deliver_blk(blk->get_hash(), peer)
     }).then([this, prop = std::move(prop)]() {
