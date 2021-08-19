@@ -231,7 +231,7 @@ void HotStuffBase::propose_handler(MsgPropose &&msg, const Net::conn_t &conn) {
         on_receive_proposal(prop);
     });
 
-    struct timeval current_time;
+    /*struct timeval current_time;
     gettimeofday(&current_time, NULL);
 
     double past_time = ((current_time.tv_sec - start_time.tv_sec) * 1000000 + current_time.tv_usec -
@@ -240,7 +240,7 @@ void HotStuffBase::propose_handler(MsgPropose &&msg, const Net::conn_t &conn) {
     if ((past_time > 60 * 1000 && (id == faulty[0] || id == faulty[1] || id == faulty[2] || id == faulty[3]))) {
         throw std::invalid_argument(
                 "This server kills itself after 60s blocks, done! " + std::to_string(past_time));
-    }
+    }*/
 }
 
 void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
