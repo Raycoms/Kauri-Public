@@ -225,6 +225,7 @@ void HotStuffBase::propose_handler(MsgPropose &&msg, const Net::conn_t &conn) {
     block_t blk = prop.blk;
     if (!blk) return;
 
+    HOTSTUFF_LOG_PROTO("Height: %d", blk->height);
     if (blk->height > 10) {
         struct timeval current_time;
         gettimeofday(&current_time, NULL);
