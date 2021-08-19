@@ -77,15 +77,8 @@ docker swarm join --token <token> <ip>
 
 Based on the token and IP the server where the init command was executed printed on start.
 
-Next, promote all servers to manager through:
 
-```
-docker node promote <ip>
-```
-
-On the machine where "docker swarm init" was executed on.
-
-On the same machine, setup a docker network with:
+On the main machine, setup a docker network with:
 
 ```
 docker network create --driver=overlay --subnet=10.1.0.0/16 kauri_network
