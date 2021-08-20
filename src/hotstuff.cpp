@@ -792,7 +792,7 @@ ReplicaID HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint
         failures++;
 
         // 9 times
-        if (failures < 10) {
+        if (failures < 9) {
             //we actually do this m+1 times (depending on the depth right))
             std::rotate(global_replicas.begin(), global_replicas.begin() + fanout + 1, global_replicas.end());
         }
