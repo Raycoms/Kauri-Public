@@ -296,7 +296,7 @@ public:
     }
 
     void set_proposer(TimerEvent &) {
-        proposer++;
+
         timeout *= 2;
         if (timeout > 10.0) {
             timeout = 10.0;
@@ -307,7 +307,8 @@ public:
         vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> reps;
         vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> reps2;
 
-        hsc->calcTree(std::move(reps), std::move(reps2), false);
+        // todo get the proposer id from the calcTree method
+        proposer = hsc->calcTree(std::move(reps), std::move(reps2), false);
 
         if (get_proposer() == hsc->get_id()) {
             HOTSTUFF_LOG_PROTO("Elected itself as a new Leader!");

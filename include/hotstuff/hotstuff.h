@@ -245,7 +245,7 @@ class HotStuffBase: public HotStuffCore {
     void exec_command(uint256_t cmd_hash, commit_cb_t callback);
     void start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> &&replicas, std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> &&replicas2,
                 bool ec_loop = false);
-    void calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> &&replicas, std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> &&replicas2, bool startup);
+    ReplicaID calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> &&replicas, std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> &&replicas2, bool startup);
     void beat();
 
     size_t size() const { return peers.size(); }

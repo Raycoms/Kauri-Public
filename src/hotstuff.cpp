@@ -774,7 +774,7 @@ void HotStuffBase::do_decide(Finality &&fin) {
 
 HotStuffBase::~HotStuffBase() {}
 
-void HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> &&replicas, std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> &&replicas2, bool startup) {
+ReplicaID HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> &&replicas, std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> &&replicas2, bool startup) {
 
     std::set<uint16_t> children;
 
@@ -948,6 +948,20 @@ void HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t
     
     HOTSTUFF_LOG_PROTO("total children: %d", children.size());
     numberOfChildren = children.size();
+
+    if (startup) {
+        return 0;
+    }
+    auto leader_hash = std::move(std::get<2>(global_replicas[0]));
+
+    for (size_t i = 0; i < original_replicas.size(); i++) {
+        auto current_hash = std::move(std::get<2>(original_replicas[i]));
+        if (current_hash == leader_hash) {
+            return i;
+        }
+    }
+
+    return 0;
 }
 
 void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> &&replicas, std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> &&replicas2, bool ec_loop) {

@@ -108,7 +108,7 @@ public:
      * @param replicas necessary set of processes.
      * @param startup if being called during startup.
      */
-    virtual void calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> &&replicas, std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> &&replicas2, bool startup) { }
+    virtual ReplicaID calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> &&replicas, std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> &&replicas2, bool startup) { }
 
     /** Call to set the fanout. */
     void set_fanout(int32_t fanout);
