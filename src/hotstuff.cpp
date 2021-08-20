@@ -1000,10 +1000,8 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
             ReplicaID proposer = pmaker->get_proposer();
             if (proposer != id) {
                 e.second(Finality(id, 0, 0, 0, e.first, uint256_t()));
-                HOTSTUFF_LOG_PROTO("I shall not propose");
                 continue;
             }
-            HOTSTUFF_LOG_PROTO("I shall propose");
 
             if (cmd_pending_buffer.size() < blk_size && final_buffer.empty()) {
                 const auto &cmd_hash = e.first;
@@ -1023,9 +1021,11 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
                 {
                     final_buffer = std::move(cmd_pending_buffer);
                 }
-
+                HOTSTUFF_LOG_PROTO("I shall beat");
                 beat();
                 return true;
+            } else {
+                HOTSTUFF_LOG_PROTO("I shall not beat: %d %d %d", cmd_pending_buffer.size(), blk_size, final_buffer.empty());
             }
         }
         return false;
