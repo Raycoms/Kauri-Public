@@ -326,9 +326,7 @@ public:
     void unlock(TimerEvent &) {
         timer.del();
         delaying_proposal = false;
-        locked = false;
-        std::queue<promise_t> pending;
-        std::swap(pending_beats, pending);
+        update_last_proposed();
 
         HOTSTUFF_LOG_PROTO("Unlocking Proposer!!!");
 
