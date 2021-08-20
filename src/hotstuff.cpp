@@ -1033,10 +1033,13 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
 void HotStuffBase::beat() {
     pmaker->beat().then([this](ReplicaID proposer) {
         if (piped_queue.size() > get_config().async_blocks + 1) {
+            HOTSTUFF_LOG_PROTO("is Full");
             return;
         }
 
         if (proposer == get_id()) {
+            HOTSTUFF_LOG_PROTO("Is proposer");
+
             struct timeval timeStart, timeEnd;
             gettimeofday(&timeStart, NULL);
 
@@ -1046,7 +1049,7 @@ void HotStuffBase::beat() {
             gettimeofday(&current_time, NULL);
             block_t current = pmaker->get_current_proposal();
 
-            if (current->height > 10) {
+            if (current->height > 10 && !faulty.empty()) {
                 double past_time = ((current_time.tv_sec - start_time.tv_sec) * 1000000 + current_time.tv_usec -
                                     start_time.tv_usec) / 1000;
                 // Number of failures = 1
@@ -1097,6 +1100,8 @@ void HotStuffBase::beat() {
                 gettimeofday(&last_block_time, NULL);
                 on_propose(final_buffer, std::move(parents));
             }
+        } else {
+            HOTSTUFF_LOG_PROTO("Not proposer");
         }
     });
 }
