@@ -41,6 +41,16 @@ The Experiments in the paper have been run in the following setup:
 Ubuntu 20 min with Git + docker installed
 ```
 
+Known Incompatibilities:
+```
+Google Cloud
+```
+
+Known Compatibilities:
+```
+Grid5000
+```
+
 The default setup in this repository runs 100 nodes, as such, we suggest having at least 5 physical machines.
 
 We suggest the above as a minimum setup, as starting up several containers and synchronizing them might take too long and time-out the system.
