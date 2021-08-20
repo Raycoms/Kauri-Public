@@ -512,6 +512,7 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
 
                     update_hqc(blk, cert);
                     on_qc_finish(blk);
+                    inc_time();
 
                     if (!rdy_queue.empty()) {
                         auto curr_blk = blk;
