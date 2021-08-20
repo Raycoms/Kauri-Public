@@ -261,10 +261,6 @@ void HotStuffCore::on_receive_proposal(const Proposal &prop) {
     update(bnew);
     bool opinion = false;
 
-    if (bnew->height > 50) {
-        inc_time();
-    }
-
     if (bnew->height > vheight)
     {
         if (bnew->qc_ref && bnew->qc_ref->height > b_lock->height)
@@ -293,6 +289,10 @@ void HotStuffCore::on_receive_proposal(const Proposal &prop) {
 
     on_receive_proposal_(prop);
     if (opinion && !vote_disabled) {
+        if (bnew->height > 50) {
+            inc_time();
+        }
+
         do_vote(prop,
                 Vote(id, bnew->get_hash(),
                      create_part_cert(*priv_key, bnew->get_hash()), this));

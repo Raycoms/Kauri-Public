@@ -314,6 +314,7 @@ public:
             HOTSTUFF_LOG_PROTO("Elected itself as a new Leader!");
             delaying_proposal = true;
             timer = TimerEvent(ec, salticidae::generic_bind(&PaceMakerDummyFixedTwo::unlock, this, _1));
+            timer = TimerEvent(ec, salticidae::generic_bind(&PaceMakerDummyFixedTwo::set_proposer, this, _1));
             timer.add(prop_delay);
         } else {
             timer = TimerEvent(ec, salticidae::generic_bind(&PaceMakerDummyFixedTwo::set_proposer, this, _1));
