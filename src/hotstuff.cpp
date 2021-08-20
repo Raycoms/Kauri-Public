@@ -852,7 +852,7 @@ ReplicaID HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint
                 HOTSTUFF_LOG_PROTO("Current 0: %s", zero_hash.to_hex().c_str());
 
                 auto new_zero = std::move(std::get<2>(original_replicas[0]));
-                HOTSTUFF_LOG_PROTO("New 0: %s", zero_hash.to_hex().c_str());
+                HOTSTUFF_LOG_PROTO("New 0: %s", new_zero.to_hex().c_str());
 
                 for (size_t i = 0; i < global_replicas.size(); i++) {
                     auto cert_hash2 = std::move(std::get<2>(global_replicas[i]));
@@ -869,7 +869,7 @@ ReplicaID HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint
         std::cout << size << std::endl;
 
         // number of faulty processes
-        if (std::find(faulty.begin(), faulty.end(), id) != faulty.end()) {
+        if (!faulty.empty() && std::find(faulty.begin(), faulty.end(), id) != faulty.end()) {
             throw std::invalid_argument(
                     "This server kills itself if in faulty set");
         }

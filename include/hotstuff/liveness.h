@@ -314,8 +314,6 @@ public:
             HOTSTUFF_LOG_PROTO("Elected itself as a new Leader!");
             delaying_proposal = true;
             timer = TimerEvent(ec, salticidae::generic_bind(&PaceMakerDummyFixedTwo::unlock, this, _1));
-            timer = TimerEvent(ec, salticidae::generic_bind(&PaceMakerDummyFixedTwo::set_proposer, this, _1));
-            timer.add(prop_delay);
         } else {
             timer = TimerEvent(ec, salticidae::generic_bind(&PaceMakerDummyFixedTwo::set_proposer, this, _1));
             timer.add(timeout);
@@ -329,6 +327,9 @@ public:
         timer.del();
         delaying_proposal = false;
         HOTSTUFF_LOG_PROTO("Unlocking Proposer!!!");
+
+        timer = TimerEvent(ec, salticidae::generic_bind(&PaceMakerDummyFixedTwo::set_proposer, this, _1));
+        timer.add(timeout > prop_delay ? timeout - prop_delay : timeout);
     }
 
     void inc_time() override {
