@@ -32,7 +32,7 @@ At the moment only bls signatures are supported. To run HotStuff with libsec sig
 
 Building Kauri is very simple and only a couple of simple steps are necessary.
 
-The Experiments in the paper have been run in the following setup:
+The Experiments in the paper have been run on Grid5000 in the following setup:
 
 ```
 1 Physical Machine per 20 processes
@@ -40,17 +40,6 @@ The Experiments in the paper have been run in the following setup:
 16 cores per physical machine
 Ubuntu 20 min with Git + docker installed
 ```
-
-Known Incompatibilities:
-```
-Google Cloud
-```
-
-Known Compatibilities:
-```
-Grid5000
-```
-
 The default setup in this repository runs 100 nodes, as such, we suggest having at least 5 physical machines.
 
 We suggest the above as a minimum setup, as starting up several containers and synchronizing them might take too long and time-out the system.
