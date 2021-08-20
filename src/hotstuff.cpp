@@ -810,7 +810,7 @@ ReplicaID HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint
 
             for (size_t i = 0; i < global_replicas.size(); i++) {
                 auto cert_hash2 = std::move(std::get<2>(global_replicas[i]));
-                if (cert_hash == cert_hash2) {
+                if (cert_hash.cheap_hash() == cert_hash2.cheap_hash()) {
                     std::iter_swap(global_replicas.begin(), global_replicas.begin() + i);
                     break;
                 }
@@ -838,7 +838,7 @@ ReplicaID HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint
 
                 for (size_t i = 0; i < global_replicas.size(); i++) {
                     auto cert_hash2 = std::move(std::get<2>(global_replicas[i]));
-                    if (cert_hash == cert_hash2) {
+                    if (cert_hash.cheap_hash() == cert_hash2.cheap_hash()) {
                         std::iter_swap(global_replicas.begin(), global_replicas.begin() + i);
                         break;
                     }
@@ -856,7 +856,7 @@ ReplicaID HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint
 
                 for (size_t i = 0; i < global_replicas.size(); i++) {
                     auto cert_hash2 = std::move(std::get<2>(global_replicas[i]));
-                    if (new_zero == cert_hash2) {
+                    if (new_zero.cheap_hash() == cert_hash2.cheap_hash()) {
                         std::iter_swap(global_replicas.begin(), global_replicas.begin() + i);
                         break;
                     }
@@ -905,6 +905,11 @@ ReplicaID HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint
     auto &leader_addr2 = std::get<0>(global_replicas[0]);
     HOTSTUFF_LOG_PROTO("Leader: %d %d", leader_addr.ip, leader_addr2.ip);
     HOTSTUFF_LOG_PROTO("Me: %d", listen_addr.ip);
+
+    auto parent_cert_hash1 = std::move(std::get<2>(original_replicas[0]));
+    auto parent_cert_hash2 = std::move(std::get<2>(global_replicas[0]));
+
+    HOTSTUFF_LOG_PROTO("Match: %d %d", parent_cert_hash1.cheap_hash(), parent_cert_hash2.cheap_hash());
 
     size_t i = 0;
     while (i < size) {
