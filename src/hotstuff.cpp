@@ -901,8 +901,9 @@ ReplicaID HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint
         HOTSTUFF_LOG_PROTO("Falling Back to Star");
     }
 
-    auto &leader_addr = std::get<0>(global_replicas[0]);
-    HOTSTUFF_LOG_PROTO("Leader: %d", leader_addr.ip);
+    auto &leader_addr = std::get<0>(original_replicas[0]);
+    auto &leader_addr2 = std::get<0>(global_replicas[0]);
+    HOTSTUFF_LOG_PROTO("Leader: %d %d", leader_addr.ip, leader_addr2.ip);
     HOTSTUFF_LOG_PROTO("Me: %d", listen_addr.ip);
 
     size_t i = 0;
