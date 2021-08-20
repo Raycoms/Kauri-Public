@@ -351,9 +351,8 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
                     throw std::runtime_error("Invalid Sigs in intermediate signature!");
                 }
 
-                if (blk->height > 50) {
-                    inc_time();
-                }
+                inc_time();
+
                 //HOTSTUFF_LOG_PROTO("Majority reached, go");
                 update_hqc(blk, cert);
                 on_qc_finish(blk);
