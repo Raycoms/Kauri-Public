@@ -864,10 +864,6 @@ ReplicaID HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint
 
                 zero_hash = std::move(std::get<2>(global_replicas[0]));
                 HOTSTUFF_LOG_PROTO("Now 0: %s", zero_hash.to_hex().c_str());
-
-                auto &leader_addr = std::get<0>(global_replicas[0]);
-                HOTSTUFF_LOG_PROTO("Leader: %d", leader_addr.ip);
-                HOTSTUFF_LOG_PROTO("Me: %d", listen_addr.ip);
             }
         }
         std::cout << size << std::endl;
@@ -904,6 +900,10 @@ ReplicaID HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint
         config.async_blocks = 0;
         HOTSTUFF_LOG_PROTO("Falling Back to Star");
     }
+
+    auto &leader_addr = std::get<0>(global_replicas[0]);
+    HOTSTUFF_LOG_PROTO("Leader: %d", leader_addr.ip);
+    HOTSTUFF_LOG_PROTO("Me: %d", listen_addr.ip);
 
     size_t i = 0;
     while (i < size) {
