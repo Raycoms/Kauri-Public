@@ -906,10 +906,7 @@ ReplicaID HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint
     HOTSTUFF_LOG_PROTO("Leader: %d %d", leader_addr.ip, leader_addr2.ip);
     HOTSTUFF_LOG_PROTO("Me: %d", listen_addr.ip);
 
-    auto parent_cert_hash1 = std::move(std::get<2>(original_replicas[0]));
-    auto parent_cert_hash2 = std::move(std::get<2>(global_replicas[0]));
-
-    HOTSTUFF_LOG_PROTO("Match: %d %d", parent_cert_hash1.cheap_hash(), parent_cert_hash2.cheap_hash());
+    auto me_cert = std::move(std::get<2>(original_replicas[id]));
 
     size_t i = 0;
     while (i < size) {
@@ -923,7 +920,6 @@ ReplicaID HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint
 
         auto parent_cert_hash = std::move(std::get<2>(global_replicas[i]));
         salticidae::PeerId parent_peer{parent_cert_hash};
-        auto &parent_addr = std::get<0>(global_replicas[i]);
 
         auto start = i + processesOnLevel;
         for (auto counter = 1; counter <= processesOnLevel; counter++) {
@@ -937,13 +933,12 @@ ReplicaID HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint
                 }
                 auto cert_hash = std::move(std::get<2>(global_replicas[j]));
                 salticidae::PeerId peer{cert_hash};
-                auto &child_addr = std::get<0>(global_replicas[j]);
 
-                if (listen_addr == parent_addr) {
+                if (me_cert.cheap_hash() == parent_cert_hash.cheap_hash()) {
                     HOTSTUFF_LOG_PROTO("Adding Child Process: %lld", j);
                     children.insert(j);
                     childPeers.insert(peer);
-                } else if (listen_addr == child_addr) {
+                } else if (me_cert.cheap_hash() == cert_hash.cheap_hash()) {
                     HOTSTUFF_LOG_PROTO("Setting Parent Process: %lld", i);
                     parentPeer = parent_peer;
                 } else if (childPeers.find(parent_peer) != childPeers.end()) {
@@ -955,7 +950,6 @@ ReplicaID HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint
             parent_cert_hash = std::move(std::get<2>(global_replicas[i]));
             salticidae::PeerId temp_parent_peer{parent_cert_hash};
             parent_peer = temp_parent_peer;
-            parent_addr = std::get<0>(global_replicas[i]);
         }
         processesOnLevel = std::min(curr_fanout * processesOnLevel, remaining);
     }
