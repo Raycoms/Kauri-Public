@@ -1021,11 +1021,8 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
                 {
                     final_buffer = std::move(cmd_pending_buffer);
                 }
-                HOTSTUFF_LOG_PROTO("I shall beat");
                 beat();
                 return true;
-            } else {
-                HOTSTUFF_LOG_PROTO("I shall not beat: %d %d %d", cmd_pending_buffer.size(), blk_size, final_buffer.empty());
             }
         }
         return false;

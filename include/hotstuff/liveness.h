@@ -135,9 +135,7 @@ class PMHighTail: public virtual PaceMaker {
  * block.  PaceMakers derived from this class will beat only when the last
  * block proposed by itself gets its QC. */
 class PMWaitQC: public virtual PaceMaker {
-    std::queue<promise_t> pending_beats;
     block_t last_proposed;
-    bool locked;
     promise_t pm_wait_propose;
 
     protected:
@@ -198,7 +196,9 @@ class PMWaitQC: public virtual PaceMaker {
         });
     }
 
-    public:
+    bool locked;
+    std::queue<promise_t> pending_beats;
+public:
 
     size_t get_pending_size() override { return pending_beats.size(); }
 
@@ -326,6 +326,10 @@ public:
     void unlock(TimerEvent &) {
         timer.del();
         delaying_proposal = false;
+        locked = false;
+        std::queue<promise_t> pending;
+        std::swap(pending_beats, pending);
+
         HOTSTUFF_LOG_PROTO("Unlocking Proposer!!!");
 
         timer = TimerEvent(ec, salticidae::generic_bind(&PaceMakerDummyFixedTwo::set_proposer, this, _1));
