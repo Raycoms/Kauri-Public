@@ -957,10 +957,12 @@ ReplicaID HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint
     for (size_t i = 0; i < original_replicas.size(); i++) {
         auto current_hash = std::move(std::get<2>(original_replicas[i]));
         if (current_hash == leader_hash) {
+            HOTSTUFF_LOG_PROTO("New leader: %d", i);
             return i;
         }
     }
 
+    HOTSTUFF_LOG_PROTO("New leader: %d", 0);
     return 0;
 }
 
