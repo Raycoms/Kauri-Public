@@ -307,7 +307,6 @@ public:
         vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> reps;
         vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> reps2;
 
-        // todo get the proposer id from the calcTree method
         proposer = hsc->calcTree(std::move(reps), std::move(reps2), false);
 
         if (get_proposer() == hsc->get_id()) {

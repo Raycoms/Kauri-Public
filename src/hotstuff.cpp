@@ -793,6 +793,8 @@ ReplicaID HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint
     size_t fanout = config.fanout;
 
     if (!startup) {
+        piped_queue.clear();
+
         failures++;
 
         // 9 times
