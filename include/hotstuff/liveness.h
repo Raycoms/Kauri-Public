@@ -136,9 +136,8 @@ class PMHighTail: public virtual PaceMaker {
  * block proposed by itself gets its QC. */
 class PMWaitQC: public virtual PaceMaker {
     block_t last_proposed;
-    promise_t pm_wait_propose;
 
-    protected:
+protected:
     virtual void schedule_next() {
         if (!pending_beats.empty())
         {
@@ -198,6 +197,7 @@ class PMWaitQC: public virtual PaceMaker {
 
     bool locked;
     std::queue<promise_t> pending_beats;
+    promise_t pm_wait_propose;
 public:
 
     size_t get_pending_size() override { return pending_beats.size(); }
@@ -326,7 +326,6 @@ public:
     void unlock(TimerEvent &) {
         timer.del();
         delaying_proposal = false;
-        update_last_proposed();
 
         HOTSTUFF_LOG_PROTO("Unlocking Proposer!!!");
 
