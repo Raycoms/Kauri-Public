@@ -998,10 +998,12 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
         while (q.try_dequeue(e))
         {
             ReplicaID proposer = pmaker->get_proposer();
-            if (proposer != get_id()) {
+            if (proposer != id) {
                 e.second(Finality(id, 0, 0, 0, e.first, uint256_t()));
+                HOTSTUFF_LOG_PROTO("I shall not propose");
                 continue;
             }
+            HOTSTUFF_LOG_PROTO("I shall propose");
 
             if (cmd_pending_buffer.size() < blk_size && final_buffer.empty()) {
                 const auto &cmd_hash = e.first;
@@ -1033,12 +1035,10 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
 void HotStuffBase::beat() {
     pmaker->beat().then([this](ReplicaID proposer) {
         if (piped_queue.size() > get_config().async_blocks + 1) {
-            HOTSTUFF_LOG_PROTO("is Full");
             return;
         }
 
         if (proposer == get_id()) {
-            HOTSTUFF_LOG_PROTO("Is proposer");
 
             struct timeval timeStart, timeEnd;
             gettimeofday(&timeStart, NULL);
@@ -1100,8 +1100,6 @@ void HotStuffBase::beat() {
                 gettimeofday(&last_block_time, NULL);
                 on_propose(final_buffer, std::move(parents));
             }
-        } else {
-            HOTSTUFF_LOG_PROTO("Not proposer");
         }
     });
 }
