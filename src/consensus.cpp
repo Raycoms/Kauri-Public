@@ -297,6 +297,10 @@ void HotStuffCore::on_receive_proposal(const Proposal &prop) {
                 Vote(id, bnew->get_hash(),
                      create_part_cert(*priv_key, bnew->get_hash()), this));
     }
+    else
+    {
+        LOG_PROTO("No, don't wanna");
+    }
 }
 
 void HotStuffCore::on_receive_vote(const Vote &vote) {
