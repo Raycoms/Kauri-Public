@@ -261,6 +261,7 @@ void HotStuffCore::on_receive_proposal(const Proposal &prop) {
     update(bnew);
     bool opinion = false;
 
+    LOG_PROTO("stats: %d %d %d", bnew->height, b_lock->height, vheight);
     if (bnew->height > vheight)
     {
         if (bnew->qc_ref && bnew->qc_ref->height > b_lock->height)
