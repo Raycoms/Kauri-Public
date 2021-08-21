@@ -192,7 +192,7 @@ class HotStuffBase: public HotStuffCore {
     uint64_t summed_latency;
     uint64_t processed_blocks;
 
-    std::unordered_map<uint256_t, timeval> proposal_time;
+    std::unordered_map<const uint256_t, timeval> proposal_time;
 
     mutable PeerId parentPeer;
     mutable std::set<PeerId> childPeers;
