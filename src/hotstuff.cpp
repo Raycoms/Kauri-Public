@@ -221,6 +221,23 @@ void HotStuffBase::propose_handler(MsgPropose &&msg, const Net::conn_t &conn) {
         }
     }
 
+    struct timeval end;
+    gettimeofday(&end, NULL);
+    proposal_time.insert(std::pair(msg.proposal.blk->hash, end));
+
+    if (msg.proposal.blk->qc_ref)
+    {
+        auto it = proposal_time.find(msg.proposal.blk->qc_ref->hash);
+        if (it != proposal_time.end()) {
+            struct timeval start = it->second;
+            long ms = ((end.tv_sec - start.tv_sec) * 1000000 + end.tv_usec - start.tv_usec)/1000;
+            proposal_time.erase(it);
+            processed_blocks++;
+            summed_latency+=ms;
+            HOTSTUFF_LOG_PROTO("Average: %d", summed_latency/processed_blocks);
+        }
+    }
+
     msg.postponed_parse(this);
     auto &prop = msg.proposal;
 
