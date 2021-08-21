@@ -98,20 +98,21 @@ bool HotStuffCore::on_deliver_blk(const block_t &blk) {
 
     blk->delivered = true;
 
-    struct timeval end;
-    gettimeofday(&end, NULL);
-    auto hash = blk->hash;
-    proposal_time[blk->hash] = end;
+    if (blk->height > 50) {
+        struct timeval end;
+        gettimeofday(&end, NULL);
+        auto hash = blk->hash;
+        proposal_time[blk->hash] = end;
 
-    if (blk->qc_ref)
-    {
-        auto it = proposal_time.find(blk->qc_ref->hash);
-        if (it != proposal_time.end()) {
-            struct timeval start = it->second;
-            long ms = ((end.tv_sec - start.tv_sec) * 1000000 + end.tv_usec - start.tv_usec)/1000;
-            processed_blocks++;
-            summed_latency+=ms;
-            HOTSTUFF_LOG_PROTO("Average: %d", summed_latency/processed_blocks);
+        if (blk->qc_ref) {
+            auto it = proposal_time.find(blk->qc_ref->hash);
+            if (it != proposal_time.end()) {
+                struct timeval start = it->second;
+                long ms = ((end.tv_sec - start.tv_sec) * 1000000 + end.tv_usec - start.tv_usec) / 1000;
+                processed_blocks++;
+                summed_latency += ms;
+                HOTSTUFF_LOG_PROTO("Average: %d", summed_latency / processed_blocks);
+            }
         }
     }
 
