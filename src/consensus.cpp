@@ -109,7 +109,6 @@ bool HotStuffCore::on_deliver_blk(const block_t &blk) {
         if (it != proposal_time.end()) {
             struct timeval start = it->second;
             long ms = ((end.tv_sec - start.tv_sec) * 1000000 + end.tv_usec - start.tv_usec)/1000;
-            proposal_time.erase(it);
             processed_blocks++;
             summed_latency+=ms;
             HOTSTUFF_LOG_PROTO("Average: %d", summed_latency/processed_blocks);
