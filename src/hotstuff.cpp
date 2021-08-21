@@ -223,7 +223,7 @@ void HotStuffBase::propose_handler(MsgPropose &&msg, const Net::conn_t &conn) {
 
     struct timeval end;
     gettimeofday(&end, NULL);
-    proposal_time.insert(std::pair(msg.proposal.blk->hash, end));
+    proposal_time[msg.proposal.blk->hash] = end;
 
     if (msg.proposal.blk->qc_ref)
     {
