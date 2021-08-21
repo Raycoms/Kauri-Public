@@ -38,8 +38,7 @@ struct VoteRelay;
 class HotStuffCore {
     block_t b0;                                  /** the genesis block */
     /* === state variables === */
-    /**< highest QC */
-    block_t b_lock;                            /**< locked block */
+    /**< locked block */
     block_t b_exec;                            /**< last executed block */
     /**< height of the block last voted for */
     /**< private key for signing votes */
@@ -87,6 +86,8 @@ bool rdy = false;
 
     void on_propose_(const Proposal &prop);
 
+/**< highest QC */
+block_t b_lock;
 public:
     BoxObj<EntityStorage> storage;
     uint16_t numberOfChildren;
