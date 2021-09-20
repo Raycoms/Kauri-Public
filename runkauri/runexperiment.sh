@@ -3,7 +3,11 @@
 trap "docker stack rm kauriservice" EXIT
 
 FILENAME=kauri.yaml
+EXPORT_FILENAME=kauri-temp.yaml
+
 ORIGINAL_STRING=thecmd
+QTY1_STRING=theqty1
+QTY2_STRING=theqty2
 
 FILENAME2="experiments"
 LINES=$(cat $FILENAME2 | grep "^[^#;]")
@@ -14,7 +18,15 @@ do
 
   echo '---------------------------------------------------------------'
   echo $LINE
-  sed  "s/${ORIGINAL_STRING}/${LINE}/g" $FILENAME > kauri-temp.yaml
+  IFS=':' read -ra split <<< "$LINE"
+
+  sed  "s/${ORIGINAL_STRING}/${split[0]}/g" $FILENAME > $EXPORT_FILENAME
+  sed  -i "s/${QTY1_STRING}/${split[1]}/g" $EXPORT_FILENAME
+  sed  -i "s/${QTY2_STRING}/${split[2]}/g" $EXPORT_FILENAME
+
+  echo '**********************************************'
+  echo "*** This setup needs ${split[3]} physical machines! ***"
+  echo '**********************************************'
 
   for i in {1..5}
   do

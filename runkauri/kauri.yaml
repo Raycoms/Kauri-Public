@@ -9,7 +9,7 @@ services:
     labels:
       becd9691-b958-47c3-9ac3-688ca48fb6d6: "true"
     deploy:
-      replicas: 11
+      replicas: theqty1
       endpoint_mode: dnsrr
     environment:
       KAURI_UUID: 'becd9691-b958-47c3-9ac3-688ca48fb6d6'
@@ -25,7 +25,7 @@ services:
     labels:
       becd9691-b958-47c3-9ac3-688ca48fb6d6: "true"
     deploy:
-      replicas: 89
+      replicas: theqty2
       endpoint_mode: dnsrr
     environment:
       KAURI_UUID: 'becd9691-b958-47c3-9ac3-688ca48fb6d6'
