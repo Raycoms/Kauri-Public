@@ -91,11 +91,11 @@ To run and configure experiments we first take a look at the "experiments" file.
 
 ```
 # type, fanout pipeline-depth pipeline-lat latency bandwidth
-['bls','10','6','10','100','25']
+['bls','10','6','10','100','25','1000']
 # HotStuff has fanout = N
-['bls','100','0','10','100','25']
+['bls','100','0','10','100','25','1000']
 ```
-Each of the lines represents an experiment, given a specific fanout, pipelining depth, latency and bandwidth.
+Each of the lines represents an experiment, given a specific fanout, pipelining depth, latency and bandwidth and block-size.
 By default, the number of nodes is 100.
 
 To increase the number of nodes, enter the kauri.yaml file and adjust the number of replicas.
@@ -103,7 +103,7 @@ At the given moment, we seperated the replicas into two groups: Potential Intern
 As such, for 100 nodes, considering a fanout of 10, there are 11 internal nodes (server1) and 89 remaining nodes (server).
 This helps to balance internal nodes more equally over the different physical machines to reduce potential interference.
 
-Note: At the given moment, only the 'bls' mode is supported.
+Note: To run HotStuff with libsec (vanilla), switch to the latest-libsec branch.
 
 Finally, to run the experiments, simply run:
 
@@ -121,21 +121,25 @@ The above script will result in a regular output similar to:
 
 ```
 2021-08-17 14:14:43.546142 [hotstuff proto] x now state: <hotstuff hqc=affd30ca8f hqc.height=2700 b_lock=22365a13f8 b_exec=63c209503b vheight=27xx tails=1>
+2021-08-17 14:14:43.546145 [hotstuff proto] Average: 200"
 ```
 
 Where 'hqc.height=2700' presents the last finalized block. Considering the 5 minute interval, that results in 2700/300 blocks per second.
 Considering the default of 1000 transactions pr block, that results in `2700/300*1000 = 9000` ops per second.
+The value next to "average" represents the average block latency.
 
 #### Additional Experiments
 
-To obtain block latency times or more detailed throughput data over the given execution time, the runexperiment.sh script has to be adjusted to export the entire log to pastebin similarly to:
+When increasing the latency of the system, to make sure Kauri maintains its high throughput, the pipeline-depth has to be adjusted in the experiments file.
+I.e for the experiment where the latency is varied between 50 and 400ms, alter the depth between 7,10,18 and 33 accordingly.
+
+To obtain more detailed throughput data over the given execution time, the runexperiment.sh script has to be adjusted to export the entire log to pastebin similarly to:
 
 ```
 cat log* | grep "proto" | grep "height" | pastebinit -b paste.ubuntu.com
 ```
 
 In order to parse the time between the receival of a block and it's finalization.
-
 
 To run the experiments including failures, exchange the branch in the Dockerfile to "reconfiguration" and re-run the docker build. Following that, adjust the server.sh script to launch one client per potential leader (By default only once client is launched that connects to process 0 to reduce the resource requirements). After this is done, one of the processes may be killed manually during execution time after 1 minute warmup.
 
