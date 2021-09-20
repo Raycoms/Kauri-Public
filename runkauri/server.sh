@@ -9,6 +9,7 @@ pipedepth=$3
 pipelatency=$4
 latency=$5
 bandwidth=$6
+blocksize=$7
 
 # Get Service-name
 service="server-$KAURI_UUID"
@@ -63,7 +64,7 @@ dig A $service +short | sort -u | sed -e 's/$/ 1/' >> ips
 sleep 5
 
 # Generate the HotStuff config file based on the given parameters
-python3 scripts/gen_conf.py --ips "ips" --crypto $crypto --fanout $fanout --pipedepth $pipedepth --pipelatency $pipelatency
+python3 scripts/gen_conf.py --ips "ips" --crypto $crypto --fanout $fanout --pipedepth $pipedepth --pipelatency $pipelatency --block-size $blocksize
 
 sleep 20
 

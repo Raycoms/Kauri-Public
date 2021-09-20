@@ -2,7 +2,7 @@ version: "3.3"
 services:
   server1-becd9691-b958-47c3-9ac3-688ca48fb6d6:
     image: kauri
-    command: ['bls','10','6','10','100','25']
+    command: ['bls','10','6','10','100','25','1000']
     hostname: server1
     cap_add:
       - NET_ADMIN
@@ -18,7 +18,7 @@ services:
 
   server-becd9691-b958-47c3-9ac3-688ca48fb6d6:
     image: kauri
-    command: ['bls','10','6','10','100','25']
+    command: ['bls','10','6','10','100','25','1000']
     hostname: server
     cap_add:
       - NET_ADMIN
