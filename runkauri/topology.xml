@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<experiment boot="kollaps:2.0">
+    <services>
+        <!-- definition of the services (containers),  -->
+        <!-- kollaps dashboard to controll the experiments, should be present in all deployments -->
+        <service name="dashboard" image="kollaps/dashboard:1.0" supervisor="true" port="8088"/>
+        <!-- iperf clients -->
+        <!-- <service name="client1" image="kollaps/iperf3-client:1.0" command="['server', '0', '0']"/> -->
+
+        <!-- the "command" can be used to pass parameters to the container entrypoints.
+             In this example we are passsing "server" which will be used to discover the IPs
+                     of the servers at run time -->
+        <!-- iperf server, declared once, but three instances will be started, see below -->
+        <service name="server1" image="hotstuff-bls" share="false" command="['bls','8','30','10','1000']"/>
+        <service name="server2" image="hotstuff-bls" share="false" command="['bls','8','30','10','1000']"/>
+        <service name="server3" image="hotstuff-bls" share="false" command="['bls','8','30','10','1000']"/>
+        <service name="server4" image="hotstuff-bls" share="false" command="['bls','8','30','10','1000']"/>
+        <service name="server5" image="hotstuff-bls" share="false" command="['bls','8','30','10','1000']"/>
+        <service name="server6" image="hotstuff-bls" share="false" command="['bls','8','30','10','1000']"/>
+    </services>
+    <bridges>
+        <!-- definition of the network elements (routers and switches) -->
+        <bridge name="Oregon"/>
+        <bridge name="Iowa"/>
+        <bridge name="Montreal"/>
+        <bridge name="Belgium"/>
+        <bridge name="Taiwan"/>
+        <bridge name="Sydney"/>
+    </bridges>
+    <links>
+        <link origin="Oregon" dest="server1" latency="0.25" upload="7998Mbps" download="7998Mbps" network="kollaps_network"/>
+        <link origin="Iowa" dest="server2" latency="0.25" upload="10004Mbps" download="10004Mbps" network="kollaps_network"/>
+        <link origin="Montreal" dest="server3" latency="0.25" upload="7977Mbps" download="7977Mbps" network="kollaps_network"/>
+        <link origin="Belgium" dest="server4" latency="0.25" upload="9728Mbps" download="9728Mbps" network="kollaps_network"/>
+        <link origin="Taiwan" dest="server5" latency="0.25" upload="7998Mbps" download="7998Mbps" network="kollaps_network"/>
+        <link origin="Sydney" dest="server6" latency="0.25" upload="7977Mbps" download="7977Mbps" network="kollaps_network"/>
+
+        <link origin="Oregon" dest="Iowa" latency="38" upload="669Mbps" download="669Mbps" network="kollaps_network"/>
+        <link origin="Oregon" dest="Montreal" latency="65" upload="371Mbps" download="371Mbps" network="kollaps_network"/>
+        <link origin="Oregon" dest="Belgium" latency="136" upload="194Mbps" download="194Mbps" network="kollaps_network"/>
+        <link origin="Oregon" dest="Taiwan" latency="118" upload="188Mbps" download="188Mbps" network="kollaps_network"/>
+        <link origin="Oregon" dest="Sydney" latency="161" upload="136Mbps" download="136Mbps" network="kollaps_network"/>
+
+        <link origin="Iowa" dest="Montreal" latency="33" upload="752Mbps" download="752Mbps" network="kollaps_network"/>
+        <link origin="Iowa" dest="Belgium" latency="98" upload="243Mbps" download="243Mbps" network="kollaps_network"/>
+        <link origin="Iowa" dest="Taiwan" latency="153" upload="144Mbps" download="144Mbps" network="kollaps_network"/>
+        <link origin="Iowa" dest="Sydney" latency="172" upload="120Mbps" download="120Mbps" network="kollaps_network"/>
+
+        <link origin="Belgium" dest="Taiwan" latency="252" upload="79Mbps" download="79Mbps" network="kollaps_network"/>
+        <link origin="Belgium" dest="Sydney" latency="270" upload="66Mbps" download="66Mbps" network="kollaps_network"/>
+
+        <link origin="Taiwan" dest="Sydney" latency="137" upload="160Mbps" download="160Mbps" network="kollaps_network"/>
+    </links>
+    <dynamic>
+        <!-- schedulle the dynamics of the experiment. These apply to services and links, see documentation for more details.
+             This section can be ommited in which case all the services will be started at the beginning of the experiment -->
+
+        <!-- were we start three instances of the "server" service -->
+        <schedule name="server1"  time="0.0" action="join" amount="12"/>
+        <schedule name="server2"  time="0.0" action="join" amount="12"/>
+        <schedule name="server3"  time="0.0" action="join" amount="12"/>
+        <schedule name="server4"  time="0.0" action="join" amount="12"/>
+        <schedule name="server5"  time="0.0" action="join" amount="12"/>
+        <schedule name="server6"  time="0.0" action="join" amount="12"/>
+
+        <schedule name="server1"  time="380.0" action="leave" amount="12"/>
+        <schedule name="server2"  time="380.0" action="leave" amount="12"/>
+        <schedule name="server3"  time="380.0" action="leave" amount="12"/>
+        <schedule name="server4"  time="380.0" action="leave" amount="12"/>
+        <schedule name="server5"  time="380.0" action="leave" amount="12"/>
+        <schedule name="server6"  time="380.0" action="leave" amount="12"/>
+    </dynamic>
+</experiment>
