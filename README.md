@@ -90,12 +90,17 @@ docker network create --driver=overlay --subnet=10.1.0.0/16 kauri_network
 To run and configure experiments we first take a look at the "experiments" file.
 
 ```
-# type, fanout pipeline-depth pipeline-lat latency bandwidth
-['bls','10','6','10','100','25','1000']
+# type, fanout pipeline-depth pipeline-lat latency bandwidth :  number of internals : number of total : suggested physical machines
+['bls','10','6','10','100','25','1000']:11:89:5
 # HotStuff has fanout = N
-['bls','100','0','10','100','25','1000']
+['bls','100','0','10','100','25','1000']:11:89:5
 ```
 Each of the lines represents an experiment, given a specific fanout, pipelining depth, latency and bandwidth and block-size.
+Additionally, it includes the number of internal nodes + non internal nodes and finally the suggested number of physical servers.
+(This will be printed in the log, and won't affect the overall execution)
+
+The internal and non internal nodes are split to make sure docker swarm distributes the internal nodes more equally over the available physical machines.
+
 By default, the number of nodes is 100.
 
 To increase the number of nodes, enter the kauri.yaml file and adjust the number of replicas.
