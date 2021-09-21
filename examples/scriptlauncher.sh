@@ -5,7 +5,7 @@ do
   for i in {1..1}
   do
         docker stack deploy -c hotstuff${j}.yaml hotstuff1 &
-        sleep 410
+        sleep 440
 
         for container in $(docker ps -q -f name="server")
         do

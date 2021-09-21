@@ -22,7 +22,7 @@ fi
 
 git pull && cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED=ON -DHOTSTUFF_PROTO_LOG=ON && make
 
-sleep 30
+sleep 60
 
 service="server-$KOLLAPS_UUID"
 service1="server1-$KOLLAPS_UUID"
