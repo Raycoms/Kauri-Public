@@ -708,35 +708,13 @@ class QuorumCertSecp256k1: public QuorumCert {
         }
 
         void sign(const bytearray_t &msg, const PrivKeyBLS &priv_key) {
-            //struct timeval timeStart, timeEnd;
-            //gettimeofday(&timeStart, nullptr);
-
             check_msg_length(msg);
             data = new bls::G2Element(bls::PopSchemeMPL::Sign(*priv_key.data, arrToVec(msg)));
-
-            //gettimeofday(&timeEnd, nullptr);
-
-            //std::cout << "This signing slow piece of code took "
-            //           << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
-            //<< " us to execute."
-            //        << std::endl;
         }
 
         bool verify(const bytearray_t &msg, const PubKeyBLS &pub_key) const {
-
             check_msg_length(msg);
-
-            //struct timeval timeStart, timeEnd;
-            //gettimeofday(&timeStart, nullptr);
             bool td = bls::PopSchemeMPL::Verify(*(pub_key.data), arrToVec(msg), *data);
-
-            /*gettimeofday(&timeEnd, nullptr);
-
-            std::cout << "This verifying slow piece of code took "
-                      << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
-                      << " us to execute."
-                      << std::endl;*/
-
             return td;
         }
     };
@@ -851,36 +829,13 @@ class QuorumCertSecp256k1: public QuorumCert {
         }
 
         void sign(const bytearray_t &msg, const PrivKeyBLS &priv_key) {
-            //struct timeval timeStart, timeEnd;
-            //gettimeofday(&timeStart, nullptr);
-
             check_msg_length(msg);
             data = new bls::G2Element(bls::PopSchemeMPL::Sign(*priv_key.data, arrToVec(msg)));
-
-            //gettimeofday(&timeEnd, nullptr);
-
-            //std::cout << "The signing took: "
-            //          << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
-            //          << " us to execute."
-            //          << std::endl;
         }
 
         bool verify(const bytearray_t &msg, const PubKeyBLS &pub_key) const {
-
             check_msg_length(msg);
-
-            struct timeval timeStart, timeEnd;
-            gettimeofday(&timeStart, nullptr);
-
             bool td = bls::PopSchemeMPL::Verify(*(pub_key.data), arrToVec(msg), *data);
-
-            gettimeofday(&timeEnd, nullptr);
-
-            std::cout << "The verifying took: "
-                     << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
-                     << " us to execute."
-                     << std::endl;
-
             return td;
         }
     };
@@ -897,19 +852,7 @@ class QuorumCertSecp256k1: public QuorumCert {
         virtual ~SigVeriTaskBLSAgg() = default;
 
         bool verify() override {
-
-            //struct timeval timeStart, timeEnd;
-            //gettimeofday(&timeStart, nullptr);
-
-            bool valid = bls::PopSchemeMPL::FastAggregateVerify(pubs, arrToVec(msg.to_bytes()), *sig.data);
-
-            //gettimeofday(&timeEnd, nullptr);
-
-            //std::cout << "Fast Aggregate Verify:  "
-            //          << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
-            //          << " us to execute."
-            //          << std::endl;
-            return valid;
+            return bls::PopSchemeMPL::FastAggregateVerify(pubs, arrToVec(msg.to_bytes()), *sig.data);
         }
     };
 
@@ -956,7 +899,7 @@ class QuorumCertSecp256k1: public QuorumCert {
         uint256_t obj_hash;
         salticidae::Bits rids;
         SigSecBLSAgg* theSig = nullptr;
-        vector<bls::G2Element> sigs;
+        std::vector<std::pair<salticidae::Bits, bls::G2Element>> sigs;
         uint32_t n = 0;
 
     public:
@@ -984,108 +927,26 @@ class QuorumCertSecp256k1: public QuorumCert {
             }
         }
 
-        void add_part(const ReplicaConfig &config, ReplicaID rid, const PartCert &pc) override {
-            if (pc.get_obj_hash() != obj_hash)
-                throw std::invalid_argument("PartCert does match the block hash");
-            rids.set(rid);
-            calculateN();
-
-            //if (theSig == nullptr) {
-            //    theSig = new SigSecBLSAgg(*dynamic_cast<const PartCertBLSAgg &>(pc).data);
-            //    sigs.push_back(*theSig->data);
-            //    return;
-            //}
-            if (sigs.empty() && theSig != nullptr) {
-                sigs.push_back(*theSig->data);
-                delete theSig;
-                theSig = nullptr;
-            }
-            sigs.push_back(*dynamic_cast<const SigSecBLSAgg &>(pc).data);
-            //bls::G2Element sig1 = *theSig->data;
-            //bls::G2Element sig2 = *dynamic_cast<const SigSecBLSAgg &>(pc).data;
-
-            //struct timeval timeStart, timeEnd;
-            //gettimeofday(&timeStart, nullptr);
-
-            //bls::G2Element sig = bls::PopSchemeMPL::Aggregate({sig1, sig2});
-
-            //gettimeofday(&timeEnd, nullptr);
-
-            //std::cout << "Aggregating Sigs: "
-            //          << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
-            //          << " us to execute."
-            //          << std::endl;
-
-            //*theSig->data = sig;
-        }
-
-        void merge_quorum(const QuorumCert &qc) override {
-            if (qc.get_obj_hash()!= obj_hash) throw std::invalid_argument("QuorumCert does match the block hash");
-
-            salticidae::Bits newRids = dynamic_cast<const QuorumCertAggBLS &>(qc).rids;
-            for (unsigned int i = 0;i < newRids.size();i++) {
-                if (newRids[i] == 1) {
-                    rids.set(i);
-                }
-            }
-            calculateN();
-
-            if (sigs.empty() && theSig != nullptr) {
-                sigs.push_back(*theSig->data);
-                delete theSig;
-                theSig = nullptr;
-            }
-
-            for (bls::G2Element el : dynamic_cast<const QuorumCertAggBLS &>(qc).sigs) {
-                sigs.push_back(el);
-            }
-
-            if (dynamic_cast<const QuorumCertAggBLS &>(qc).theSig != nullptr) {
-                sigs.push_back(*dynamic_cast<const QuorumCertAggBLS &>(qc).theSig->data);
-            }
-
-            //bls::G2Element sig1 = *theSig->data;
-            //bls::G2Element sig2 = *dynamic_cast<const QuorumCertAggBLS &>(qc).theSig->data;
-
-            //struct timeval timeStart,timeEnd;
-            //gettimeofday(&timeStart, nullptr);
-
-            //bls::G2Element sig = bls::PopSchemeMPL::Aggregate({sig1, sig2});
-
-            //gettimeofday(&timeEnd, nullptr);
-
-            //std::cout << "Aggregating Sigs: "
-            //          << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
-            //          << " us to execute."
-            //          << std::endl;
-
-            //*theSig->data = sig;
-        }
-
         bool has_n(const uint32_t t) override {
-            //HOTSTUFF_LOG_PROTO("check %d of %d", n, t);
             return n >= t;
         }
 
         void compute() override {
             if (theSig == nullptr) {
-                struct timeval timeStart,timeEnd;
-                gettimeofday(&timeStart, nullptr);
 
-                theSig = new SigSecBLSAgg(bls::PopSchemeMPL::Aggregate(sigs));
-                sigs.clear();
+                vector<bls::G2Element> sigvec;
+                for(const auto& elem : sigs)
+                    sigvec.push_back(elem.second);
 
-                gettimeofday(&timeEnd, nullptr);
-
-                std::cout << "Aggregating Sigs: "
-                          << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
-                          << " us to execute."
-                          << std::endl;
+                theSig = new SigSecBLSAgg(bls::PopSchemeMPL::Aggregate(sigvec));
+                //sigs.clear();
             }
         }
 
         bool verify(const ReplicaConfig &config) override;
         promise_t verify(const ReplicaConfig &config, VeriPool &vpool) override;
+        void add_part(const ReplicaConfig &config, ReplicaID rid,const PartCert &pc) override;
+        void merge_quorum(const QuorumCert &qc) override;
 
         const uint256_t &get_obj_hash() const override { return obj_hash; }
 

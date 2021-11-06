@@ -234,6 +234,11 @@ void HotStuffBase::propose_handler(MsgPropose &&msg, const Net::conn_t &conn) {
     });
 }
 
+/**
+ * This is the vote handler, it is called on receiving a vote from another process with the
+ * @param msg that contains the vote
+ * @param conn the connection over which it was received.
+ */
 void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
     struct timeval timeStart,timeEnd;
     gettimeofday(&timeStart, NULL);
@@ -241,7 +246,6 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
     const auto &peer = conn->get_peer_id();
     if (peer.is_null()) return;
     msg.postponed_parse(this);
-    //HOTSTUFF_LOG_PROTO("received vote");
 
     if (id == pmaker->get_proposer() && !piped_queue.empty() && std::find(piped_queue.begin(), piped_queue.end(), msg.vote.blk_hash) != piped_queue.end()) {
         HOTSTUFF_LOG_PROTO("piped block");
@@ -263,11 +267,11 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
     }
 
     std::cout << "vote handler: " << msg.vote.blk_hash.to_hex() << " " << std::endl;
-    //HOTSTUFF_LOG_PROTO("vote handler %d %d", config.nmajority, config.nreplicas);
 
+    // Early exit if we processed sufficient votes already.
     if (blk->self_qc->has_n(config.nmajority)) {
         HOTSTUFF_LOG_PROTO("bye vote handler");
-        //std::cout << "bye vote handler: " << msg.vote.blk_hash.to_hex() << " " << &blk->self_qc << std::endl;
+        // This is code to measure the actual CPU cost of the protocol.
         /*if (id == get_pace_maker()->get_proposer()) {
             gettimeofday(&timeEnd, NULL);
             long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
@@ -277,62 +281,59 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
         return;
     }
 
-    if (id != pmaker->get_proposer() ) {
-        auto &cert = blk->self_qc;
-
-
-        if (cert->has_n(numberOfChildren + 1)) {
-            return;
-        }
-
-        cert->add_part(config, msg.vote.voter, *msg.vote.cert);
-
-        if (!cert->has_n(numberOfChildren + 1)) {
-            return;
-        }
-        std::cout <<  " got enough votes: " << msg.vote.blk_hash.to_hex().c_str() <<  std::endl;
-
-        if (!piped_queue.empty()) {
-
-            for (auto hash = std::begin(piped_queue); hash != std::end(piped_queue); ++hash) {
-                block_t b = storage->find_blk(*hash);
-                if (b->delivered && b->qc->has_n(config.nmajority)) {
-                    piped_queue.erase(hash);
-                    HOTSTUFF_LOG_PROTO("Confirm Piped block");
-                }
-            }
-
-            if (blk->hash == piped_queue.front()){
-                piped_queue.pop_front();
-                HOTSTUFF_LOG_PROTO("Reset Piped block");
-            }
-            else {
-                HOTSTUFF_LOG_PROTO("Failed resetting piped block, wasn't front!!!");
-            }
-        }
-
-        cert->compute();
-        if (!cert->verify(config)) {
-            HOTSTUFF_LOG_PROTO("Error, Invalid Sig!!!");
-            return;
-        }
-
-        std::cout <<  " send relay message: " << msg.vote.blk_hash.to_hex().c_str() <<  std::endl;
-        pn.send_msg(MsgRelay(VoteRelay(msg.vote.blk_hash, blk->self_qc->clone(), this)), parentPeer);
-        async_deliver_blk(msg.vote.blk_hash, peer);
-        return;
-    }
-
-    //auto &vote = msg.vote;
+    // Off thread verification of vote and then return to main thread to process the result.
     RcObj<Vote> v(new Vote(std::move(msg.vote)));
     promise::all(std::vector<promise_t>{
         async_deliver_blk(v->blk_hash, peer),
-        id == pmaker->get_proposer() ? v->verify(vpool) : promise_t([](promise_t &pm) { pm.resolve(true); }),
+        // This directly accepts votes to start the aggregate, now, this ONLY works for BLS signatures! todo make this a config option
+        //id == pmaker->get_proposer() ? v->verify(vpool) : promise_t([](promise_t &pm) { pm.resolve(true); }),
+        promise_t([](promise_t &pm) { pm.resolve(true); }),
     }).then([this, blk, v=std::move(v), timeStart](const promise::values_t values) {
         if (!promise::any_cast<bool>(values[1]))
             LOG_WARN("invalid vote from %d", v->voter);
         auto &cert = blk->self_qc;
-        //struct timeval timeEnd;
+
+        // If the process is not a proposer, we have to relay data.
+        if (id != pmaker->get_proposer()) {
+          if (cert->has_n(numberOfChildren + 1)) {
+            return;
+          }
+
+          cert->add_part(config, v->voter, *v->cert);
+
+          if (!cert->has_n(numberOfChildren + 1)) {
+            return;
+          }
+
+          if (!piped_queue.empty()) {
+
+            for (auto hash = std::begin(piped_queue); hash != std::end(piped_queue); ++hash) {
+              block_t b = storage->find_blk(*hash);
+              if (b->delivered && b->qc->has_n(config.nmajority)) {
+                piped_queue.erase(hash);
+                HOTSTUFF_LOG_PROTO("Confirm Piped block");
+              }
+            }
+
+            if (blk->hash == piped_queue.front()) {
+              piped_queue.pop_front();
+              HOTSTUFF_LOG_PROTO("Reset Piped block");
+            } else {
+              HOTSTUFF_LOG_PROTO("Failed resetting piped block, wasn't front!!!");
+            }
+          }
+
+          cert->compute();
+          if (!cert->verify(config)) {
+            HOTSTUFF_LOG_PROTO("Error, Invalid Sig!!!");
+            return;
+          }
+
+          std::cout << " send relay message: "
+                    << v->blk_hash.to_hex().c_str() << std::endl;
+          pn.send_msg(MsgRelay(VoteRelay(v->blk_hash,blk->self_qc->clone(), this)),parentPeer);
+          return;
+        }
 
         cert->add_part(config, v->voter, *v->cert);
         if (cert != nullptr && cert->get_obj_hash() == blk->get_hash()) {
@@ -346,31 +347,16 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
             }
         }
 
+        // This is code to measure the actual CPU cost of the protocol.
         /*if (id == get_pace_maker()->get_proposer()) {
+           struct timeval timeEnd;
             gettimeofday(&timeEnd, NULL);
             long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
             std::cout << usec << " a:a " << stats[blk->hash] << std::endl;
             stats[blk->hash] = stats[blk->hash] + usec;
             std::cout << usec << " b:b " << stats[blk->hash] << std::endl;
         }*/
-
-        /*struct timeval timeEnd;
-        gettimeofday(&timeEnd, NULL);
-
-        std::cout << "Vote handling cost partially threaded: "
-                  << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
-                  << " us to execute."
-                  << std::endl;*/
-
     });
-
-    /*
-    gettimeofday(&timeEnd, NULL);
-
-    std::cout << "Vote handling cost: "
-              << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
-              << " us to execute."
-              << std::endl;*/
 }
 
 void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
@@ -444,7 +430,9 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
     RcObj<VoteRelay> v(new VoteRelay(std::move(msg.vote)));
     promise::all(std::vector<promise_t>{
             async_deliver_blk(v->blk_hash, peer),
-            v->cert->verify(config, vpool),
+            // Just accept directly and add to aggregate
+            //v->cert->verify(config, vpool),
+            promise_t([](promise_t &pm) { pm.resolve(true); }),
     }).then([this, blk, v=std::move(v), timeStart](const promise::values_t& values) {
         struct timeval timeEnd;
 
