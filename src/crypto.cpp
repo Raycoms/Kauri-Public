@@ -112,7 +112,7 @@ namespace hotstuff {
             }
           }
         }
-        sigs = newSigs;
+        sigs = std::move(newSigs);
         compute();
         return bls::PopSchemeMPL::FastAggregateVerify(newPubVec, arrToVec(obj_hash.to_bytes()), *theSig->data);
     }
@@ -129,7 +129,7 @@ namespace hotstuff {
       saveRids.set(rid);
 
       if (sigs.empty() && theSig != nullptr) {
-        sigs.push_back(std::pair(rids, *theSig->data));
+        sigs.push_back(std::pair(std::move(rids), *theSig->data));
         delete theSig;
         theSig = nullptr;
       }
@@ -137,7 +137,7 @@ namespace hotstuff {
       rids.set(rid);
       calculateN();
 
-      sigs.push_back(std::pair(saveRids, *dynamic_cast<const SigSecBLSAgg &>(pc).data));
+      sigs.push_back(std::pair(std::move(saveRids), *dynamic_cast<const SigSecBLSAgg &>(pc).data));
     }
 
     /**
@@ -156,7 +156,7 @@ namespace hotstuff {
       calculateN();
 
       if (sigs.empty() && theSig != nullptr) {
-        sigs.push_back(std::pair(rids, *theSig->data));
+        sigs.push_back(std::pair(std::move(rids), *theSig->data));
         delete theSig;
         theSig = nullptr;
       }
@@ -166,7 +166,7 @@ namespace hotstuff {
       }
 
       if (dynamic_cast<const QuorumCertAggBLS &>(qc).theSig != nullptr) {
-        sigs.push_back(std::pair(dynamic_cast<const QuorumCertAggBLS &>(qc).rids, *dynamic_cast<const QuorumCertAggBLS &>(qc).theSig->data));
+        sigs.push_back(std::pair(std::move(dynamic_cast<const QuorumCertAggBLS &>(qc).rids), *dynamic_cast<const QuorumCertAggBLS &>(qc).theSig->data));
       }
     }
 
@@ -181,7 +181,7 @@ namespace hotstuff {
         vector<bls::G1Element> pubs;
         for (unsigned int i = 0; i < rids.size(); i++) {
             if (rids[i] == 1) {
-                pubs.push_back(*static_cast<const PubKeyBLS &>(config.get_pubkey(i)).data);
+                pubs.push_back(*dynamic_cast<const PubKeyBLS &>(config.get_pubkey(i)).data);
             }
         }
 
