@@ -17,7 +17,7 @@ service1="server1-$KAURI_UUID"
 
 # Make sure correct branch is selected for crypto
 cd Kauri-Public && git pull && git submodule update --recursive --remote
-git checkout latest
+git checkout latest-opt
 
 # Do a quick compile of the branch
 git pull && cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED=ON -DHOTSTUFF_PROTO_LOG=ON && make

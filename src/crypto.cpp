@@ -129,7 +129,7 @@ namespace hotstuff {
       saveRids.set(rid);
 
       if (sigs.empty() && theSig != nullptr) {
-        sigs.push_back(std::pair(std::move(rids), *theSig->data));
+        sigs.push_back(std::pair(rids, *theSig->data));
         delete theSig;
         theSig = nullptr;
       }
@@ -137,7 +137,7 @@ namespace hotstuff {
       rids.set(rid);
       calculateN();
 
-      sigs.push_back(std::pair(std::move(saveRids), *dynamic_cast<const SigSecBLSAgg &>(pc).data));
+      sigs.push_back(std::pair(saveRids, *dynamic_cast<const SigSecBLSAgg &>(pc).data));
     }
 
     /**
