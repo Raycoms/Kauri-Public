@@ -68,9 +68,7 @@ namespace hotstuff {
         });
     }
 
-    QuorumCertAggBLS::QuorumCertAggBLS(
-            const ReplicaConfig &config, const uint256_t &obj_hash) :
-            QuorumCert(), obj_hash(obj_hash), rids(config.nreplicas){
+    QuorumCertAggBLS::QuorumCertAggBLS(const ReplicaConfig &config, const uint256_t &obj_hash) :QuorumCert(), obj_hash(obj_hash), rids(config.nreplicas){
         rids.clear();
     }
 
@@ -125,7 +123,7 @@ namespace hotstuff {
       if (pc.get_obj_hash() != obj_hash)
         throw std::invalid_argument("PartCert does match the block hash");
 
-      salticidae::Bits saveRids;
+      salticidae::Bits saveRids(config.nreplicas);
       saveRids.set(rid);
 
       if (sigs.empty() && theSig != nullptr) {
