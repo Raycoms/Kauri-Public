@@ -91,6 +91,7 @@ namespace hotstuff {
           return res;
         }
 
+        HOTSTUFF_LOG_PROTO("Signature Invalid, backing up!");
         vector<std::pair<salticidae::Bits, bls::G2Element>> newSigs;
         vector<bls::G1Element> newPubVec;
 
@@ -127,7 +128,6 @@ namespace hotstuff {
       saveRids.set(rid);
 
       if (sigs.empty() && theSig != nullptr) {
-        HOTSTUFF_LOG_PROTO("emplace back 1");
         sigs.emplace_back(rids, *theSig->data);
         delete theSig;
         theSig = nullptr;
@@ -136,7 +136,6 @@ namespace hotstuff {
       rids.set(rid);
       calculateN();
 
-      HOTSTUFF_LOG_PROTO("emplace back 2");
       sigs.emplace_back(saveRids, *dynamic_cast<const SigSecBLSAgg &>(pc).data);
     }
 
