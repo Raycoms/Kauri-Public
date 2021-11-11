@@ -277,76 +277,73 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
         return;
     }
 
-    if (id != pmaker->get_proposer() ) {
-        auto &cert = blk->self_qc;
-
-
-        if (cert->has_n(numberOfChildren + 1)) {
-            return;
-        }
-
-        cert->add_part(config, msg.vote.voter, *msg.vote.cert);
-
-        if (!cert->has_n(numberOfChildren + 1)) {
-            return;
-        }
-        std::cout <<  " got enough votes: " << msg.vote.blk_hash.to_hex().c_str() <<  std::endl;
-
-        if (!piped_queue.empty()) {
-
-            for (auto hash = std::begin(piped_queue); hash != std::end(piped_queue); ++hash) {
-                block_t b = storage->find_blk(*hash);
-                if (b->delivered && b->qc->has_n(config.nmajority)) {
-                    piped_queue.erase(hash);
-                    HOTSTUFF_LOG_PROTO("Confirm Piped block");
-                }
-            }
-
-            if (blk->hash == piped_queue.front()){
-                piped_queue.pop_front();
-                HOTSTUFF_LOG_PROTO("Reset Piped block");
-            }
-            else {
-                HOTSTUFF_LOG_PROTO("Failed resetting piped block, wasn't front!!!");
-            }
-        }
-
-        cert->compute();
-        if (!cert->verify(config)) {
-            HOTSTUFF_LOG_PROTO("Error, Invalid Sig!!!");
-            return;
-        }
-
-        std::cout <<  " send relay message: " << msg.vote.blk_hash.to_hex().c_str() <<  std::endl;
-        pn.send_msg(MsgRelay(VoteRelay(msg.vote.blk_hash, blk->self_qc->clone(), this)), parentPeer);
-        async_deliver_blk(msg.vote.blk_hash, peer);
-        return;
-    }
-
     //auto &vote = msg.vote;
     RcObj<Vote> v(new Vote(std::move(msg.vote)));
     promise::all(std::vector<promise_t>{
         async_deliver_blk(v->blk_hash, peer),
-        id == pmaker->get_proposer() ? v->verify(vpool) : promise_t([](promise_t &pm) { pm.resolve(true); }),
+        v->verify(vpool),
     }).then([this, blk, v=std::move(v), timeStart](const promise::values_t values) {
         if (!promise::any_cast<bool>(values[1]))
             LOG_WARN("invalid vote from %d", v->voter);
         auto &cert = blk->self_qc;
         //struct timeval timeEnd;
 
-        cert->add_part(config, v->voter, *v->cert);
-        if (cert != nullptr && cert->get_obj_hash() == blk->get_hash()) {
-            if (cert->has_n(config.nmajority)) {
-                cert->compute();
-                if (id != 0 && !cert->verify(config)) {
-                    throw std::runtime_error("Invalid Sigs in intermediate signature!");
-                }
-                update_hqc(blk, cert);
-                on_qc_finish(blk);
-            }
+      if (id != pmaker->get_proposer() ) {
+
+        if (cert->has_n(numberOfChildren + 1)) {
+          return;
         }
 
-        /*if (id == get_pace_maker()->get_proposer()) {
+        cert->add_part(config, v->voter, *v->cert);
+
+        if (!cert->has_n(numberOfChildren + 1)) {
+          return;
+        }
+        std::cout <<  " got enough votes: " << v->blk_hash.to_hex().c_str() <<  std::endl;
+
+        if (!piped_queue.empty()) {
+
+          for (auto hash = std::begin(piped_queue); hash != std::end(piped_queue); ++hash) {
+            block_t b = storage->find_blk(*hash);
+            if (b->delivered && b->qc->has_n(config.nmajority)) {
+              piped_queue.erase(hash);
+              HOTSTUFF_LOG_PROTO("Confirm Piped block");
+            }
+          }
+
+          if (blk->hash == piped_queue.front()){
+            piped_queue.pop_front();
+            HOTSTUFF_LOG_PROTO("Reset Piped block");
+          }
+          else {
+            HOTSTUFF_LOG_PROTO("Failed resetting piped block, wasn't front!!!");
+          }
+        }
+
+        cert->compute();
+        if (!cert->verify(config)) {
+          HOTSTUFF_LOG_PROTO("Error, Invalid Sig!!!");
+          return;
+        }
+
+        std::cout <<  " send relay message: " << v->blk_hash.to_hex().c_str() <<  std::endl;
+        pn.send_msg(MsgRelay(VoteRelay(v->blk_hash, blk->self_qc->clone(), this)), parentPeer);
+        return;
+      }
+
+      cert->add_part(config, v->voter, *v->cert);
+      if (cert != nullptr && cert->get_obj_hash() == blk->get_hash()) {
+        if (cert->has_n(config.nmajority)) {
+          cert->compute();
+          if (id != 0 && !cert->verify(config)) {
+            throw std::runtime_error("Invalid Sigs in intermediate signature!");
+          }
+          update_hqc(blk, cert);
+          on_qc_finish(blk);
+        }
+      }
+
+      /*if (id == get_pace_maker()->get_proposer()) {
             gettimeofday(&timeEnd, NULL);
             long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
             std::cout << usec << " a:a " << stats[blk->hash] << std::endl;
