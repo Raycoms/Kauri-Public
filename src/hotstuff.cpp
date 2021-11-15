@@ -276,7 +276,7 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
             gettimeofday(&timeEnd, NULL);
             long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
             stats[blk->hash] = stats[blk->hash] + usec;
-            HOTSTUFF_LOG_PROTO("result: %s, %s ", blk->hash.to_hex().c_str(), std::to_string(stats[blk->parent_hashes[0]]).c_str());
+            HOTSTUFF_LOG_PROTO("result: %s, %s: %d", blk->hash.to_hex().c_str(), std::to_string(stats[blk->parent_hashes[0]]).c_str(), stats[blk->hash]);
         }
         return;
     }
@@ -417,7 +417,7 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
             gettimeofday(&timeEnd, NULL);
             long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
             stats[blk->hash] = stats[blk->hash] + usec;
-            HOTSTUFF_LOG_PROTO("result: %s, %s ", blk->hash.to_hex().c_str(), std::to_string(stats[blk->parent_hashes[0]]).c_str());
+            HOTSTUFF_LOG_PROTO("result: %s, %s: %d", blk->hash.to_hex().c_str(), std::to_string(stats[blk->parent_hashes[0]]).c_str(), stats[blk->hash]);
         }
         return;
     }
@@ -465,9 +465,8 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
                 if (id == get_pace_maker()->get_proposer()) {
                     gettimeofday(&timeEnd, NULL);
                     long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
-                    std::cout << usec << " a:a " << stats[blk->hash] << std::endl;
                     stats[blk->hash] = stats[blk->hash] + usec;
-                    std::cout << usec << " b:b " << stats[blk->hash] << std::endl;
+                    HOTSTUFF_LOG_PROTO("result: %s, %s: %d", blk->hash.to_hex().c_str(), std::to_string(stats[blk->parent_hashes[0]]).c_str(), stats[blk->hash]);
                 }
                 return;
             }
@@ -539,7 +538,7 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
                 gettimeofday(&timeEnd, NULL);
                 long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
                 stats[blk->hash] = stats[blk->hash] + usec;
-                HOTSTUFF_LOG_PROTO("result: %s, %s ", blk->hash.to_hex().c_str(), std::to_string(stats[blk->hash]).c_str());
+                HOTSTUFF_LOG_PROTO("result: %s, %s: %d", blk->hash.to_hex().c_str(), std::to_string(stats[blk->parent_hashes[0]]).c_str(), stats[blk->hash]);
             }
 
             /*
@@ -556,7 +555,7 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
                 gettimeofday(&timeEnd, NULL);
                 long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
                 stats[blk->hash] = stats[blk->hash] + usec;
-                HOTSTUFF_LOG_PROTO("result: %s, %s ", blk->hash.to_hex().c_str(), std::to_string(stats[blk->parent_hashes[0]]).c_str());
+                HOTSTUFF_LOG_PROTO("result: %s, %s: %d", blk->hash.to_hex().c_str(), std::to_string(stats[blk->parent_hashes[0]]).c_str(), stats[blk->hash]);
             }
         }
     });
