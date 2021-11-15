@@ -466,7 +466,7 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
                     gettimeofday(&timeEnd, NULL);
                     long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
                     stats[blk->hash] = stats[blk->hash] + usec;
-                    HOTSTUFF_LOG_PROTO("result: %s, %s: %d", blk->hash.to_hex().c_str(), std::to_string(stats[blk->parent_hashes[0]]).c_str(), stats[blk->hash]);
+                    //HOTSTUFF_LOG_PROTO("result: %d", blk->hash.to_hex().c_str(), std::to_string(stats[blk->parent_hashes[0]]).c_str(), stats[blk->hash]);
                 }
                 return;
             }
@@ -538,7 +538,7 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
                 gettimeofday(&timeEnd, NULL);
                 long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
                 stats[blk->hash] = stats[blk->hash] + usec;
-                HOTSTUFF_LOG_PROTO("result: %s, %s: %d", blk->hash.to_hex().c_str(), std::to_string(stats[blk->parent_hashes[0]]).c_str(), stats[blk->hash]);
+                //HOTSTUFF_LOG_PROTO("result: %s, %s: %d", blk->hash.to_hex().c_str(), std::to_string(stats[blk->parent_hashes[0]]).c_str(), stats[blk->hash]);
             }
 
             /*
@@ -555,7 +555,7 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
                 gettimeofday(&timeEnd, NULL);
                 long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
                 stats[blk->hash] = stats[blk->hash] + usec;
-                HOTSTUFF_LOG_PROTO("result: %s, %s: %d", blk->hash.to_hex().c_str(), std::to_string(stats[blk->parent_hashes[0]]).c_str(), stats[blk->hash]);
+                //HOTSTUFF_LOG_PROTO("result: %s, %s: %d", blk->hash.to_hex().c_str(), std::to_string(stats[blk->parent_hashes[0]]).c_str(), stats[blk->hash]);
             }
         }
     });
