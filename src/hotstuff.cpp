@@ -272,12 +272,12 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
     if (blk->self_qc->has_n(config.nmajority)) {
         HOTSTUFF_LOG_PROTO("bye vote handler");
         // This is code to measure the actual CPU cost of the protocol.
-        if (id == get_pace_maker()->get_proposer()) {
+        /*if (id == get_pace_maker()->get_proposer()) {
             gettimeofday(&timeEnd, NULL);
             long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
             stats[blk->hash] = stats[blk->hash] + usec;
             HOTSTUFF_LOG_PROTO("result: %s, %s: %d", blk->hash.to_hex().c_str(), std::to_string(stats[blk->parent_hashes[0]]).c_str());
-        }
+        }*/
         return;
     }
 
@@ -348,12 +348,12 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
         }
 
         // This is code to measure the actual CPU cost of the protocol.
-        if (id == get_pace_maker()->get_proposer()) {
+        /*if (id == get_pace_maker()->get_proposer()) {
             struct timeval timeEnd;
             gettimeofday(&timeEnd, NULL);
             long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
             stats[blk->hash] = stats[blk->hash] + usec;
-        }
+        }*/
     });
 }
 
@@ -413,12 +413,12 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
             }
         }
 
-        if (id == get_pace_maker()->get_proposer()) {
+        /*if (id == get_pace_maker()->get_proposer()) {
             gettimeofday(&timeEnd, NULL);
             long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
             stats[blk->hash] = stats[blk->hash] + usec;
             HOTSTUFF_LOG_PROTO("result: %s, %s", blk->hash.to_hex().c_str(), std::to_string(stats[blk->parent_hashes[0]]).c_str());
-        }
+        }*/
         return;
     }
 
@@ -462,102 +462,102 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
             //HOTSTUFF_LOG_PROTO("got %s", std::string(*v).c_str());
 
             if (!cert->has_n(config.nmajority)) {
-                if (id == get_pace_maker()->get_proposer()) {
-                    gettimeofday(&timeEnd, NULL);
-                    long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
-                    stats[blk->hash] = stats[blk->hash] + usec;
-                    //HOTSTUFF_LOG_PROTO("result: %d", blk->hash.to_hex().c_str(), std::to_string(stats[blk->parent_hashes[0]]).c_str(), stats[blk->hash]);
-                }
-                return;
-            }
+              /*if (id == get_pace_maker()->get_proposer()) {
+                  gettimeofday(&timeEnd, NULL);
+                  long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
+                  stats[blk->hash] = stats[blk->hash] + usec;
+                  //HOTSTUFF_LOG_PROTO("result: %d", blk->hash.to_hex().c_str(), std::to_string(stats[blk->parent_hashes[0]]).c_str(), stats[blk->hash]);
+              }*/
+              return;
+          }
 
-            cert->compute();
-            if (!cert->verify(config)) {
-                HOTSTUFF_LOG_PROTO("Error, Invalid Sig!!!");
-                return;
-            }
+          cert->compute();
+          if (!cert->verify(config)) {
+              HOTSTUFF_LOG_PROTO("Error, Invalid Sig!!!");
+              return;
+          }
 
-            if (!piped_queue.empty()) {
-                if (blk->hash == piped_queue.front()) {
-                    piped_queue.pop_front();
-                    HOTSTUFF_LOG_PROTO("Reset Piped block");
+          if (!piped_queue.empty()) {
+              if (blk->hash == piped_queue.front()) {
+                  piped_queue.pop_front();
+                  HOTSTUFF_LOG_PROTO("Reset Piped block");
 
-                    std::cout << "go to town: " << std::endl;
+                  std::cout << "go to town: " << std::endl;
 
-                    update_hqc(blk, cert);
-                    on_qc_finish(blk);
+                  update_hqc(blk, cert);
+                  on_qc_finish(blk);
 
-                    if (!rdy_queue.empty()) {
-                        auto curr_blk = blk;
-                        bool foundChildren = true;
-                        while (foundChildren) {
-                            foundChildren = false;
-                            for (const auto &hash : rdy_queue) {
-                                block_t rdy_blk = storage->find_blk(hash);
-                                if (rdy_blk->get_parent_hashes()[0] == curr_blk->hash) {
-                                    HOTSTUFF_LOG_PROTO("Resolved block in rdy queue %s", hash.to_hex().c_str());
-                                    rdy_queue.erase(std::find(rdy_queue.begin(), rdy_queue.end(), hash));
-                                    piped_queue.erase(std::find(piped_queue.begin(), piped_queue.end(), hash));
+                  if (!rdy_queue.empty()) {
+                      auto curr_blk = blk;
+                      bool foundChildren = true;
+                      while (foundChildren) {
+                          foundChildren = false;
+                          for (const auto &hash : rdy_queue) {
+                              block_t rdy_blk = storage->find_blk(hash);
+                              if (rdy_blk->get_parent_hashes()[0] == curr_blk->hash) {
+                                  HOTSTUFF_LOG_PROTO("Resolved block in rdy queue %s", hash.to_hex().c_str());
+                                  rdy_queue.erase(std::find(rdy_queue.begin(), rdy_queue.end(), hash));
+                                  piped_queue.erase(std::find(piped_queue.begin(), piped_queue.end(), hash));
 
-                                    update_hqc(rdy_blk, rdy_blk->self_qc);
-                                    on_qc_finish(rdy_blk);
-                                    foundChildren = true;
-                                    curr_blk = rdy_blk;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-                else {
-                    auto place = std::find(piped_queue.begin(), piped_queue.end(), blk->hash);
-                    if (place != piped_queue.end()) {
-                        HOTSTUFF_LOG_PROTO("Failed resetting piped block, wasn't front! Adding to rdy_queue %s", blk->hash.to_hex().c_str());
-                        rdy_queue.push_back(blk->hash);
+                                  update_hqc(rdy_blk, rdy_blk->self_qc);
+                                  on_qc_finish(rdy_blk);
+                                  foundChildren = true;
+                                  curr_blk = rdy_blk;
+                                  break;
+                              }
+                          }
+                      }
+                  }
+              }
+              else {
+                  auto place = std::find(piped_queue.begin(), piped_queue.end(), blk->hash);
+                  if (place != piped_queue.end()) {
+                      HOTSTUFF_LOG_PROTO("Failed resetting piped block, wasn't front! Adding to rdy_queue %s", blk->hash.to_hex().c_str());
+                      rdy_queue.push_back(blk->hash);
 
-                        // Don't finish this block until the previous one was finished.
-                        return;
-                    }
-                    else {
-                        std::cout << "go to town: " << std::endl;
+                      // Don't finish this block until the previous one was finished.
+                      return;
+                  }
+                  else {
+                      std::cout << "go to town: " << std::endl;
 
-                        update_hqc(blk, cert);
-                        on_qc_finish(blk);
-                    }
-                }
-            }
-            else
-            {
-                std::cout << "go to town: " << std::endl;
+                      update_hqc(blk, cert);
+                      on_qc_finish(blk);
+                  }
+              }
+          }
+          else
+          {
+              std::cout << "go to town: " << std::endl;
 
-                update_hqc(blk, cert);
-                on_qc_finish(blk);
-            }
-            
+              update_hqc(blk, cert);
+              on_qc_finish(blk);
+          }
+
+          /*if (id == get_pace_maker()->get_proposer()) {
+              gettimeofday(&timeEnd, NULL);
+              long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
+              stats[blk->hash] = stats[blk->hash] + usec;
+              //HOTSTUFF_LOG_PROTO("result: %s, %s", blk->hash.to_hex().c_str(), std::to_string(stats[blk->parent_hashes[0]]).c_str());
+          }*/
+
+          /*
+          struct timeval timeEnd;
+          gettimeofday(&timeEnd, NULL);
+
+          std::cout << "Vote relay handling cost partially threaded: "
+                    << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
+                    << " us to execute."
+                    << std::endl;*/
+        }
+        /*else {
             if (id == get_pace_maker()->get_proposer()) {
                 gettimeofday(&timeEnd, NULL);
                 long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
                 stats[blk->hash] = stats[blk->hash] + usec;
                 //HOTSTUFF_LOG_PROTO("result: %s, %s", blk->hash.to_hex().c_str(), std::to_string(stats[blk->parent_hashes[0]]).c_str());
             }
-
-            /*
-            struct timeval timeEnd;
-            gettimeofday(&timeEnd, NULL);
-
-            std::cout << "Vote relay handling cost partially threaded: "
-                      << ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec)
-                      << " us to execute."
-                      << std::endl;*/
-        }
-        else {
-            if (id == get_pace_maker()->get_proposer()) {
-                gettimeofday(&timeEnd, NULL);
-                long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
-                stats[blk->hash] = stats[blk->hash] + usec;
-                //HOTSTUFF_LOG_PROTO("result: %s, %s", blk->hash.to_hex().c_str(), std::to_string(stats[blk->parent_hashes[0]]).c_str());
-            }
-        }
+        }*/
     });
 
     /*gettimeofday(&timeEnd, NULL);
@@ -930,11 +930,11 @@ void HotStuffBase::beat() {
                     gettimeofday(&last_block_time, NULL);
                     do_broadcast_proposal(prop);
 
-                    if (id == get_pace_maker()->get_proposer()) {
+                    /*if (id == get_pace_maker()->get_proposer()) {
                         gettimeofday(&timeEnd, NULL);
                         long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
                         stats.insert(std::make_pair(piped_block->hash, usec));
-                    }
+                    }*/
                     piped_submitted = false;
                 }
             } else {
