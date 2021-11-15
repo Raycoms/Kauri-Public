@@ -272,12 +272,12 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
     if (blk->self_qc->has_n(config.nmajority)) {
         HOTSTUFF_LOG_PROTO("bye vote handler");
         // This is code to measure the actual CPU cost of the protocol.
-        /*if (id == get_pace_maker()->get_proposer()) {
+        if (id == get_pace_maker()->get_proposer()) {
             gettimeofday(&timeEnd, NULL);
             long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
             stats[blk->hash] = stats[blk->hash] + usec;
             HOTSTUFF_LOG_PROTO("result: %s, %s ", blk->hash.to_hex().c_str(), std::to_string(stats[blk->parent_hashes[0]]).c_str());
-        }*/
+        }
         return;
     }
 
@@ -348,14 +348,12 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
         }
 
         // This is code to measure the actual CPU cost of the protocol.
-        /*if (id == get_pace_maker()->get_proposer()) {
-           struct timeval timeEnd;
+        if (id == get_pace_maker()->get_proposer()) {
+            struct timeval timeEnd;
             gettimeofday(&timeEnd, NULL);
             long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
-            std::cout << usec << " a:a " << stats[blk->hash] << std::endl;
             stats[blk->hash] = stats[blk->hash] + usec;
-            std::cout << usec << " b:b " << stats[blk->hash] << std::endl;
-        }*/
+        }
     });
 }
 
@@ -415,12 +413,12 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
             }
         }
 
-        /*if (id == get_pace_maker()->get_proposer()) {
+        if (id == get_pace_maker()->get_proposer()) {
             gettimeofday(&timeEnd, NULL);
             long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
             stats[blk->hash] = stats[blk->hash] + usec;
             HOTSTUFF_LOG_PROTO("result: %s, %s ", blk->hash.to_hex().c_str(), std::to_string(stats[blk->parent_hashes[0]]).c_str());
-        }*/
+        }
         return;
     }
 
@@ -464,13 +462,13 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
             //HOTSTUFF_LOG_PROTO("got %s", std::string(*v).c_str());
 
             if (!cert->has_n(config.nmajority)) {
-                /*if (id == get_pace_maker()->get_proposer()) {
+                if (id == get_pace_maker()->get_proposer()) {
                     gettimeofday(&timeEnd, NULL);
                     long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
                     std::cout << usec << " a:a " << stats[blk->hash] << std::endl;
                     stats[blk->hash] = stats[blk->hash] + usec;
                     std::cout << usec << " b:b " << stats[blk->hash] << std::endl;
-                }*/
+                }
                 return;
             }
 
@@ -537,12 +535,12 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
                 on_qc_finish(blk);
             }
             
-            /*if (id == get_pace_maker()->get_proposer()) {
+            if (id == get_pace_maker()->get_proposer()) {
                 gettimeofday(&timeEnd, NULL);
                 long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
                 stats[blk->hash] = stats[blk->hash] + usec;
                 HOTSTUFF_LOG_PROTO("result: %s, %s ", blk->hash.to_hex().c_str(), std::to_string(stats[blk->hash]).c_str());
-            }*/
+            }
 
             /*
             struct timeval timeEnd;
@@ -553,14 +551,14 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
                       << " us to execute."
                       << std::endl;*/
         }
-        /*else {
+        else {
             if (id == get_pace_maker()->get_proposer()) {
                 gettimeofday(&timeEnd, NULL);
                 long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
                 stats[blk->hash] = stats[blk->hash] + usec;
                 HOTSTUFF_LOG_PROTO("result: %s, %s ", blk->hash.to_hex().c_str(), std::to_string(stats[blk->parent_hashes[0]]).c_str());
             }
-        }*/
+        }
     });
 
     /*gettimeofday(&timeEnd, NULL);
@@ -933,11 +931,11 @@ void HotStuffBase::beat() {
                     gettimeofday(&last_block_time, NULL);
                     do_broadcast_proposal(prop);
 
-                    /*if (id == get_pace_maker()->get_proposer()) {
+                    if (id == get_pace_maker()->get_proposer()) {
                         gettimeofday(&timeEnd, NULL);
                         long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
                         stats.insert(std::make_pair(piped_block->hash, usec));
-                    }*/
+                    }
                     piped_submitted = false;
                 }
             } else {
