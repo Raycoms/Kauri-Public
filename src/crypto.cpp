@@ -76,7 +76,11 @@ namespace hotstuff {
      * Verify the aggregated signature.
      */
     bool QuorumCertAggBLS::verify(const ReplicaConfig &config) {
-        if (theSig == nullptr) return false;
+      compute();
+      if (theSig == nullptr) {
+        return false;
+      }
+
         vector<bls::G1Element> pubs;
         for (unsigned int i = 0; i < rids.size(); i++) {
             if (rids[i] == 1) {
@@ -169,27 +173,25 @@ namespace hotstuff {
       }
     }
 
-    promise_t QuorumCertAggBLS::verify(const ReplicaConfig &config, VeriPool &vpool) {
-        if (theSig == nullptr)
-            return promise_t([](promise_t &pm) { pm.resolve(false); });
-        std::vector<promise_t> vpm;
+    promise_t QuorumCertAggBLS::verify(const ReplicaConfig &config,
+                                       VeriPool &vpool) {
+      std::vector<promise_t> vpm;
 
-        struct timeval timeStart,timeEnd;
-        gettimeofday(&timeStart, nullptr);
-
-        vector<bls::G1Element> pubs;
-        for (unsigned int i = 0; i < rids.size(); i++) {
-            if (rids[i] == 1) {
-                pubs.push_back(*dynamic_cast<const PubKeyBLS &>(config.get_pubkey(i)).data);
-            }
+      vector<bls::G1Element> pubs;
+      for (unsigned int i = 0; i < rids.size(); i++) {
+        if (rids[i] == 1) {
+          pubs.push_back(
+              *dynamic_cast<const PubKeyBLS &>(config.get_pubkey(i)).data);
         }
+      }
 
-        vpm.push_back(vpool.verify(new SigVeriTaskBLSAgg(obj_hash, pubs, *theSig)));
+      vpm.push_back(vpool.verify(new SigVeriTaskBLSAgg(*this, pubs)));
 
-        return promise::all(vpm).then([](const promise::values_t &values) {
-            for (const auto &v: values)
-                if (!promise::any_cast<bool>(v)) return false;
-            return true;
-        });
+      return promise::all(vpm).then([](const promise::values_t &values) {
+        for (const auto &v : values)
+          if (!promise::any_cast<bool>(v))
+            return false;
+        return true;
+      });
     }
-}
+    }

@@ -840,22 +840,6 @@ class QuorumCertSecp256k1: public QuorumCert {
         }
     };
 
-    class SigVeriTaskBLSAgg: public VeriTask {
-        uint256_t msg;
-        vector<bls::G1Element> pubs;
-        SigSecBLSAgg sig;
-    public:
-        SigVeriTaskBLSAgg(uint256_t msg,
-                          vector<bls::G1Element> pubs,
-                          const SigSecBLSAgg &sig):
-                msg(std::move(msg)), pubs(std::move(pubs)), sig(sig) {}
-        virtual ~SigVeriTaskBLSAgg() = default;
-
-        bool verify() override {
-            return bls::PopSchemeMPL::FastAggregateVerify(pubs, arrToVec(msg.to_bytes()), *sig.data);
-        }
-    };
-
     class PartCertBLSAgg: public SigSecBLSAgg, public PartCert {
         uint256_t obj_hash;
 
@@ -894,11 +878,9 @@ class QuorumCertSecp256k1: public QuorumCert {
         }
     };
 
-
     class QuorumCertAggBLS: public QuorumCert {
         uint256_t obj_hash;
         salticidae::Bits rids;
-        SigSecBLSAgg* theSig = nullptr;
         std::vector<std::pair<salticidae::Bits, bls::G2Element>> sigs;
         uint32_t n = 0;
 
@@ -933,13 +915,11 @@ class QuorumCertSecp256k1: public QuorumCert {
 
         void compute() override {
             if (theSig == nullptr) {
-
                 vector<bls::G2Element> sigvec;
                 for(const auto& elem : sigs)
                     sigvec.push_back(elem.second);
 
                 theSig = new SigSecBLSAgg(bls::PopSchemeMPL::Aggregate(sigvec));
-                //sigs.clear();
             }
         }
 
@@ -974,7 +954,23 @@ class QuorumCertSecp256k1: public QuorumCert {
                 theSig->unserialize(s);
             }
         }
+        SigSecBLSAgg* theSig = nullptr;
     };
-}
+
+    class SigVeriTaskBLSAgg : public VeriTask {
+      QuorumCertAggBLS cert;
+      vector<bls::G1Element> pubs;
+
+    public:
+      SigVeriTaskBLSAgg(QuorumCertAggBLS cert, vector<bls::G1Element> pubs)
+          : cert(std::move(cert)), pubs(std::move(pubs)) {}
+      virtual ~SigVeriTaskBLSAgg() = default;
+
+      bool verify() override {
+        cert.compute();
+        return bls::PopSchemeMPL::FastAggregateVerify(pubs, arrToVec(cert.get_obj_hash().to_bytes()), *cert.theSig->data);
+      }
+    };
+} // namespace hotstuff
 
 #endif

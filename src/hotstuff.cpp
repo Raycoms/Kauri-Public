@@ -323,27 +323,33 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
             }
           }
 
-          cert->compute();
-          if (!cert->verify(config)) {
-            HOTSTUFF_LOG_PROTO("Error, Invalid Sig!!!");
-            return;
-          }
+          promise::all(std::vector<promise_t>{cert->verify(config, vpool)})
+              .then([this, blk, v = std::move(v)](const promise::values_t values) {
+                if (!promise::any_cast<bool>(values[0])) {
+                  HOTSTUFF_LOG_PROTO("Error, Invalid Sig!!!");
+                  return;
+                }
 
-          std::cout << " send relay message: "
-                    << v->blk_hash.to_hex().c_str() << std::endl;
-          pn.send_msg(MsgRelay(VoteRelay(v->blk_hash,blk->self_qc->clone(), this)),parentPeer);
+                std::cout << " send relay message: "<< v->blk_hash.to_hex().c_str() << std::endl;
+                pn.send_msg(MsgRelay(VoteRelay(v->blk_hash,blk->self_qc->clone(), this)),parentPeer);
+              });
+
           return;
         }
 
         cert->add_part(config, v->voter, *v->cert);
         if (cert != nullptr && cert->get_obj_hash() == blk->get_hash()) {
             if (cert->has_n(config.nmajority)) {
-                cert->compute();
-                if (id != 0 && !cert->verify(config)) {
-                    throw std::runtime_error("Invalid Sigs in intermediate signature!");
-                }
-                update_hqc(blk, cert);
-                on_qc_finish(blk);
+
+              promise::all(std::vector<promise_t>{cert->verify(config, vpool)})
+                  .then([this, blk, v = std::move(v)](const promise::values_t values) {
+                    if (!promise::any_cast<bool>(values[0])) {
+                      throw std::runtime_error("Invalid Sigs in intermediate signature!");
+                    }
+
+                    update_hqc(blk, blk->self_qc);
+                    on_qc_finish(blk);
+                  });
             }
         }
 
@@ -450,7 +456,6 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
             std::cout << "merge quorum " << std::endl;
             if (id != pmaker->get_proposer()) {
                 if (!cert->has_n(numberOfChildren + 1)) return;
-                cert->compute();
                 if (!cert->verify(config)) {
                     throw std::runtime_error("Invalid Sigs in intermediate signature!");
                 }
@@ -471,7 +476,6 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
               return;
           }
 
-          cert->compute();
           if (!cert->verify(config)) {
               HOTSTUFF_LOG_PROTO("Error, Invalid Sig!!!");
               return;
