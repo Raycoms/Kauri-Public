@@ -914,6 +914,7 @@ class QuorumCertSecp256k1: public QuorumCert {
         }
 
         void compute() override {
+          HOTSTUFF_LOG_PROTO("Compute %d", sigs.size());
             if (theSig == nullptr && sigs.size() > 1) {
                 vector<bls::G2Element> sigvec;
                 for(const auto& elem : sigs)
