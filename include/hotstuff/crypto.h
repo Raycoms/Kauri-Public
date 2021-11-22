@@ -887,7 +887,7 @@ class QuorumCertSecp256k1: public QuorumCert {
     public:
         QuorumCertAggBLS() = default;
         QuorumCertAggBLS(const ReplicaConfig &config, const uint256_t &obj_hash);
-        QuorumCertAggBLS (const QuorumCertAggBLS &other): obj_hash(other.obj_hash), rids(other.rids)
+        QuorumCertAggBLS (const QuorumCertAggBLS &other): obj_hash(other.obj_hash), rids(other.rids), sigs(other.sigs), n(other.n)
         {
             if (other.theSig != nullptr) {
                 theSig = new SigSecBLSAgg(*other.theSig);
