@@ -958,7 +958,7 @@ class QuorumCertSecp256k1: public QuorumCert {
     };
 
     class SigVeriTaskBLSAgg : public VeriTask {
-      QuorumCertAggBLS cert;
+      QuorumCertAggBLS &cert;
       vector<bls::G1Element> pubs;
 
     public:
