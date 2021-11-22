@@ -454,11 +454,17 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
             std::cout << "merge quorum " << std::endl;
             if (id != pmaker->get_proposer()) {
                 if (!cert->has_n(numberOfChildren + 1)) return;
-                if (!cert->verify(config)) {
-                    throw std::runtime_error("Invalid Sigs in intermediate signature!");
-                }
-                std::cout << "Send Vote Relay: " << v->blk_hash.to_hex() << std::endl;
-                pn.send_msg(MsgRelay(VoteRelay(v->blk_hash, cert.get()->clone(), this)), parentPeer);
+
+              promise::all(std::vector<promise_t>{cert->verify(config, vpool)})
+                  .then([this, blk, v = std::move(v), &cert](const promise::values_t values) {
+                    if (!promise::any_cast<bool>(values[0])) {
+                      throw std::runtime_error("Invalid Sigs in intermediate signature!");
+                      return;
+                    }
+
+                    std::cout << " send relay message: "<< v->blk_hash.to_hex().c_str() << std::endl;
+                    pn.send_msg(MsgRelay(VoteRelay(v->blk_hash,cert->clone(), this)),parentPeer);
+                  });
                 return;
             }
 
