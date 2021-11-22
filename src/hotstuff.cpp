@@ -324,14 +324,14 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
           }
 
           promise::all(std::vector<promise_t>{cert->verify(config, vpool)})
-              .then([this, blk, v = std::move(v)](const promise::values_t values) {
+              .then([this, blk, v = std::move(v), &cert](const promise::values_t values) {
                 if (!promise::any_cast<bool>(values[0])) {
                   HOTSTUFF_LOG_PROTO("Error, Invalid Sig!!!");
                   return;
                 }
 
                 std::cout << " send relay message: "<< v->blk_hash.to_hex().c_str() << std::endl;
-                pn.send_msg(MsgRelay(VoteRelay(v->blk_hash,blk->self_qc->clone(), this)),parentPeer);
+                pn.send_msg(MsgRelay(VoteRelay(v->blk_hash,cert->clone(), this)),parentPeer);
               });
 
           return;
@@ -342,12 +342,12 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
             if (cert->has_n(config.nmajority)) {
 
               promise::all(std::vector<promise_t>{cert->verify(config, vpool)})
-                  .then([this, blk, v = std::move(v)](const promise::values_t values) {
+                  .then([this, blk, v = std::move(v), &cert](const promise::values_t values) {
                     if (!promise::any_cast<bool>(values[0])) {
                       throw std::runtime_error("Invalid Sigs in intermediate signature!");
                     }
 
-                    update_hqc(blk, blk->self_qc);
+                    update_hqc(blk, cert);
                     on_qc_finish(blk);
                   });
             }
