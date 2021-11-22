@@ -881,7 +881,6 @@ class QuorumCertSecp256k1: public QuorumCert {
     class QuorumCertAggBLS: public QuorumCert {
         uint256_t obj_hash;
         salticidae::Bits rids;
-        std::vector<std::pair<salticidae::Bits, bls::G2Element>> sigs;
         uint32_t n = 0;
 
     public:
@@ -955,6 +954,7 @@ class QuorumCertSecp256k1: public QuorumCert {
             }
         }
         SigSecBLSAgg* theSig = nullptr;
+        std::vector<std::pair<salticidae::Bits, bls::G2Element>> sigs;
     };
 
     class SigVeriTaskBLSAgg : public VeriTask {
@@ -971,7 +971,11 @@ class QuorumCertSecp256k1: public QuorumCert {
         if (cert.theSig == nullptr) {
           return false;
         }
-        return bls::PopSchemeMPL::FastAggregateVerify(pubs, arrToVec(cert.get_obj_hash().to_bytes()), *cert.theSig->data);
+        if( bls::PopSchemeMPL::FastAggregateVerify(pubs, arrToVec(cert.get_obj_hash().to_bytes()), *cert.theSig->data) ) {
+          cert.sigs.clear();
+          return true;
+        }
+        return false;
       }
     };
 } // namespace hotstuff
