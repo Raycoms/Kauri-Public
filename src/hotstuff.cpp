@@ -454,18 +454,12 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
             std::cout << "merge quorum " << std::endl;
             if (id != pmaker->get_proposer()) {
                 if (!cert->has_n(numberOfChildren + 1)) return;
-
-              promise::all(std::vector<promise_t>{cert->verify(config, vpool)})
-                  .then([this, blk, v = std::move(v), &cert](const promise::values_t values) {
-                    if (!promise::any_cast<bool>(values[0])) {
-                      throw std::runtime_error("Invalid Sigs in intermediate signature!");
-                    }
-
-                    std::cout << "Send Vote Relay: " << v->blk_hash.to_hex() << std::endl;
-                    pn.send_msg(MsgRelay(VoteRelay(v->blk_hash,cert->clone(), this)),parentPeer);
-                    });
-
-              return;
+                if (!cert->verify(config)) {
+                    throw std::runtime_error("Invalid Sigs in intermediate signature!");
+                }
+                std::cout << "Send Vote Relay: " << v->blk_hash.to_hex() << std::endl;
+                pn.send_msg(MsgRelay(VoteRelay(v->blk_hash, cert.get()->clone(), this)), parentPeer);
+                return;
             }
 
             //HOTSTUFF_LOG_PROTO("got %s", std::string(*v).c_str());
@@ -480,71 +474,67 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
               return;
           }
 
-          promise::all(std::vector<promise_t>{cert->verify(config, vpool)})
-              .then([this, blk, v = std::move(v), &cert](const promise::values_t values) {
-                if (!promise::any_cast<bool>(values[0])) {
-                  HOTSTUFF_LOG_PROTO("Error, Invalid Sig!!!");
-                  return;
-                }
+          if (!cert->verify(config)) {
+              HOTSTUFF_LOG_PROTO("Error, Invalid Sig!!!");
+              return;
+          }
 
-                if (!piped_queue.empty()) {
-                  if (blk->hash == piped_queue.front()) {
-                    piped_queue.pop_front();
-                    HOTSTUFF_LOG_PROTO("Reset Piped block");
+          if (!piped_queue.empty()) {
+              if (blk->hash == piped_queue.front()) {
+                  piped_queue.pop_front();
+                  HOTSTUFF_LOG_PROTO("Reset Piped block");
 
-                    std::cout << "go to town: " << std::endl;
+                  std::cout << "go to town: " << std::endl;
 
-                    update_hqc(blk, cert);
-                    on_qc_finish(blk);
+                  update_hqc(blk, cert);
+                  on_qc_finish(blk);
 
-                    if (!rdy_queue.empty()) {
+                  if (!rdy_queue.empty()) {
                       auto curr_blk = blk;
                       bool foundChildren = true;
                       while (foundChildren) {
-                        foundChildren = false;
-                        for (const auto &hash : rdy_queue) {
-                          block_t rdy_blk = storage->find_blk(hash);
-                          if (rdy_blk->get_parent_hashes()[0] == curr_blk->hash) {
-                            HOTSTUFF_LOG_PROTO("Resolved block in rdy queue %s", hash.to_hex().c_str());
-                            rdy_queue.erase(std::find(rdy_queue.begin(), rdy_queue.end(), hash));
-                            piped_queue.erase(std::find(piped_queue.begin(), piped_queue.end(), hash));
+                          foundChildren = false;
+                          for (const auto &hash : rdy_queue) {
+                              block_t rdy_blk = storage->find_blk(hash);
+                              if (rdy_blk->get_parent_hashes()[0] == curr_blk->hash) {
+                                  HOTSTUFF_LOG_PROTO("Resolved block in rdy queue %s", hash.to_hex().c_str());
+                                  rdy_queue.erase(std::find(rdy_queue.begin(), rdy_queue.end(), hash));
+                                  piped_queue.erase(std::find(piped_queue.begin(), piped_queue.end(), hash));
 
-                            update_hqc(rdy_blk, rdy_blk->self_qc);
-                            on_qc_finish(rdy_blk);
-                            foundChildren = true;
-                            curr_blk = rdy_blk;
-                            break;
+                                  update_hqc(rdy_blk, rdy_blk->self_qc);
+                                  on_qc_finish(rdy_blk);
+                                  foundChildren = true;
+                                  curr_blk = rdy_blk;
+                                  break;
+                              }
                           }
-                        }
                       }
-                    }
                   }
-                  else {
-                    auto place = std::find(piped_queue.begin(), piped_queue.end(), blk->hash);
-                    if (place != piped_queue.end()) {
+              }
+              else {
+                  auto place = std::find(piped_queue.begin(), piped_queue.end(), blk->hash);
+                  if (place != piped_queue.end()) {
                       HOTSTUFF_LOG_PROTO("Failed resetting piped block, wasn't front! Adding to rdy_queue %s", blk->hash.to_hex().c_str());
                       rdy_queue.push_back(blk->hash);
 
                       // Don't finish this block until the previous one was finished.
                       return;
-                    }
-                    else {
+                  }
+                  else {
                       std::cout << "go to town: " << std::endl;
 
                       update_hqc(blk, cert);
                       on_qc_finish(blk);
-                    }
                   }
-                }
-                else
-                {
-                  std::cout << "go to town: " << std::endl;
+              }
+          }
+          else
+          {
+              std::cout << "go to town: " << std::endl;
 
-                  update_hqc(blk, cert);
-                  on_qc_finish(blk);
-                }
-
-              });
+              update_hqc(blk, cert);
+              on_qc_finish(blk);
+          }
 
           /*if (id == get_pace_maker()->get_proposer()) {
               gettimeofday(&timeEnd, NULL);
