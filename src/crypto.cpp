@@ -173,24 +173,24 @@ namespace hotstuff {
       }
     }
 
-    promise_t QuorumCertAggBLS::verify(const ReplicaConfig &config,
-                                       VeriPool &vpool) {
+    promise_t QuorumCertAggBLS::verify(const ReplicaConfig &config, VeriPool &vpool) {
       std::vector<promise_t> vpm;
 
       vector<bls::G1Element> pubs;
       for (unsigned int i = 0; i < rids.size(); i++) {
         if (rids[i] == 1) {
-          pubs.push_back(
-              *dynamic_cast<const PubKeyBLS &>(config.get_pubkey(i)).data);
+          pubs.push_back(*dynamic_cast<const PubKeyBLS &>(config.get_pubkey(i)).data);
         }
       }
 
       vpm.push_back(vpool.verify(new SigVeriTaskBLSAgg(*this, pubs)));
 
-      return promise::all(vpm).then([](const promise::values_t &values) {
+      return promise::all(vpm).then([*this](const promise::values_t &values) {
         for (const auto &v : values)
           if (!promise::any_cast<bool>(v))
             return false;
+
+        HOTSTUFF_LOG_PROTO("Solved: %d", sigs.size());
         return true;
       });
     }
