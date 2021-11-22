@@ -970,6 +970,9 @@ class QuorumCertSecp256k1: public QuorumCert {
 
       bool verify() override {
         cert.compute();
+        if (cert.theSig == nullptr) {
+          return false;
+        }
         return bls::PopSchemeMPL::FastAggregateVerify(pubs, arrToVec(cert.get_obj_hash().to_bytes()), *cert.theSig->data);
       }
     };
