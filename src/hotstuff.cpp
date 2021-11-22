@@ -438,8 +438,6 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
             //v->cert->verify(config, vpool),
             promise_t([](promise_t &pm) { pm.resolve(true); }),
     }).then([this, blk, v=std::move(v), timeStart](const promise::values_t& values) {
-        struct timeval timeEnd;
-
         if (!promise::any_cast<bool>(values[1]))
             LOG_WARN ("invalid vote-relay");
         auto &cert = blk->self_qc;

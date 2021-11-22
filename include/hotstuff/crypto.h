@@ -962,8 +962,8 @@ class QuorumCertSecp256k1: public QuorumCert {
       vector<bls::G1Element> pubs;
 
     public:
-      SigVeriTaskBLSAgg(QuorumCertAggBLS cert, vector<bls::G1Element> pubs)
-          : cert(std::move(cert)), pubs(std::move(pubs)) {}
+      SigVeriTaskBLSAgg(QuorumCertAggBLS &cert, vector<bls::G1Element> pubs)
+          : cert(cert), pubs(std::move(pubs)) {}
       virtual ~SigVeriTaskBLSAgg() = default;
 
       bool verify() override {
