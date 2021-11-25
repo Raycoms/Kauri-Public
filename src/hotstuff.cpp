@@ -828,7 +828,7 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
     for (const PeerId& peer : peers) {
         if (childPeers.find(peer) != childPeers.end() || parentPeer == peer) {
           pn.conn_peer(peer);
-          usleep(5);
+          usleep(10);
           std::cout << " ccconn " << std::endl;
         }
     }
