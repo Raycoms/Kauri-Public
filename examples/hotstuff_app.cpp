@@ -259,8 +259,8 @@ int main(int argc, char **argv) {
                 salticidae::X509::create_from_der(
                     hotstuff::from_hex(opt_tls_cert->get())));
         repnet_config
-            .conn_timeout(500)
-            .conn_server_timeout(10)
+            .conn_timeout(600)
+            .conn_server_timeout(100)
             .enable_tls(true)
             .tls_key(tls_priv_key)
             .tls_cert(tls_cert);
