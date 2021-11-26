@@ -10,6 +10,7 @@ pipelatency=$4
 latency=$5
 bandwidth=$6
 blocksize=$7
+all=$8
 
 # Get Service-name
 service="server-$KAURI_UUID"
@@ -21,6 +22,13 @@ git checkout latest-opt
 
 # Do a quick compile of the branch
 git pull && cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED=ON -DHOTSTUFF_PROTO_LOG=ON && make
+
+while [ $({ dig A $service1 +short & dig A $service +short; } | wc -l) -le $all ]
+do
+ sleep 0.1
+ echo $({ dig A $service1 +short & dig A $service +short; } | wc -l)
+done
+
 
 sleep 30
 
