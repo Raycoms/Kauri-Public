@@ -61,7 +61,12 @@ class HotStuffCore {
 
     void on_receive_proposal_(const Proposal &prop);
 
-  protected:
+    uint64_t summed_latency;
+    uint64_t processed_blocks;
+
+    std::unordered_map<const uint256_t, timeval> proposal_time;
+
+    protected:
     ReplicaID id;                  /**< identity of the replica itself */
 
     block_t get_delivered_blk(const uint256_t &blk_hash);
@@ -87,13 +92,7 @@ bool rdy = false;
 
     void on_propose_(const Proposal &prop);
 
-    std::unordered_map<const uint256_t, timeval> proposal_time;
-
-    uint64_t processed_blocks;
-
-    uint64_t summed_latency;
-
-  public:
+public:
     BoxObj<EntityStorage> storage;
     uint16_t numberOfChildren;
 

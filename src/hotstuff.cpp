@@ -200,25 +200,6 @@ promise_t HotStuffBase::async_deliver_blk(const uint256_t &blk_hash, const PeerI
         /* the parents should be delivered */
         for (const auto &phash: blk->get_parent_hashes())
             pms.push_back(async_deliver_blk(phash, replica));
-
-      if (blk->height > 50) {
-        struct timeval end;
-        gettimeofday(&end, NULL);
-        auto hash = blk->hash;
-        proposal_time[blk->hash] = end;
-
-        if (blk->qc_ref) {
-          auto it = proposal_time.find(blk->qc_ref->hash);
-          if (it != proposal_time.end()) {
-            struct timeval start = it->second;
-            long ms = ((end.tv_sec - start.tv_sec) * 1000000 + end.tv_usec - start.tv_usec) / 1000;
-            processed_blocks++;
-            summed_latency += ms;
-            HOTSTUFF_LOG_PROTO("Average: %d", summed_latency / processed_blocks);
-          }
-        }
-      }
-
         promise::all(pms).then([this, blk](const promise::values_t values) {
             auto ret = promise::any_cast<bool>(values[0]) && this->on_deliver_blk(blk);
             if (!ret)
