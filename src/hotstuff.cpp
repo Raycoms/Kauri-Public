@@ -820,6 +820,7 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
             parent_peer = temp_parent_peer;
         } // i = 1
         processesOnLevel = std::min(curr_fanout * processesOnLevel, remaining); // 10
+        fanout = 25;
     }
 
     HOTSTUFF_LOG_PROTO("total children: %d", children.size());
