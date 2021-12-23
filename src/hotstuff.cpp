@@ -269,7 +269,7 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
     std::cout << "vote handler: " << msg.vote.blk_hash.to_hex() << " " << std::endl;
 
     // Early exit if we processed sufficient votes already.
-    if (blk->self_qc->has_n(config.nmajority)) {
+    if (blk->self_qc->has_n(numberOfChildren)) {
         HOTSTUFF_LOG_PROTO("bye vote handler");
         // This is code to measure the actual CPU cost of the protocol.
         /*if (id == get_pace_maker()->get_proposer()) {
@@ -295,13 +295,13 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
 
         // If the process is not a proposer, we have to relay data.
         if (id != pmaker->get_proposer()) {
-          if (cert->has_n(numberOfChildren + 1)) {
+          if (cert->has_n(numberOfChildren)) {
             return;
           }
 
           cert->add_part(config, v->voter, *v->cert);
 
-          if (!cert->has_n(numberOfChildren + 1)) {
+          if (!cert->has_n(numberOfChildren)) {
             return;
           }
 
