@@ -295,13 +295,13 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
 
         // If the process is not a proposer, we have to relay data.
         if (id != pmaker->get_proposer()) {
-          if (cert->has_n(numberOfChildren)) {
+          if (cert->has_n(numberOfChildren + 1)) {
             return;
           }
 
           cert->add_part(config, v->voter, *v->cert);
 
-          if (!cert->has_n(numberOfChildren)) {
+          if (!cert->has_n(numberOfChildren + 1)) {
             return;
           }
 
