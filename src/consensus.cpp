@@ -68,6 +68,8 @@ block_t HotStuffCore::get_delivered_blk(const uint256_t &blk_hash) {
 }
 
 bool HotStuffCore::on_deliver_blk(const block_t &blk) {
+    HOTSTUFF_LOG_PROTO("Core deliver");
+
     if (blk->delivered)
     {
         LOG_WARN("attempt to deliver a block twice");
@@ -97,6 +99,25 @@ bool HotStuffCore::on_deliver_blk(const block_t &blk) {
     tails.insert(blk);
 
     blk->delivered = true;
+
+    if (blk->height > 50) {
+        struct timeval end;
+        gettimeofday(&end, NULL);
+        auto hash = blk->hash;
+        proposal_time[blk->hash] = end;
+
+        if (blk->qc_ref) {
+            auto it = proposal_time.find(blk->qc_ref->hash);
+            if (it != proposal_time.end()) {
+                struct timeval start = it->second;
+                long ms = ((end.tv_sec - start.tv_sec) * 1000000 + end.tv_usec - start.tv_usec) / 1000;
+                processed_blocks++;
+                summed_latency += ms;
+                HOTSTUFF_LOG_PROTO("Average: %d", summed_latency / processed_blocks);
+            }
+        }
+    }
+
     HOTSTUFF_LOG_PROTO("deliver %s", std::string(*blk).c_str());
     return true;
 }
@@ -215,11 +236,11 @@ block_t HotStuffCore::on_propose(const std::vector<uint256_t> &cmds,
     /* broadcast to other replicas */
     do_broadcast_proposal(prop);
 
-    if (id == 0) {
+    /*if (id == 0) {
         gettimeofday(&timeEnd, NULL);
         long usec = ((timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + timeEnd.tv_usec - timeStart.tv_usec);
         stats.insert(std::make_pair(bnew->hash, usec));
-    }
+    }*/
 
     return bnew;
 }
@@ -318,7 +339,7 @@ void HotStuffCore::on_receive_vote(const Vote &vote) {
     }
 
     if (vote.voter != get_id()) return;
-    if (blk->self_qc != nullptr && blk->self_qc->has_n(config.nmajority)) return;
+    if (blk->qc != nullptr && blk->qc->has_n(config.nmajority)) return;
 
     //std::cout << "self vote" << std::endl;
     auto &qc = blk->self_qc;

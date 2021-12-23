@@ -161,7 +161,7 @@ int main(int argc, char **argv) {
     auto opt_help = Config::OptValFlag::create(false);
     auto opt_pace_maker = Config::OptValStr::create("dummy");
     auto opt_fixed_proposer = Config::OptValInt::create(1);
-    auto opt_base_timeout = Config::OptValDouble::create(1);
+    auto opt_base_timeout = Config::OptValDouble::create(2);
     auto opt_prop_delay = Config::OptValDouble::create(1);
     auto opt_imp_timeout = Config::OptValDouble::create(11);
     auto opt_nworker = Config::OptValInt::create(1);
@@ -259,6 +259,8 @@ int main(int argc, char **argv) {
                 salticidae::X509::create_from_der(
                     hotstuff::from_hex(opt_tls_cert->get())));
         repnet_config
+            .conn_timeout(600)
+            .conn_server_timeout(100)
             .enable_tls(true)
             .tls_key(tls_priv_key)
             .tls_cert(tls_cert);
