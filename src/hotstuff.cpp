@@ -269,7 +269,7 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
     std::cout << "vote handler: " << msg.vote.blk_hash.to_hex() << " " << std::endl;
 
     // Early exit if we processed sufficient votes already.
-    if (blk->self_qc->has_n(numberOfChildren)) {
+    if (blk->self_qc->has_n(config.nmajority)) {
         HOTSTUFF_LOG_PROTO("bye vote handler");
         // This is code to measure the actual CPU cost of the protocol.
         /*if (id == get_pace_maker()->get_proposer()) {
