@@ -79,7 +79,7 @@ if __name__ == "__main__":
     main_conf.write("piped_latency = {}\n".format(args.pipelatency))
     main_conf.write("async_blocks = {}\n".format(args.pipedepth))
     main_conf.write("base-timeout = {}\n".format(2.0))
-    main_conf.write("prop-delay = {}\n".format(1.0))
+    main_conf.write("prop-delay = {}\n".format(0.5))
 
     for r in zip(replicas, keys, tls_keys2[:len(keys)], itertools.count(0)):
         main_conf.write("replica = {}, {}, {}\n".format(r[0], r[1][0], r[2][2]))
