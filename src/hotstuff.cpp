@@ -792,11 +792,11 @@ ReplicaID HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint
         failures++;
 
         // 9 times
-        if (failures < 9) {
+        if (failures < 9 && fanout < global_replicas.size() / 2) {
             //we actually do this m+1 times (depending on the depth right))
             std::rotate(global_replicas.begin(), global_replicas.begin() + fanout + 1, global_replicas.end());
         }
-        else if (failures == 9 && !faulty.empty()) {
+        else if (failures == 9 && !faulty.empty() && fanout < global_replicas.size() / 2) {
             std::rotate(global_replicas.begin(), global_replicas.begin() + fanout + 2, global_replicas.end());
 
             auto cert_hash = std::move(std::get<2>(original_replicas.at(faulty.at(0))));
@@ -867,8 +867,7 @@ ReplicaID HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint
 
         // number of faulty processes
         if (!faulty.empty() && std::find(faulty.begin(), faulty.end(), id) != faulty.end()) {
-            throw std::invalid_argument(
-                    "This server kills itself if in faulty set");
+            throw std::invalid_argument("This server kills itself if in faulty set");
         }
     }
     else {
