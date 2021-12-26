@@ -821,7 +821,8 @@ ReplicaID HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint
 
             // Delete the first faulty.
             global_replicas.erase(global_replicas.begin());
-            faulty.erase(faulty.begin());
+            if (!faulty.empty())
+              faulty.erase(faulty.begin());
 
             size = global_replicas.size();
 
