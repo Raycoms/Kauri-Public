@@ -311,7 +311,7 @@ void HotStuffCore::on_receive_proposal(const Proposal &prop) {
 
     on_receive_proposal_(prop);
     if (opinion && !vote_disabled) {
-        if (bnew->height > 50) {
+        if (bnew->height > 25) {
             inc_time();
         }
 
