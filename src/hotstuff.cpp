@@ -348,9 +348,11 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
         if (cert != nullptr && cert->get_obj_hash() == blk->get_hash()) {
             if (cert->has_n(config.nmajority)) {
                 cert->compute();
-                if (id != 0 && !cert->verify(config)) {
+                if (id != pmaker->get_proposer() && !cert->verify(config)) {
                     throw std::runtime_error("Invalid Sigs in intermediate signature!");
                 }
+
+                inc_time();
                 update_hqc(blk, cert);
                 on_qc_finish(blk);
             }
@@ -503,6 +505,7 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
 
                   update_hqc(blk, cert);
                   on_qc_finish(blk);
+                  inc_time();
 
                   if (!rdy_queue.empty()) {
                       auto curr_blk = blk;
