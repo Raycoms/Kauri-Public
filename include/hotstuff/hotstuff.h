@@ -172,7 +172,7 @@ class HotStuffBase: public HotStuffCore {
     cmd_queue_t cmd_pending;
     std::vector<uint256_t> cmd_pending_buffer;
     std::vector<uint256_t> final_buffer;
-    std::vector<ReplicaID> faulty = { 0, 0, 0 }; //7, 8, 9, 10, 18, 19, 20, 21, 29, 30, 31, 32, 40, 41, 42, 43, 51, 52, 53, 54, 62, 63, 64, 65, 74, 75, 76, 85, 86, 87, 96, 97, 98};
+    std::vector<ReplicaID> faulty = { 0 }; //7, 8, 9, 10, 18, 19, 20, 21, 29, 30, 31, 32, 40, 41, 42, 43, 51, 52, 53, 54, 62, 63, 64, 65, 74, 75, 76, 85, 86, 87, 96, 97, 98};
     /* statistics */
     uint64_t fetched;
     uint64_t delivered;
