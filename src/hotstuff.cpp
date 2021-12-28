@@ -786,7 +786,21 @@ ReplicaID HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint
     size_t fanout = config.fanout;
 
     if (!startup) {
-        vheight = b_lock->height + 1;
+      double m = config.fanout;
+      double n = original_replicas.size();
+      size_t f_result = 0;
+
+      for (size_t f = 0; f < n; f++) {
+        if (f + floor(f / m) * ceil((n - m) / m) <= (n - 1.0) / 3.0) {
+          f_result = f;
+        } else {
+          break;
+        }
+      }
+
+
+
+      vheight = b_lock->height + 1;
         piped_queue.clear();
 
         failures++;
@@ -814,6 +828,13 @@ ReplicaID HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint
 
             auto new_zero_hash = std::move(std::get<2>(global_replicas[0]));
             HOTSTUFF_LOG_PROTO("Now: %s", new_zero_hash.to_hex().c_str());
+
+          std::rotate(global_replicas.begin(), global_replicas.begin() + 1, global_replicas.end());
+        }
+        else if (failures < f_result)
+        {
+            //we actually do this m+1 times (depending on the depth right))
+            std::rotate(global_replicas.begin(), global_replicas.begin() + fanout + 1, global_replicas.end());
         }
         else if (failures > 10 || fanout > global_replicas.size() / 2) {
             std::cout << global_replicas.size() << std::endl;
