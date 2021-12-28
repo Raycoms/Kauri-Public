@@ -143,7 +143,12 @@ void HotStuffCore::update(const block_t &nblk) {
     const block_t &blk1 = blk2->qc_ref;
     if (blk1 == nullptr) return;
     if (blk1->decision) return;
-    if (blk1->height > b_lock->height) b_lock = blk1;
+    if (blk1->height > b_lock->height) {
+      b_lock = blk1;
+      if (blk1->height > 50) {
+        inc_time();
+      }
+    }
 
     const block_t &blk = blk1->qc_ref;
     if (blk == nullptr) return;
@@ -311,10 +316,6 @@ void HotStuffCore::on_receive_proposal(const Proposal &prop) {
 
     on_receive_proposal_(prop);
     if (opinion && !vote_disabled) {
-        if (bnew->height > 50) {
-            inc_time();
-        }
-
         do_vote(prop,
                 Vote(id, bnew->get_hash(),
                      create_part_cert(*priv_key, bnew->get_hash()), this));
