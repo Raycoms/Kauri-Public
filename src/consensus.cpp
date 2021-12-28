@@ -339,7 +339,7 @@ void HotStuffCore::on_receive_vote(const Vote &vote) {
     }
 
     if (vote.voter != get_id()) return;
-    if (blk->qc != nullptr && blk->qc->has_n(config.nmajority)) return;
+    if (blk->self_qc != nullptr && blk->self_qc->has_n(config.nmajority)) return;
 
     //std::cout << "self vote" << std::endl;
     auto &qc = blk->self_qc;
