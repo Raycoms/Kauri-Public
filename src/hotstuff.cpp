@@ -825,20 +825,20 @@ ReplicaID HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint
               std::rotate(global_replicas.begin(),global_replicas.begin() + fanout + 1,global_replicas.end());
             }
         }
-        else if (failures == f_result)
-        {
-          // fall back to a star, start over at 0.
-          std::rotate(global_replicas.begin(), global_replicas.begin() + (n - 2), global_replicas.end());
-        }
         else if (failures > 10 || fanout > global_replicas.size() / 2) {
             std::cout << global_replicas.size() << std::endl;
             HOTSTUFF_LOG_PROTO("Size: %d", global_replicas.size());
 
-            // Delete the first faulty.
-            global_replicas.erase(global_replicas.begin());
-            if (!faulty.empty())
-              faulty.erase(faulty.begin());
-
+            if (failures == f_result) {
+              // fall back to a star, start over at 0.
+              std::rotate(global_replicas.begin(), global_replicas.begin() + (n - 2), global_replicas.end());
+            }
+            else {
+              // Delete the first faulty.
+              global_replicas.erase(global_replicas.begin());
+              if (!faulty.empty())
+                faulty.erase(faulty.begin());
+            }
             size = global_replicas.size();
 
             if (!faulty.empty()) {
