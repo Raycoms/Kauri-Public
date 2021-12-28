@@ -506,7 +506,7 @@ public:
   }
 
   bool has_n(const uint32_t n) override {
-    //std::cout << std::to_string(sigs.size()) << " " << std::to_string(n) << std::endl;
+    std::cout << std::to_string(sigs.size()) << " " << std::to_string(n) << std::endl;
     return sigs.size() >= n;
   }
 
