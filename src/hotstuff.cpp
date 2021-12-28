@@ -788,13 +788,14 @@ ReplicaID HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint
       double m = config.fanout;
       double n = original_replicas.size();
 
-      for (size_t f = 0; f < n; f++) {
-        if (f + floor(f / m) * ceil((n - m) / m) <= (n - 1.0) / 3.0) {
+      for (uint64_t f = 0; f < n; f++) {
+        if (f + floor(f / m) * 10.0 <= n - config.nmajority) {
           f_result = f;
         } else {
           break;
         }
       }
+      HOTSTUFF_LOG_PROTO("F result: %d", f_result);
     }
 
     if (!startup) {
