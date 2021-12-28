@@ -784,7 +784,7 @@ ReplicaID HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint
 
     auto size = global_replicas.size();
     size_t fanout = config.fanout;
-    if (f_result == 0) {
+    if (f_result <= 1) {
       double m = config.fanout;
       double n = original_replicas.size();
 
