@@ -304,13 +304,13 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
 
         // If the process is not a proposer, we have to relay data.
         if (id != pmaker->get_proposer()) {
-          if (cert->has_n(numberOfChildren + 1)) {
+          if (cert->has_n(numberOfChildren)) {
             return;
           }
 
           cert->add_part(config, v->voter, *v->cert);
 
-          if (!cert->has_n(numberOfChildren + 1)) {
+          if (!cert->has_n(numberOfChildren)) {
             return;
           }
 
@@ -459,7 +459,7 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
         std::cout << "got relay and verified" << std::endl;
 
         if (cert != nullptr && cert->get_obj_hash() == blk->get_hash() && !cert->has_n(config.nmajority)) {
-            if (id != pmaker->get_proposer() && cert->has_n(numberOfChildren + 1))
+            if (id != pmaker->get_proposer() && cert->has_n(numberOfChildren))
             {
                 return;
             }
@@ -468,7 +468,7 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
 
             std::cout << "merge quorum " << std::endl;
             if (id != pmaker->get_proposer()) {
-                if (!cert->has_n(numberOfChildren + 1)) return;
+                if (!cert->has_n(numberOfChildren)) return;
                 cert->compute();
                 if (!cert->verify(config)) {
                     throw std::runtime_error("Invalid Sigs in intermediate signature!");
@@ -802,47 +802,33 @@ ReplicaID HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint
 
         failures++;
 
+        // todo calc position of previous leader, check if in faulty 0 position, and if so delete from there. This way we don't have to retry the same.
+
         // 9 times
         if (failures < 9 && fanout < global_replicas.size() / 2) {
             //we actually do this m+1 times (depending on the depth right))
+            // 0 11 22 33 44 55 66 77 88
             std::rotate(global_replicas.begin(), global_replicas.begin() + fanout + 1, global_replicas.end());
         }
         else if (failures == 9 && !faulty.empty() && fanout < global_replicas.size() / 2) {
-            std::rotate(global_replicas.begin(), global_replicas.begin() + fanout + 2, global_replicas.end());
-
-            auto cert_hash = std::move(std::get<2>(original_replicas.at(faulty.at(0))));
-            HOTSTUFF_LOG_PROTO("Next Leader: %s faulty: %d", cert_hash.to_hex().c_str(), faulty.at(0));
-            auto zero_hash = std::move(std::get<2>(global_replicas[0]));
-            HOTSTUFF_LOG_PROTO("Current 0: %s", zero_hash.to_hex().c_str());
-
-            for (size_t i = 0; i < global_replicas.size(); i++) {
-                auto cert_hash2 = std::move(std::get<2>(global_replicas[i]));
-                if (cert_hash.cheap_hash() == cert_hash2.cheap_hash()) {
-                    std::iter_swap(global_replicas.begin(), global_replicas.begin() + i);
-                    break;
-                }
-            }
-
-            auto new_zero_hash = std::move(std::get<2>(global_replicas[0]));
-            HOTSTUFF_LOG_PROTO("Now: %s", new_zero_hash.to_hex().c_str());
-
-          std::rotate(global_replicas.begin(), global_replicas.begin() + 1, global_replicas.end());
+            // 1
+            std::rotate(global_replicas.begin(), global_replicas.begin() + fanout + 3, global_replicas.end());
         }
         else if (failures < f_result)
         {
             if (failures == 18) {
-
+              // 2
+              std::rotate(global_replicas.begin(), global_replicas.begin() + fanout + 3, global_replicas.end());
             }
             else {
-              // we actually do this m+1 times (depending on the depth right))
-              std::rotate(global_replicas.begin(),
-                          global_replicas.begin() + fanout + 1,
-                          global_replicas.end());
+              // 1 12 23 34 45 56 67 78 89
+              std::rotate(global_replicas.begin(),global_replicas.begin() + fanout + 1,global_replicas.end());
             }
         }
         else if (failures == f_result)
         {
-
+          // fall back to a star, start over at 0.
+          std::rotate(global_replicas.begin(), global_replicas.begin() + (n - 2), global_replicas.end());
         }
         else if (failures > 10 || fanout > global_replicas.size() / 2) {
             std::cout << global_replicas.size() << std::endl;
