@@ -349,6 +349,7 @@ void HotStuffCore::on_receive_vote(const Vote &vote) {
         qc = create_quorum_cert(blk->get_hash());
     }
 
+    LOG_PROTO("Added own vote to cert %s", std::string(vote).c_str());
     qc->add_part(config, vote.voter, *vote.cert);
     if (qc->has_n(config.nmajority))
     {
