@@ -178,6 +178,8 @@ class HotStuffBase: public HotStuffCore {
     uint64_t fetched;
     uint64_t delivered;
     uint64_t failures;
+    uint64_t f_result = 0;
+
     mutable uint64_t nsent;
     mutable uint64_t nrecv;
 
