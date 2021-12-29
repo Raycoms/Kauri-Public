@@ -298,8 +298,8 @@ public:
     void set_proposer(TimerEvent &) {
 
         timeout *= 2;
-        if (timeout > 10.0) {
-            timeout = 10.0;
+        if (timeout > 12.0) {
+            timeout = 12.0;
         }
         HOTSTUFF_LOG_PROTO("-------------------------------");
         HOTSTUFF_LOG_PROTO("Timeout reached!!!");
