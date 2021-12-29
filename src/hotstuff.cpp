@@ -751,7 +751,7 @@ void HotStuffBase::do_vote(Proposal prop, const Vote &vote) {
 
         if (childPeers.empty()) {
             HOTSTUFF_LOG_PROTO("send vote");
-            pn.send_msg(MsgVote(vote), parentPeer);
+            pn.send_msg(MsgVote(vote), peers[proposer]);
         } else {
             block_t blk = get_delivered_blk(vote.blk_hash);
             if (blk->self_qc == nullptr)
