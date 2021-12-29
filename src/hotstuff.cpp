@@ -789,7 +789,7 @@ ReplicaID HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint
       double n = original_replicas.size();
 
       for (uint64_t f = 0; f < n; f++) {
-        if (f + floor(f / m) * 10.0 <= n - config.nmajority) {
+        if (f + (floor(f / m) * 10.0) <= ((n - 1.0) / 3.0)) {
           f_result = f;
         } else {
           break;
