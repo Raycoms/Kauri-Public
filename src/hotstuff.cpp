@@ -750,8 +750,13 @@ void HotStuffBase::do_vote(Proposal prop, const Vote &vote) {
         }
 
         if (childPeers.empty()) {
+            if (config.fanout > (peers.size() / 2.0)) {
+              pn.send_msg(MsgVote(vote), get_config().get_peer_id(proposer));
+            }
+            else {
+              pn.send_msg(MsgVote(vote), parentPeer);
+            }
             HOTSTUFF_LOG_PROTO("send vote");
-            pn.send_msg(MsgVote(vote), get_config().get_peer_id(proposer));
         } else {
             block_t blk = get_delivered_blk(vote.blk_hash);
             if (blk->self_qc == nullptr)
