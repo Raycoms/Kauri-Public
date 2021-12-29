@@ -338,9 +338,14 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
             return;
           }
 
-          std::cout << " send relay message: "
-                    << v->blk_hash.to_hex().c_str() << std::endl;
-          pn.send_msg(MsgRelay(VoteRelay(v->blk_hash,blk->self_qc->clone(), this)),parentPeer);
+          std::cout << " send relay message: "<< v->blk_hash.to_hex().c_str() << std::endl;
+          try {
+            pn.send_msg(MsgRelay(VoteRelay(v->blk_hash,blk->self_qc->clone(), this)), parentPeer);
+          }
+          catch (const char* message) {
+            return;
+          }
+
           return;
         }
 
