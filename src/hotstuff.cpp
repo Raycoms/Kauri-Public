@@ -833,7 +833,7 @@ ReplicaID HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint
 
             if (failures == f_result) {
               // fall back to a star, start over at 0.
-              std::rotate(global_replicas.begin(), global_replicas.begin() + (n - 2), global_replicas.end());
+              std::rotate(global_replicas.begin(), global_replicas.begin() + (global_replicas.size() - 2), global_replicas.end());
             }
             else {
               // Delete the first faulty.
