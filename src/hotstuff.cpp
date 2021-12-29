@@ -865,7 +865,7 @@ ReplicaID HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint
                 auto zero_hash = std::move(std::get<2>(global_replicas[0]));
                 HOTSTUFF_LOG_PROTO("Current 0: %s", zero_hash.to_hex().c_str());
 
-                auto new_zero = std::move(std::get<2>(original_replicas[1]));
+                auto new_zero = std::move(std::get<2>(original_replicas[15]));
                 HOTSTUFF_LOG_PROTO("New 0: %s", new_zero.to_hex().c_str());
 
                 for (size_t i = 0; i < global_replicas.size(); i++) {
