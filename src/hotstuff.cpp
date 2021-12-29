@@ -275,6 +275,10 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
         std::cout << "create cert: " << msg.vote.blk_hash.to_hex() << " " << &blk->self_qc << std::endl;
     }
 
+    if (blk->self_qc == nullptr) {
+      return;
+    }
+
     HOTSTUFF_LOG_PROTO("vote handler: %s", msg.vote.blk_hash.to_hex().c_str());
 
     // Early exit if we processed sufficient votes already.
