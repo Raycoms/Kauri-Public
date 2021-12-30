@@ -297,7 +297,7 @@ public:
 
     void set_proposer(TimerEvent &) {
 
-        timeout += 0.5;
+        timeout *= 2;
         if (timeout > 10.0) {
             timeout = 10.0;
         }
