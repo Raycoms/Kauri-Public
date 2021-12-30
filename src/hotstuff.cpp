@@ -361,7 +361,7 @@ void HotStuffBase::vote_handler(MsgVote &&msg, const Net::conn_t &conn) {
                     throw std::runtime_error("Invalid Sigs in intermediate signature!");
                 }
 
-                inc_time();
+                //inc_time();
                 update_hqc(blk, cert);
                 on_qc_finish(blk);
             }
@@ -514,7 +514,7 @@ void HotStuffBase::vote_relay_handler(MsgRelay &&msg, const Net::conn_t &conn) {
 
                   update_hqc(blk, cert);
                   on_qc_finish(blk);
-                  inc_time();
+                  //inc_time();
 
                   if (!rdy_queue.empty()) {
                       auto curr_blk = blk;
