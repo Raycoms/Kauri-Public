@@ -857,6 +857,12 @@ ReplicaID HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint
             HOTSTUFF_LOG_PROTO("Size: %d", global_replicas.size());
 
             if (failures == f_result && fanout < global_replicas.size() / 2) {
+              auto h1 = std::move(std::get<2>(original_replicas.at(faulty.at(0))));
+              auto h2 = std::move(std::get<2>(global_replicas.at(0)));
+              if (h1 == h2) {
+                faulty.erase(faulty.begin());
+              }
+
               // fall back to a star, start over at 0.
               std::rotate(global_replicas.begin(), global_replicas.begin() + (global_replicas.size() - 2), global_replicas.end());
             }
