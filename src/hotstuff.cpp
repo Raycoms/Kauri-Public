@@ -830,7 +830,7 @@ ReplicaID HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint
             // 1
             std::rotate(global_replicas.begin(), global_replicas.begin() + fanout + 3, global_replicas.end());
         }
-        else if (failures < f_result)
+        else if (failures < f_result && fanout < global_replicas.size() / 2)
         {
             if (failures == 18) {
               // 2
@@ -845,7 +845,7 @@ ReplicaID HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint
             std::cout << global_replicas.size() << std::endl;
             HOTSTUFF_LOG_PROTO("Size: %d", global_replicas.size());
 
-            if (failures == f_result) {
+            if (failures == f_result && fanout < global_replicas.size() / 2) {
               // fall back to a star, start over at 0.
               std::rotate(global_replicas.begin(), global_replicas.begin() + (global_replicas.size() - 2), global_replicas.end());
             }
