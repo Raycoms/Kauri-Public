@@ -818,28 +818,39 @@ ReplicaID HotStuffBase::calcTree(std::vector<std::tuple<NetAddr, pubkey_bt, uint
 
         failures++;
 
-        // todo calc position of previous leader, check if in faulty 0 position, and if so delete from there. This way we don't have to retry the same.
-
         // 9 times
         if (failures < 9 && fanout < global_replicas.size() / 2) {
-            //we actually do this m+1 times (depending on the depth right))
-            // 0 11 22 33 44 55 66 77 88
-            std::rotate(global_replicas.begin(), global_replicas.begin() + fanout + 1, global_replicas.end());
+          auto h1 = std::move(std::get<2>(original_replicas.at(faulty.at(0))));
+          auto h2 = std::move(std::get<2>(global_replicas.at(0)));
+          if (h1 == h2) {
+            faulty.erase(faulty.begin());
+          }
+          // we actually do this m+1 times (depending on the depth right))
+          //  0 11 22 33 44 55 66 77 88
+          std::rotate(global_replicas.begin(),global_replicas.begin() + fanout + 1,global_replicas.end());
         }
-        else if (failures == 9 && !faulty.empty() && fanout < global_replicas.size() / 2) {
-            // 1
-            std::rotate(global_replicas.begin(), global_replicas.begin() + fanout + 3, global_replicas.end());
+        else if (failures == 9 && !faulty.empty() &&fanout < global_replicas.size() / 2) {
+          auto h1 = std::move(std::get<2>(original_replicas.at(faulty.at(0))));
+          auto h2 = std::move(std::get<2>(global_replicas.at(0)));
+          if (h1 == h2) {
+            faulty.erase(faulty.begin());
+          }
+          // 1
+          std::rotate(global_replicas.begin(),global_replicas.begin() + fanout + 3,global_replicas.end());
         }
-        else if (failures < f_result && fanout < global_replicas.size() / 2)
-        {
-            if (failures == 18) {
-              // 2
-              std::rotate(global_replicas.begin(), global_replicas.begin() + fanout + 3, global_replicas.end());
-            }
-            else {
-              // 1 12 23 34 45 56 67 78 89
-              std::rotate(global_replicas.begin(),global_replicas.begin() + fanout + 1,global_replicas.end());
-            }
+        else if (failures < f_result && fanout < global_replicas.size() / 2) {
+          auto h1 = std::move(std::get<2>(original_replicas.at(faulty.at(0))));
+          auto h2 = std::move(std::get<2>(global_replicas.at(0)));
+          if (h1 == h2) {
+            faulty.erase(faulty.begin());
+          }
+          if (failures == 18) {
+            // 2
+            std::rotate(global_replicas.begin(),global_replicas.begin() + fanout + 3,global_replicas.end());
+          } else {
+            // 1 12 23 34 45 56 67 78 89
+            std::rotate(global_replicas.begin(),global_replicas.begin() + fanout + 1,global_replicas.end());
+          }
         }
         else if (failures > 10 || fanout > global_replicas.size() / 2) {
             std::cout << global_replicas.size() << std::endl;
