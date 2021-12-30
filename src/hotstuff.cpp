@@ -751,7 +751,7 @@ void HotStuffBase::do_vote(Proposal prop, const Vote &vote) {
 
         if (childPeers.empty()) {
             if (config.fanout > (peers.size() / 2.0)) {
-              pn.send_msg(MsgVote(vote), get_config().get_peer_id(proposer));
+              pn.send_msg(MsgVote(vote), get_config().get_peer_id(prop.proposer));
             }
             else {
               pn.send_msg(MsgVote(vote), parentPeer);
